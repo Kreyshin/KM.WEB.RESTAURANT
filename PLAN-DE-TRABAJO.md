@@ -33,17 +33,23 @@ solo test. Eso se arregla antes de añadir superficie nueva, no después.
 Las fases están ordenadas por **dependencia real**, no por apetito. La regla que las gobierna:
 *no se construye una pantalla operativa sobre un maestro que todavía no existe*.
 
-### Fase 0 — Higiene del proyecto
+### Fase 0 — Higiene del proyecto ✅ COMPLETADA
 
 Pequeña y desbloqueante. Sin esto, todo lo demás se desarrolla a ciegas.
 
-- [ ] `git init`, `.gitignore`, primer commit, convención de ramas y mensajes
-- [ ] ESLint (`eslint-plugin-vue` + `typescript-eslint`) y Prettier, con script `lint`
-- [ ] Vitest + `@vue/test-utils`; script `test`
-- [ ] Tests semilla: guarda de rol del router, `salones.service`, `mesas.service`
-- [ ] Script `verify` que encadene `lint`, `vue-tsc` y `test`
+- [x] `git init`, `.gitignore`, primer commit (`b7e27b4`, 77 archivos)
+- [x] ESLint 10 y Prettier, con `src/assets/karma/` excluido de ambos
+- [x] Vitest con jsdom y `@vue/test-utils`
+- [x] 30 pruebas semilla: guardas de rol, aritmética de stock, último administrador
+- [x] Script `verify` que encadena formato, lint, tipos y pruebas
 
-**Terminado cuando:** `npm run verify` pasa en limpio y hay historial de git.
+**Terminado:** `npm run verify` pasa en limpio y hay historial de git.
+
+Scripts disponibles: `verify`, `lint`, `lint:fix`, `formato`, `formato:fix`, `tipos`, `test`,
+`test:watch`.
+
+Las pruebas no cubren componentes a propósito: se eligieron los tres puntos donde un fallo sería
+silencioso y caro —permisos, stock y bloqueo administrativo—, en lugar de perseguir cobertura.
 
 ---
 
@@ -52,26 +58,33 @@ Pequeña y desbloqueante. Sin esto, todo lo demás se desarrolla a ciegas.
 Es la fase que desbloquea todo lo operativo. **Carta es la pieza crítica**: sin catálogo de
 productos no hay comanda, no hay ticket y no hay reporte de ventas.
 
-#### 1.1 Carta y menú ← máxima prioridad
+#### 1.1 Carta y menú ✅ COMPLETADA
 
-- [ ] Modelo: `Categoria`, `Producto`, `Variante`, `GrupoModificador`, `Modificador`
-- [ ] Precios por producto y por variante; disponibilidad por horario o agotado
-- [ ] CRUD de categorías con reordenación
-- [ ] CRUD de productos con imagen, alérgenos y tiempo de preparación
-- [ ] Editor de variantes y modificadores (ej. «sin cebolla», «extra queso» con recargo)
+- [x] Modelo: `Categoria`, `Producto`, `Variante`, `GrupoModificador`, `Modificador`
+- [x] Precios por producto y por presentación; conmutador de agotado en un clic
+- [x] CRUD de categorías con reordenación arriba/abajo
+- [x] CRUD de productos con alérgenos y tiempo de preparación
+- [x] Editor de presentaciones y de grupos de opciones con reglas de selección
+- [ ] Imagen del producto *(aplazado: necesita almacenamiento de archivos, Fase 2)*
 
-#### 1.2 Inventario e insumos
+#### 1.2 Inventario e insumos — en curso
 
-- [ ] Modelo: `Insumo`, `UnidadMedida`, `Movimiento`, `Receta`
-- [ ] CRUD de insumos con stock mínimo y alerta
-- [ ] Receta: relación producto → insumos con cantidades *(depende de 1.1)*
-- [ ] Movimientos: entrada, salida, merma, ajuste, con motivo y responsable
+- [x] Modelo: `Insumo`, `UnidadMedida`, `Movimiento`, `Receta`
+- [x] Servicio con aritmética de stock, kardex y coste de receta
+- [x] Modal de alta y edición de insumo
+- [ ] Vista principal con stock, alerta de mínimo y kardex
+- [ ] Modal de movimiento (entrada, salida, merma, ajuste)
+- [ ] Editor de recetas: relación producto → insumos con cantidades
 
-#### 1.3 Usuarios y roles
+#### 1.3 Usuarios y roles — en curso
 
-- [ ] CRUD de usuarios y asignación de rol
+- [x] Servicio con CRUD, validación de correo y regla del último administrador
+- [ ] Vista con tabla, alta, baja y cambio de rol
+- [ ] Restablecimiento de contraseña
 - [ ] Matriz de permisos explícita, sustituyendo el `roles[]` del `meta` de cada ruta
-- [ ] Alta, baja, reseteo de contraseña, asignación de mesero a salón
+
+> Las rutas de Inventario y Usuarios apuntan a `EnConstruccionView` hasta que existan sus vistas.
+> Hay un `TODO` en `src/router/index.ts` señalando dónde reconectarlas.
 
 **Terminado cuando:** los tres módulos operan CRUD completo contra la capa de servicios y ya no
 queda ningún `EnConstruccionView` en rutas de maestros.
