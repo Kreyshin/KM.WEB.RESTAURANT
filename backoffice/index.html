@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Mesa — gestión de restaurante. Un sistema Karma Corp." />
+    <meta name="theme-color" content="#0b2e23" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Fraunces para títulos y cifras (el registro «de carta»), Inter para la
+      interfaz. Ambas con fallback a serif/sans del sistema en main.css.
+    -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Mesa</title>
+    <script>
+      // Se aplica el tema antes del primer pintado para evitar el destello.
+      ;(function () {
+        try {
+          var guardado = localStorage.getItem('km.restaurante.tema')
+          var oscuro =
+            guardado === 'oscuro' ||
+            (!guardado && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.setAttribute('data-theme', oscuro ? 'dark' : 'light')
+          document.documentElement.style.backgroundColor = oscuro ? '#0c120f' : '#f5f2ec'
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

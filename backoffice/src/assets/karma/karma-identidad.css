@@ -1,0 +1,340 @@
+/* =============================================================================
+ * PRESERVADO — Identidad visual Karma Corp
+ *
+ * Este archivo es la implementacion completa de docs/KARMA-IDENTIDAD-VISUAL.md
+ * tal como estaba antes de crear la identidad propia de Restaurante.
+ * NO se importa en la aplicacion: se conserva como referencia y como punto de
+ * retorno si en algun momento el vertical debe volver al tema de plataforma.
+ *
+ * El isotipo Karma tambien se conserva, en src/components/marca/KarmaLogo.vue,
+ * y sigue en uso como atribucion de plataforma dentro del nuevo tema.
+ * ========================================================================== */
+@import 'tailwindcss';
+
+/*
+ * Identidad visual Karma Corp.
+ * Fuente: docs/KARMA-IDENTIDAD-VISUAL.md (Web.Administrador.UI.Angular.V2).
+ *
+ * Ningún componente escribe colores de marca directamente: todos consumen los
+ * tokens --km-* a través de las utilidades de Tailwind declaradas en @theme.
+ */
+
+/* Modo oscuro por atributo, como en el shell Angular (data-theme). */
+@custom-variant dark ([data-theme='dark'] &);
+
+:root {
+  /* Identidad */
+  --km-brand-primary: #8a2be2;
+  --km-brand-active: #6a0dad;
+  --km-brand-focus: #b47bff;
+  --km-brand-avatar: #9f5bff;
+  --km-blue-cosmic: #1a237e;
+
+  /* Superficies — tema claro */
+  --km-bg: #f5f5f5;
+  --km-surface: #ffffff;
+  --km-surface-nav: #ede7f6;
+  --km-text: #121212;
+  --km-text-muted: #555555;
+  --km-border: #dfd5e8;
+  --km-selection: #e2d2f4;
+
+  /* Estados */
+  --km-success: #0eaf9c;
+  --km-warning: #ff8f00;
+  --km-error: #b71c1c;
+
+  /*
+   * Firma del vertical. Los valores reales los publica
+   * `src/config/vertical.ts` al arrancar; estos son solo el respaldo.
+   * No es un color de acción ni de estado: solo sirve para distinguir este
+   * sistema de los demás del ecosistema Karma.
+   */
+  --km-vertical: #d81b77;
+  --km-vertical-texto-claro: #a0104f;
+  --km-vertical-texto-oscuro: #f06292;
+  --km-vertical-texto: var(--km-vertical-texto-claro);
+
+  /* Radios */
+  --km-radius-control: 7px;
+  --km-radius-card: 11px;
+  --km-radius-overlay: 16px;
+  --km-focus-ring: 0 0 0 2px #b47bff;
+
+  /* Estructura del shell */
+  --km-rail: 100px;
+  --km-menu: 325px;
+}
+
+[data-theme='dark'] {
+  --km-bg: #121015;
+  --km-surface: #1e1b25;
+  --km-surface-nav: #1b1724;
+  --km-text: #ffffff;
+  --km-text-muted: #b7a9c6;
+  --km-border: #332b40;
+  --km-selection: #352345;
+  --km-vertical-texto: var(--km-vertical-texto-oscuro);
+}
+
+@theme inline {
+  --color-brand: var(--km-brand-primary);
+  --color-brand-active: var(--km-brand-active);
+  --color-brand-focus: var(--km-brand-focus);
+  --color-brand-avatar: var(--km-brand-avatar);
+  --color-cosmic: var(--km-blue-cosmic);
+
+  --color-bg: var(--km-bg);
+  --color-surface: var(--km-surface);
+  --color-surface-nav: var(--km-surface-nav);
+  --color-text: var(--km-text);
+  --color-muted: var(--km-text-muted);
+  --color-border: var(--km-border);
+  --color-selection: var(--km-selection);
+
+  --color-success: var(--km-success);
+  --color-warning: var(--km-warning);
+  --color-error: var(--km-error);
+
+  --color-vertical: var(--km-vertical);
+  --color-vertical-texto: var(--km-vertical-texto);
+
+  --radius-control: var(--km-radius-control);
+  --radius-card: var(--km-radius-card);
+  --radius-overlay: var(--km-radius-overlay);
+
+  --font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  background-color: var(--km-bg);
+  color: var(--km-text);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--km-selection);
+  color: var(--km-text);
+}
+
+/* Foco visible de 2px en violeta, exigido por la guía de accesibilidad. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--km-focus-ring);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--km-border) transparent;
+}
+
+/*
+ * Jerarquía tipográfica de la guía.
+ * Se declaran como clases para no repetir tamaños sueltos en cada vista.
+ */
+.km-titulo-pagina {
+  font-size: 29px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+/* En móvil el título baja de escalón para no romper la cabecera. */
+@media (max-width: 640px) {
+  .km-titulo-pagina {
+    font-size: 21px;
+  }
+}
+
+.km-titulo-seccion {
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.km-etiqueta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/*
+ * Tonos de estado. Se calculan con color-mix sobre la superficie activa, así
+ * que el mismo token funciona en tema claro y oscuro sin duplicar valores.
+ */
+.km-tono {
+  --km-tono-color: var(--km-text-muted);
+  background-color: color-mix(in srgb, var(--km-tono-color) 12%, var(--km-surface));
+  border-color: color-mix(in srgb, var(--km-tono-color) 45%, var(--km-surface));
+  color: color-mix(in srgb, var(--km-tono-color) 85%, var(--km-text));
+}
+
+.km-tono-ok {
+  --km-tono-color: var(--km-success);
+}
+
+.km-tono-alerta {
+  --km-tono-color: var(--km-warning);
+}
+
+.km-tono-error {
+  --km-tono-color: var(--km-error);
+}
+
+.km-tono-info {
+  --km-tono-color: var(--km-blue-cosmic);
+}
+
+[data-theme='dark'] .km-tono-info {
+  /* El azul cósmico es demasiado oscuro sobre superficies carbón. */
+  --km-tono-color: #7986cb;
+}
+
+.km-tono-marca {
+  --km-tono-color: var(--km-brand-primary);
+}
+
+.km-tono-neutro {
+  --km-tono-color: var(--km-text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Firma del vertical
+ *
+ * Todo lo que sigue viste el CROMO (barra principal, cabecera, fondo, portada).
+ * El área de contenido —tarjetas, tablas, formularios— se mantiene neutra para
+ * que la plataforma se sienta una sola, según §3 de la guía: el color de marca
+ * no debe cubrir grandes áreas de contenido.
+ * ────────────────────────────────────────────────────────────────────────────*/
+
+/* Barra superior: la señal más rápida de «en qué sistema Karma estoy». */
+.km-firma {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--km-brand-active) 0%,
+    var(--km-brand-primary) 35%,
+    var(--km-vertical) 100%
+  );
+}
+
+/*
+ * Fondo del área de trabajo. Dos lavados muy tenues —acento arriba a la
+ * izquierda, violeta arriba a la derecha— que tiñen el espacio sin restar
+ * contraste al contenido, que va siempre sobre superficies opacas.
+ */
+.km-fondo-vertical {
+  background-color: var(--km-bg);
+  background-image:
+    radial-gradient(
+      55rem 26rem at 0% 0%,
+      color-mix(in srgb, var(--km-vertical) 12%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      45rem 24rem at 100% 0%,
+      color-mix(in srgb, var(--km-brand-primary) 10%, transparent),
+      transparent 70%
+    );
+  background-attachment: local;
+}
+
+/* En carbón los lavados necesitan más cuerpo para llegar a leerse. */
+[data-theme='dark'] .km-fondo-vertical {
+  background-image:
+    radial-gradient(
+      55rem 26rem at 0% 0%,
+      color-mix(in srgb, var(--km-vertical) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      45rem 24rem at 100% 0%,
+      color-mix(in srgb, var(--km-brand-primary) 20%, transparent),
+      transparent 70%
+    );
+}
+
+/* Barra principal: degradado que cae hacia el acento del vertical. */
+.km-rail {
+  background-color: var(--km-surface-nav);
+  background-image: linear-gradient(
+    180deg,
+    transparent 45%,
+    color-mix(in srgb, var(--km-vertical) 16%, transparent) 100%
+  );
+}
+
+[data-theme='dark'] .km-rail {
+  background-image: linear-gradient(
+    180deg,
+    transparent 40%,
+    color-mix(in srgb, var(--km-vertical) 26%, transparent) 100%
+  );
+}
+
+/* Cabecera del espacio de trabajo, teñida hacia el acento por la derecha. */
+.km-cabecera {
+  background-color: var(--km-surface);
+  background-image: linear-gradient(
+    90deg,
+    transparent 40%,
+    color-mix(in srgb, var(--km-vertical) 9%, transparent) 100%
+  );
+}
+
+[data-theme='dark'] .km-cabecera {
+  background-image: linear-gradient(
+    90deg,
+    transparent 35%,
+    color-mix(in srgb, var(--km-vertical) 18%, transparent) 100%
+  );
+}
+
+/* Distintivo del vertical: nombre + icono sobre fondo de acento suave. */
+.km-chip-vertical {
+  background-color: color-mix(in srgb, var(--km-vertical) 14%, var(--km-surface));
+  border-color: color-mix(in srgb, var(--km-vertical) 40%, var(--km-surface));
+  color: var(--km-vertical-texto);
+}
+
+/*
+ * En carbón el relleno se mantiene bajo: más magenta aclara el fondo y come
+ * contraste contra el texto rosa. Con 14% queda en 5.4:1.
+ */
+[data-theme='dark'] .km-chip-vertical {
+  background-color: color-mix(in srgb, var(--km-vertical) 14%, var(--km-surface));
+  border-color: color-mix(in srgb, var(--km-vertical) 55%, var(--km-surface));
+}
+
+/* Filo superior de las tarjetas de indicadores: violeta que vira al acento. */
+.km-filo-firma::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: var(--km-radius-card) var(--km-radius-card) 0 0;
+  background: linear-gradient(90deg, var(--km-brand-primary) 0%, var(--km-vertical) 100%);
+}
+
+/* Transiciones de 150–300ms que refuerzan el cambio de estado. */
+@keyframes km-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.km-fade-in {
+  animation: km-fade-in 0.18s ease-out;
+}
