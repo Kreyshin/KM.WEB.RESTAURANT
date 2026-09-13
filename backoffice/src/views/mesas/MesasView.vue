@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
+import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmConfirm from '@/components/ui/KmConfirm.vue'
@@ -297,11 +298,18 @@ async function eliminar() {
         </template>
 
         <template #col-acciones="{ fila }">
-          <div v-if="puedeConfigurar" class="flex justify-end gap-1">
-            <KmButton variante="fantasma" tamano="sm" @click="abrirEdicion(fila)">Editar</KmButton>
-            <KmButton variante="fantasma" tamano="sm" @click="pedirEliminar(fila)">
-              <span class="text-vino">Eliminar</span>
-            </KmButton>
+          <div v-if="puedeConfigurar" class="flex justify-end gap-0.5">
+            <KmBotonIcono
+              icono="editar"
+              :etiqueta="`Editar mesa ${fila.codigo}`"
+              @click="abrirEdicion(fila)"
+            />
+            <KmBotonIcono
+              icono="eliminar"
+              tono="peligro"
+              :etiqueta="`Eliminar mesa ${fila.codigo}`"
+              @click="pedirEliminar(fila)"
+            />
           </div>
         </template>
       </KmTable>

@@ -5,6 +5,7 @@ import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import { canalesService } from '@/services/comercial.service'
+import { dependenciasService } from '@/services/dependencias.service'
 import type { CanalVenta, NuevoCanalVenta } from '@/types'
 import type { ColumnaTabla } from '@/types/ui'
 import { etiquetaTipoCanal, opcionesTipoCanal } from '@/utils/configuracion'
@@ -39,6 +40,7 @@ function validar(c: NuevoCanalVenta) {
       subtitulo="Por dónde entran los pedidos. Permite separar ventas y comisiones en los reportes."
       entidad="canal"
       :servicio="canalesService"
+      :consecuencias-estado="dependenciasService.canal"
       :columnas="columnas"
       :nuevo="nuevo"
       :validar="validar"

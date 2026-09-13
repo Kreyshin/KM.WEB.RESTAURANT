@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
+import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmConfirm from '@/components/ui/KmConfirm.vue'
+import KmConfirmarEstado from '@/components/ui/KmConfirmarEstado.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmTable from '@/components/ui/KmTable.vue'
 import CategoriaFormModal from './CategoriaFormModal.vue'
 import ProductoFormModal from './ProductoFormModal.vue'
+import { useConfirmarEstado } from '@/composables/useConfirmarEstado'
 import { cartaService } from '@/services/carta.service'
+import { dependenciasService } from '@/services/dependencias.service'
 import { useUiStore } from '@/stores/ui.store'
 import type { ApiError, Categoria, NuevaCategoria, NuevoProducto, Producto } from '@/types'
 import type { ColumnaTabla } from '@/types/ui'
@@ -131,17 +135,6 @@ async function guardarProducto(datos: NuevoProducto, id?: string) {
   }
 }
 
-async function alternarDisponible(p: Producto) {
-  const anterior = p.disponible
-  p.disponible = !anterior // Optimista: en sala se marca agotado a toda prisa.
-  try {
-    await cartaService.cambiarDisponibilidad(p.id, p.disponible)
-  } catch (e) {
-    p.disponible = anterior
-    ui.error((e as ApiError).mensaje ?? 'No se pudo cambiar la disponibilidad.')
-  }
-}
-
 // ── Categorías ──────────────────────────────────────────────────────────────
 
 function nuevaCategoria() {
@@ -154,7 +147,22 @@ function editarCategoria(c: Categoria) {
   modalCategoria.value = true
 }
 
-async function guardarCategoria(datos: NuevaCategoria, id?: string) {
+const estado = useConfirmarEstado()
+
+async function guardarCategoria(
+  datos: NuevaCategoria,
+  id?: string,
+  confirmado = false,
+): Promise<void> {
+  const original = categoriaEnEdicion.value
+  if (id && original && original.activa !== datos.activa && !confirmado) {
+    return estado.pedir({
+      nombre: datos.nombre,
+      activar: datos.activa,
+      consecuencias: () => dependenciasService.categoria(id, datos.activa),
+      continuar: () => guardarCategoria(datos, id, true),
+    })
+  }
   try {
     if (id) {
       await cartaService.actualizarCategoria(id, datos)
@@ -174,15 +182,6 @@ async function guardarCategoria(datos: NuevaCategoria, id?: string) {
 
 async function reordenar(id: string, direccion: 'arriba' | 'abajo') {
   categorias.value = await cartaService.reordenarCategoria(id, direccion)
-}
-
-async function alternarActiva(c: Categoria) {
-  try {
-    await cartaService.actualizarCategoria(c.id, { activa: !c.activa })
-    await cargar()
-  } catch (e) {
-    ui.error((e as ApiError).mensaje ?? 'No se pudo cambiar el estado.')
-  }
 }
 
 // ── Eliminación ─────────────────────────────────────────────────────────────
@@ -319,25 +318,24 @@ async function eliminar() {
           </template>
 
           <template #col-disponible="{ fila }">
-            <button type="button" title="Cambiar disponibilidad" @click="alternarDisponible(fila)">
-              <KmBadge :tono="fila.disponible ? 'verde' : 'vino'" punto>
-                {{ fila.disponible ? 'Sí' : 'Agotado' }}
-              </KmBadge>
-            </button>
+            <KmBadge :tono="fila.disponible ? 'verde' : 'vino'" punto>
+              {{ fila.disponible ? 'Disponible' : 'Agotado' }}
+            </KmBadge>
           </template>
 
           <template #col-acciones="{ fila }">
-            <div class="flex justify-end gap-1">
-              <KmButton variante="fantasma" tamano="sm" @click="editarProducto(fila)"
-                >Editar</KmButton
-              >
-              <KmButton
-                variante="fantasma"
-                tamano="sm"
+            <div class="flex justify-end gap-0.5">
+              <KmBotonIcono
+                icono="editar"
+                :etiqueta="`Editar ${fila.nombre}`"
+                @click="editarProducto(fila)"
+              />
+              <KmBotonIcono
+                icono="eliminar"
+                tono="peligro"
+                :etiqueta="`Eliminar ${fila.nombre}`"
                 @click="pedirEliminar('producto', fila.id, fila.nombre)"
-              >
-                <span class="text-vino">Eliminar</span>
-              </KmButton>
+              />
             </div>
           </template>
         </KmTable>
@@ -360,38 +358,16 @@ async function eliminar() {
         <template #col-orden="{ fila }">
           <div class="flex items-center gap-1">
             <span class="w-5 text-tenue tabular-nums">{{ fila.orden }}</span>
-            <button
-              type="button"
-              class="rounded p-1 text-tenue transition-colors hover:bg-seleccion hover:text-tinta"
-              aria-label="Subir"
+            <KmBotonIcono
+              icono="subir"
+              :etiqueta="`Subir ${fila.nombre}`"
               @click="reordenar(fila.id, 'arriba')"
-            >
-              <svg
-                class="size-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M18 15l-6-6-6 6" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="rounded p-1 text-tenue transition-colors hover:bg-seleccion hover:text-tinta"
-              aria-label="Bajar"
+            />
+            <KmBotonIcono
+              icono="bajar"
+              :etiqueta="`Bajar ${fila.nombre}`"
               @click="reordenar(fila.id, 'abajo')"
-            >
-              <svg
-                class="size-3.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
-              </svg>
-            </button>
+            />
           </div>
         </template>
 
@@ -405,25 +381,24 @@ async function eliminar() {
         </template>
 
         <template #col-estado="{ fila }">
-          <button type="button" title="Cambiar estado" @click="alternarActiva(fila)">
-            <KmBadge :tono="fila.activa ? 'verde' : 'neutro'" punto>
-              {{ fila.activa ? 'Visible' : 'Oculta' }}
-            </KmBadge>
-          </button>
+          <KmBadge :tono="fila.activa ? 'verde' : 'neutro'" punto>
+            {{ fila.activa ? 'Visible' : 'Oculta' }}
+          </KmBadge>
         </template>
 
         <template #col-acciones="{ fila }">
-          <div class="flex justify-end gap-1">
-            <KmButton variante="fantasma" tamano="sm" @click="editarCategoria(fila)"
-              >Editar</KmButton
-            >
-            <KmButton
-              variante="fantasma"
-              tamano="sm"
+          <div class="flex justify-end gap-0.5">
+            <KmBotonIcono
+              icono="editar"
+              :etiqueta="`Editar ${fila.nombre}`"
+              @click="editarCategoria(fila)"
+            />
+            <KmBotonIcono
+              icono="eliminar"
+              tono="peligro"
+              :etiqueta="`Eliminar ${fila.nombre}`"
               @click="pedirEliminar('categoria', fila.id, fila.nombre)"
-            >
-              <span class="text-vino">Eliminar</span>
-            </KmButton>
+            />
           </div>
         </template>
       </KmTable>
@@ -444,6 +419,15 @@ async function eliminar() {
       :categoria="categoriaEnEdicion"
       :orden-sugerido="ordenSugerido"
       @guardado="guardarCategoria"
+    />
+
+    <KmConfirmarEstado
+      v-model="estado.abierto.value"
+      :activar="estado.activar.value"
+      :nombre="estado.nombre.value"
+      :consecuencias="estado.consecuencias.value"
+      :cargando="estado.cargando.value"
+      @confirmar="estado.confirmar"
     />
 
     <KmConfirm

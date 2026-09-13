@@ -5,7 +5,8 @@ Pantalla de mantenimiento completa en un solo componente. Pensado para catálogo
 Incluye, sin escribir nada más:
 
 - Búsqueda, filtro de estado y filtros propios por slot
-- Tabla ordenable con columna **Estado** (clic para activar o desactivar) y acciones **Editar** / **Eliminar**
+- Tabla ordenable con columna **Estado** (solo lectura) y acciones con icono de lápiz y tacho, con tooltip
+- Cambio de estado dentro de la edición, con una confirmación que explica qué se ve afectado
 - Paginación y exportación a Excel o CSV de todo lo filtrado
 - Drawer de alta y edición con validación en cliente y errores del servicio por campo
 - Confirmación de borrado y avisos de éxito o error
@@ -72,22 +73,23 @@ function validar(c: NuevoCanalVenta): Record<string, string> {
 
 ## Props
 
-| Prop                  | Tipo                                   | Descripción                                                 |
-| --------------------- | -------------------------------------- | ----------------------------------------------------------- |
-| `titulo`, `subtitulo` | `string`                               | Cabecera de la tarjeta                                      |
-| `entidad`             | `string`                               | Singular en minúscula: textos de botones, drawer y avisos   |
-| `femenino`            | `boolean`                              | «Nueva serie», «Activa», «creada»                           |
-| `servicio`            | `ServicioCatalogo<T>`                  | `consultar`, `crear`, `actualizar`, `eliminar?`             |
-| `columnas`            | `ColumnaTabla[]`                       | Sin Estado ni acciones: se añaden solas                     |
-| `nuevo`               | `() => Omit<T, 'id'>`                  | Registro vacío para el alta                                 |
-| `nombreDe`            | `(item: T) => string`                  | Nombre en la confirmación de borrado                        |
-| `validar`             | `(borrador) => Record<string, string>` | Validación en cliente antes de llamar al servicio           |
-| `filtrosFijos`        | `Consulta['filtros']`                  | Filtro permanente; también se copia en los registros nuevos |
-| `orden`               | `Orden`                                | Orden inicial                                               |
-| `exportacion`         | `ColumnaExportable<T>[]`               | Activa el botón Exportar                                    |
-| `archivo`             | `string`                               | Nombre base del archivo exportado                           |
-| `anchoDrawer`         | `'sm' \| 'md' \| 'lg'`                 | Por defecto `md`                                            |
-| `sinTarjeta`          | `boolean`                              | Sin `KmCard`: para usarlo dentro de pestañas                |
+| Prop                  | Tipo                                   | Descripción                                                               |
+| --------------------- | -------------------------------------- | ------------------------------------------------------------------------- |
+| `titulo`, `subtitulo` | `string`                               | Cabecera de la tarjeta                                                    |
+| `entidad`             | `string`                               | Singular en minúscula: textos de botones, drawer y avisos                 |
+| `femenino`            | `boolean`                              | «Nueva serie», «Activa», «creada»                                         |
+| `servicio`            | `ServicioCatalogo<T>`                  | `consultar`, `crear`, `actualizar`, `eliminar?`                           |
+| `columnas`            | `ColumnaTabla[]`                       | Sin Estado ni acciones: se añaden solas                                   |
+| `nuevo`               | `() => Omit<T, 'id'>`                  | Registro vacío para el alta                                               |
+| `nombreDe`            | `(item: T) => string`                  | Nombre en la confirmación de borrado                                      |
+| `validar`             | `(borrador) => Record<string, string>` | Validación en cliente antes de llamar al servicio                         |
+| `filtrosFijos`        | `Consulta['filtros']`                  | Filtro permanente; también se copia en los registros nuevos               |
+| `orden`               | `Orden`                                | Orden inicial                                                             |
+| `exportacion`         | `ColumnaExportable<T>[]`               | Activa el botón Exportar                                                  |
+| `archivo`             | `string`                               | Nombre base del archivo exportado                                         |
+| `anchoDrawer`         | `'sm' \| 'md' \| 'lg'`                 | Por defecto `md`                                                          |
+| `sinTarjeta`          | `boolean`                              | Sin `KmCard`: para usarlo dentro de pestañas                              |
+| `consecuenciasEstado` | `(id, activar) => Promise<string[]>`   | Frases de la confirmación de estado. Normalmente de `dependenciasService` |
 
 ## Slots
 
@@ -115,3 +117,29 @@ Para pestañas que filtran por un campo (p. ej. motivos por tipo), usa `filtrosF
   <KmCatalogo :key="tipo" :filtros-fijos="{ tipo }" sin-tarjeta ... />
 </KmTabs>
 ```
+
+## Cambio de estado
+
+El estado no se cambia desde la tabla, donde un clic accidental afectaría a otros registros. Al editar, el formulario muestra un interruptor **Estado**; si cambia, al guardar aparece `KmConfirmarEstado` con lo que provoca:
+
+```vue
+<KmCatalogo :servicio="localesService" :consecuencias-estado="dependenciasService.local" ... />
+```
+
+Para pantallas que no usan `KmCatalogo` (salones, categorías), la misma experiencia se arma con `KmCampoEstado` en el formulario y el composable `useConfirmarEstado` en la vista.
+
+## Acciones de fila
+
+Las acciones usan `KmBotonIcono`: botón de 36 px con icono, nombre accesible que incluye el registro («Editar Terraza») y tooltip inmediato al pasar el ratón o con el foco del teclado.
+
+```vue
+<KmBotonIcono icono="editar" :etiqueta="`Editar ${fila.nombre}`" @click="editar(fila)" />
+<KmBotonIcono
+  icono="eliminar"
+  tono="peligro"
+  :etiqueta="`Eliminar ${fila.nombre}`"
+  @click="eliminar(fila)"
+/>
+```
+
+Iconos disponibles: `editar`, `eliminar`, `subir`, `bajar`, `ver`.

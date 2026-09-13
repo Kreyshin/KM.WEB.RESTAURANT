@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
+import KmCampoEstado from '@/components/ui/KmCampoEstado.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmModal from '@/components/ui/KmModal.vue'
@@ -78,14 +79,7 @@ defineExpose({ mostrarError })
         <KmInput :id="id" v-model="form.orden" type="number" min="1" :invalido="invalido" />
       </KmField>
 
-      <label class="flex items-center gap-2.5">
-        <input
-          v-model="form.activo"
-          type="checkbox"
-          class="size-4 rounded border-linea text-verde focus:ring-brand"
-        />
-        <span class="text-sm text-tinta">Salón activo</span>
-      </label>
+      <KmCampoEstado v-if="salon" v-model="form.activo" :original="salon.activo" />
     </form>
 
     <template #footer>

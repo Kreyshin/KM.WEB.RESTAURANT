@@ -6,6 +6,7 @@ import KmInput from '@/components/ui/KmInput.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
 import { mediosPagoService } from '@/services/comercial.service'
+import { dependenciasService } from '@/services/dependencias.service'
 import type { MedioPago, NuevoMedioPago } from '@/types'
 import type { ColumnaTabla } from '@/types/ui'
 import { etiquetaTipoMedioPago, opcionesTipoMedioPago } from '@/utils/configuracion'
@@ -45,6 +46,7 @@ function validar(m: NuevoMedioPago) {
       subtitulo="Formas de cobro disponibles en caja. El orden define cómo aparecen al cobrar."
       entidad="medio de pago"
       :servicio="mediosPagoService"
+      :consecuencias-estado="dependenciasService.medioPago"
       :columnas="columnas"
       :nuevo="nuevo"
       :validar="validar"

@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
+import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmBusqueda from '@/components/ui/KmBusqueda.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmConfirm from '@/components/ui/KmConfirm.vue'
+import KmConfirmarEstado from '@/components/ui/KmConfirmarEstado.vue'
 import KmExportar from '@/components/ui/KmExportar.vue'
 import KmPaginacion from '@/components/ui/KmPaginacion.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmTable from '@/components/ui/KmTable.vue'
 import SalonFormModal from './SalonFormModal.vue'
+import { useConfirmarEstado } from '@/composables/useConfirmarEstado'
 import { useListado } from '@/composables/useListado'
+import { dependenciasService } from '@/services/dependencias.service'
 import { mesasService } from '@/services/mesas.service'
 import { salonesService } from '@/services/salones.service'
 import { useUiStore } from '@/stores/ui.store'
@@ -118,7 +122,18 @@ function abrirEdicion(salon: Salon) {
   modalAbierto.value = true
 }
 
-async function guardar(datos: NuevoSalon, id?: string) {
+const estado = useConfirmarEstado()
+
+async function guardar(datos: NuevoSalon, id?: string, confirmado = false): Promise<void> {
+  const original = salonEnEdicion.value
+  if (id && original && original.activo !== datos.activo && !confirmado) {
+    return estado.pedir({
+      nombre: datos.nombre,
+      activar: datos.activo,
+      consecuencias: () => dependenciasService.salon(id, datos.activo),
+      continuar: () => guardar(datos, id, true),
+    })
+  }
   try {
     if (id) {
       await salonesService.actualizar(id, datos)
@@ -153,15 +168,6 @@ async function eliminar() {
     ui.error((e as ApiError).mensaje ?? 'No se pudo eliminar el salón.')
   } finally {
     eliminando.value = false
-  }
-}
-
-async function alternarActivo(salon: Salon) {
-  try {
-    await salonesService.actualizar(salon.id, { activo: !salon.activo })
-    await listado.recargar()
-  } catch (e) {
-    ui.error((e as ApiError).mensaje ?? 'No se pudo cambiar el estado.')
   }
 }
 </script>
@@ -216,19 +222,24 @@ async function alternarActivo(salon: Salon) {
         </template>
 
         <template #col-activo="{ fila }">
-          <button type="button" title="Cambiar estado" @click="alternarActivo(fila)">
-            <KmBadge :tono="fila.activo ? 'verde' : 'neutro'" punto>
-              {{ fila.activo ? 'Activo' : 'Inactivo' }}
-            </KmBadge>
-          </button>
+          <KmBadge :tono="fila.activo ? 'verde' : 'neutro'" punto>
+            {{ fila.activo ? 'Activo' : 'Inactivo' }}
+          </KmBadge>
         </template>
 
         <template #col-acciones="{ fila }">
-          <div class="flex justify-end gap-1">
-            <KmButton variante="fantasma" tamano="sm" @click="abrirEdicion(fila)">Editar</KmButton>
-            <KmButton variante="fantasma" tamano="sm" @click="pedirEliminar(fila)">
-              <span class="text-vino">Eliminar</span>
-            </KmButton>
+          <div class="flex justify-end gap-0.5">
+            <KmBotonIcono
+              icono="editar"
+              :etiqueta="`Editar ${fila.nombre}`"
+              @click="abrirEdicion(fila)"
+            />
+            <KmBotonIcono
+              icono="eliminar"
+              tono="peligro"
+              :etiqueta="`Eliminar ${fila.nombre}`"
+              @click="pedirEliminar(fila)"
+            />
           </div>
         </template>
       </KmTable>
@@ -247,6 +258,15 @@ async function alternarActivo(salon: Salon) {
       :salon="salonEnEdicion"
       :orden-sugerido="ordenSugerido"
       @guardado="guardar"
+    />
+
+    <KmConfirmarEstado
+      v-model="estado.abierto.value"
+      :activar="estado.activar.value"
+      :nombre="estado.nombre.value"
+      :consecuencias="estado.consecuencias.value"
+      :cargando="estado.cargando.value"
+      @confirmar="estado.confirmar"
     />
 
     <KmConfirm

@@ -9,6 +9,7 @@ import KmSelect from '@/components/ui/KmSelect.vue'
 import KmTabs from '@/components/ui/KmTabs.vue'
 import { useLocales } from '@/composables/useLocales'
 import { estacionesService, impresorasService } from '@/services/produccion.service'
+import { dependenciasService } from '@/services/dependencias.service'
 import type {
   Consulta,
   EstacionProduccion,
@@ -124,6 +125,7 @@ function validarImpresora(i: NuevaImpresora) {
           femenino
           sin-tarjeta
           :servicio="estacionesService"
+          :consecuencias-estado="dependenciasService.estacion"
           :columnas="columnasEstaciones"
           :nuevo="nuevaEstacion"
           :validar="validarEstacion"
@@ -202,6 +204,7 @@ function validarImpresora(i: NuevaImpresora) {
           femenino
           sin-tarjeta
           :servicio="impresorasService"
+          :consecuencias-estado="dependenciasService.impresora"
           :columnas="columnasImpresoras"
           :nuevo="nuevaImpresora"
           :validar="validarImpresora"

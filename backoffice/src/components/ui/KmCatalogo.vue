@@ -1,14 +1,17 @@
 <script setup lang="ts" generic="T extends { id: string; activo: boolean }">
 import { computed, ref, shallowRef, type Ref } from 'vue'
 import KmBadge from './KmBadge.vue'
+import KmBotonIcono from './KmBotonIcono.vue'
 import KmBusqueda from './KmBusqueda.vue'
 import KmButton from './KmButton.vue'
 import KmCard from './KmCard.vue'
 import KmConfirm from './KmConfirm.vue'
+import KmConfirmarEstado from './KmConfirmarEstado.vue'
 import KmDrawer from './KmDrawer.vue'
 import KmExportar from './KmExportar.vue'
 import KmPaginacion from './KmPaginacion.vue'
 import KmSelect from './KmSelect.vue'
+import KmCampoEstado from './KmCampoEstado.vue'
 import KmTable from './KmTable.vue'
 import { useListado } from '@/composables/useListado'
 import { useUiStore } from '@/stores/ui.store'
@@ -54,6 +57,11 @@ const props = withDefaults(
     archivo?: string
     anchoDrawer?: 'sm' | 'md' | 'lg'
     sinTarjeta?: boolean
+    /**
+     * Qué provoca activar o desactivar este registro, para la confirmación.
+     * Sin ella se muestra un texto genérico.
+     */
+    consecuenciasEstado?: (id: string, activar: boolean) => Promise<string[]>
   }>(),
   { femenino: false, anchoDrawer: 'md', sinTarjeta: false },
 )
@@ -115,6 +123,12 @@ const borrador = ref({}) as unknown as Ref<Omit<T, 'id'>>
 const errores = ref<Record<string, string>>({})
 const guardando = ref(false)
 
+/** Estado con el que se abrió la edición: cambiarlo exige confirmación. */
+const activoOriginal = ref(true)
+const confirmarEstadoAbierto = ref(false)
+const consecuencias = ref<string[]>([])
+let estadoConfirmado = false
+
 function abrirNuevo() {
   editandoId.value = null
   borrador.value = { ...props.nuevo(), ...props.filtrosFijos } as Omit<T, 'id'>
@@ -126,13 +140,42 @@ function abrirEdicion(fila: T) {
   const { id, ...resto } = structuredClone(JSON.parse(JSON.stringify(fila))) as T
   editandoId.value = id
   borrador.value = resto
+  activoOriginal.value = fila.activo
+  estadoConfirmado = false
   errores.value = {}
   drawerAbierto.value = true
 }
 
+const activoBorrador = computed({
+  get: () => (borrador.value as { activo?: boolean }).activo ?? true,
+  set: (v: boolean) => ((borrador.value as { activo?: boolean }).activo = v),
+})
+
 async function guardar() {
   errores.value = props.validar?.(borrador.value) ?? {}
   if (Object.keys(errores.value).length) return
+
+  // Cambiar el estado afecta a otros registros: se explica antes de guardar.
+  const cambiaEstado = !!editandoId.value && activoBorrador.value !== activoOriginal.value
+  if (cambiaEstado && !estadoConfirmado) {
+    guardando.value = true
+    try {
+      consecuencias.value = props.consecuenciasEstado
+        ? await props.consecuenciasEstado(editandoId.value!, activoBorrador.value)
+        : [
+            activoBorrador.value
+              ? 'Vuelve a estar disponible para usarse en la operación.'
+              : 'Deja de estar disponible para usarse en la operación.',
+          ]
+    } catch {
+      consecuencias.value = []
+    } finally {
+      guardando.value = false
+    }
+    confirmarEstadoAbierto.value = true
+    return
+  }
+
   guardando.value = true
   try {
     if (editandoId.value) {
@@ -151,17 +194,14 @@ async function guardar() {
     ui.error(err.mensaje ?? 'No se pudo guardar.')
   } finally {
     guardando.value = false
+    estadoConfirmado = false
   }
 }
 
-async function alternarActivo(fila: T) {
-  try {
-    await props.servicio.actualizar(fila.id, { activo: !fila.activo } as Partial<Omit<T, 'id'>>)
-    await recargar()
-    emit('cambio')
-  } catch (e) {
-    ui.error((e as ApiError).mensaje ?? 'No se pudo cambiar el estado.')
-  }
+async function confirmarEstado() {
+  estadoConfirmado = true
+  confirmarEstadoAbierto.value = false
+  await guardar()
 }
 
 // ── Eliminación ──
@@ -268,27 +308,27 @@ defineExpose({ recargar, abrirNuevo })
         </slot>
       </template>
 
+      <!-- Solo informa: el estado se cambia dentro de la edición, con confirmación. -->
       <template #col-activo="{ fila }">
-        <button type="button" title="Cambiar estado" @click="alternarActivo(fila)">
-          <KmBadge :tono="fila.activo ? 'verde' : 'neutro'" punto>
-            {{
-              fila.activo ? (femenino ? 'Activa' : 'Activo') : femenino ? 'Inactiva' : 'Inactivo'
-            }}
-          </KmBadge>
-        </button>
+        <KmBadge :tono="fila.activo ? 'verde' : 'neutro'" punto>
+          {{ fila.activo ? (femenino ? 'Activa' : 'Activo') : femenino ? 'Inactiva' : 'Inactivo' }}
+        </KmBadge>
       </template>
 
       <template #col-_acciones="{ fila }">
-        <div class="flex justify-end gap-1">
-          <KmButton variante="fantasma" tamano="sm" @click="abrirEdicion(fila)">Editar</KmButton>
-          <KmButton
+        <div class="flex justify-end gap-0.5">
+          <KmBotonIcono
+            icono="editar"
+            :etiqueta="`Editar ${nombreDe(fila)}`"
+            @click="abrirEdicion(fila)"
+          />
+          <KmBotonIcono
             v-if="servicio.eliminar"
-            variante="fantasma"
-            tamano="sm"
+            icono="eliminar"
+            tono="peligro"
+            :etiqueta="`Eliminar ${nombreDe(fila)}`"
             @click="pedirEliminar(fila)"
-          >
-            <span class="text-vino">Eliminar</span>
-          </KmButton>
+          />
         </div>
       </template>
     </KmTable>
@@ -312,6 +352,14 @@ defineExpose({ recargar, abrirNuevo })
         @submit.prevent="guardar"
       >
         <slot name="formulario" :borrador="borrador" :errores="errores" :editando="!!editandoId" />
+
+        <KmCampoEstado
+          v-if="editandoId"
+          v-model="activoBorrador"
+          :original="activoOriginal"
+          :texto-activo="femenino ? 'Activa' : 'Activo'"
+          :texto-inactivo="femenino ? 'Inactiva' : 'Inactivo'"
+        />
       </form>
       <template #footer>
         <KmButton variante="secundario" :disabled="guardando" @click="drawerAbierto = false">
@@ -322,6 +370,15 @@ defineExpose({ recargar, abrirNuevo })
         </KmButton>
       </template>
     </KmDrawer>
+
+    <KmConfirmarEstado
+      v-model="confirmarEstadoAbierto"
+      :activar="activoBorrador"
+      :nombre="editandoId ? nombreDe({ ...borrador, id: editandoId } as T) : ''"
+      :consecuencias="consecuencias"
+      :cargando="guardando"
+      @confirmar="confirmarEstado"
+    />
 
     <KmConfirm
       v-model="confirmAbierto"

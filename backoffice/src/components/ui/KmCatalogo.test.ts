@@ -126,7 +126,8 @@ describe('KmCatalogo', () => {
     const { usuario, servicio } = montar()
     await screen.findByText('Rappi')
 
-    await usuario.click(within(filaDe('Rappi')).getByRole('button', { name: 'Editar' }))
+    // Las acciones son iconos: su nombre accesible incluye el registro.
+    await usuario.click(screen.getByRole('button', { name: 'Editar Rappi' }))
     const campo = screen.getByLabelText('Nombre')
     expect(campo).toHaveValue('Rappi')
 
@@ -137,13 +138,32 @@ describe('KmCatalogo', () => {
     expect(servicio.actualizar).toHaveBeenCalledWith('c2', { nombre: 'Rappi Turbo', activo: false })
   })
 
-  it('activa o desactiva desde la insignia de estado', async () => {
+  it('el estado en la tabla solo informa: no es un botón', async () => {
+    montar()
+    await screen.findByText('Rappi')
+
+    expect(within(filaDe('Rappi')).getByText('Inactivo')).toBeInTheDocument()
+    expect(within(filaDe('Rappi')).queryByRole('button', { name: /Inactivo/ })).toBeNull()
+  })
+
+  it('cambiar el estado al editar pide confirmación y explica sus consecuencias', async () => {
     const { usuario, servicio } = montar()
     await screen.findByText('Rappi')
 
-    await usuario.click(within(filaDe('Rappi')).getByRole('button', { name: /Inactivo/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Editar Rappi' }))
+    await usuario.click(screen.getByRole('switch', { name: 'Inactivo' }))
+    expect(screen.getByText('Se pedirá confirmación al guardar.')).toBeInTheDocument()
 
-    expect(servicio.actualizar).toHaveBeenCalledWith('c2', { activo: true })
+    await usuario.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    // Todavía no se guarda: primero se muestra qué provoca el cambio.
+    expect(await screen.findByText('Activar «Rappi»')).toBeInTheDocument()
+    expect(screen.getByText(/Vuelve a estar disponible/)).toBeInTheDocument()
+    expect(servicio.actualizar).not.toHaveBeenCalled()
+
+    await usuario.click(screen.getByRole('button', { name: 'Activar y guardar' }))
+
+    expect(servicio.actualizar).toHaveBeenCalledWith('c2', { nombre: 'Rappi', activo: true })
     await waitFor(() => expect(within(filaDe('Rappi')).getByText('Activo')).toBeInTheDocument())
   })
 
@@ -151,7 +171,7 @@ describe('KmCatalogo', () => {
     const { usuario, servicio } = montar()
     await screen.findByText('Rappi')
 
-    await usuario.click(within(filaDe('Rappi')).getByRole('button', { name: 'Eliminar' }))
+    await usuario.click(screen.getByRole('button', { name: 'Eliminar Rappi' }))
     const dialogo = screen.getByRole('dialog', { name: '' })
     expect(dialogo).toHaveTextContent('¿Eliminar «Rappi»?')
     expect(servicio.eliminar).not.toHaveBeenCalled()

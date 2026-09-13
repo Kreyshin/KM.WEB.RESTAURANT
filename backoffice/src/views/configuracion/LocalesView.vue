@@ -4,6 +4,7 @@ import KmCatalogo from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import { localesService } from '@/services/locales.service'
+import { dependenciasService } from '@/services/dependencias.service'
 import { useLocalStore } from '@/stores/local.store'
 import type { DiaSemana, HorarioDia, Local, NuevoLocal } from '@/types'
 import type { ColumnaTabla } from '@/types/ui'
@@ -75,6 +76,7 @@ function alCambiar() {
       subtitulo="Sucursales del negocio, su horario y su código de establecimiento ante SUNAT."
       entidad="local"
       :servicio="localesService"
+      :consecuencias-estado="dependenciasService.local"
       :columnas="columnas"
       :nuevo="nuevo"
       :validar="validar"

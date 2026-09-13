@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
+import KmCampoEstado from '@/components/ui/KmCampoEstado.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmModal from '@/components/ui/KmModal.vue'
@@ -62,14 +63,14 @@ defineExpose({ mostrarError })
         <KmInput :id="id" v-model="form.descripcion" placeholder="Ej. Para empezar" />
       </KmField>
 
-      <label class="flex items-center gap-2.5">
-        <input
-          v-model="form.activa"
-          type="checkbox"
-          class="size-4 rounded border-linea accent-[var(--rs-accion)]"
-        />
-        <span class="text-sm text-tinta">Categoría visible en la carta</span>
-      </label>
+      <KmCampoEstado
+        v-if="categoria"
+        v-model="form.activa"
+        :original="categoria.activa"
+        texto-activo="Visible en la carta"
+        texto-inactivo="Oculta de la carta"
+        descripcion="Una categoría oculta esconde también sus productos."
+      />
     </form>
 
     <template #footer>

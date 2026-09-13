@@ -7,6 +7,7 @@ import KmInput from '@/components/ui/KmInput.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import { useLocales } from '@/composables/useLocales'
 import { seriesService } from '@/services/produccion.service'
+import { dependenciasService } from '@/services/dependencias.service'
 import type { Consulta, NuevaSerie, SerieComprobante } from '@/types'
 import type { ColumnaTabla, OpcionSelect } from '@/types/ui'
 import {
@@ -67,6 +68,7 @@ function filtrar(consulta: Consulta, campo: string, valor: string | number | und
       entidad="serie"
       femenino
       :servicio="seriesService"
+      :consecuencias-estado="dependenciasService.serie"
       :columnas="columnas"
       :nuevo="nuevo"
       :validar="validar"

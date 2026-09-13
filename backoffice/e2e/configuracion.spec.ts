@@ -63,6 +63,25 @@ test.describe('Configuración del negocio', () => {
     await expect(fila(page, 'San Isidro')).toContainText('Todos los días')
   })
 
+  test('desactivar un local explica qué se ve afectado antes de guardar', async ({ page }) => {
+    await page.goto('/configuracion/locales')
+    const miraflores = fila(page, 'Miraflores')
+
+    // En la tabla el estado solo se lee.
+    await expect(miraflores.getByRole('button', { name: /Activo/ })).toHaveCount(0)
+
+    await miraflores.getByRole('button', { name: 'Editar Miraflores' }).click()
+    await drawer(page).getByRole('switch', { name: 'Activo' }).click()
+    await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click()
+
+    const confirmacion = page.getByRole('dialog').filter({ hasText: 'Desactivar «Miraflores»' })
+    await expect(confirmacion).toContainText('4 series activas no podrán emitir comprobantes.')
+    await expect(confirmacion).toContainText('3 estaciones dejarán de recibir comandas.')
+
+    await confirmacion.getByRole('button', { name: 'Desactivar y guardar' }).click()
+    await expect(miraflores).toContainText('Inactivo')
+  })
+
   test.describe('Impuestos y cargos', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto('/configuracion/impuestos')

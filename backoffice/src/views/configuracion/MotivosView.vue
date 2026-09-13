@@ -8,6 +8,7 @@ import KmInput from '@/components/ui/KmInput.vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
 import KmTabs from '@/components/ui/KmTabs.vue'
 import { motivosService } from '@/services/comercial.service'
+import { dependenciasService } from '@/services/dependencias.service'
 import type { Motivo, NuevoMotivo, TipoMotivo } from '@/types'
 import type { ColumnaTabla, Pestana } from '@/types/ui'
 import { etiquetaTipoMotivo } from '@/utils/configuracion'
@@ -58,6 +59,7 @@ function validar(m: NuevoMotivo): Record<string, string> {
           entidad="motivo"
           sin-tarjeta
           :servicio="motivosService"
+          :consecuencias-estado="dependenciasService.motivo"
           :columnas="columnas"
           :nuevo="nuevo"
           :validar="validar"
