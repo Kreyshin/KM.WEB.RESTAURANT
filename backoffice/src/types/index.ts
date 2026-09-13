@@ -51,6 +51,11 @@ export interface Mesa {
   /** Posición en el plano del salón, en porcentaje del contenedor (0–100). */
   posX: number
   posY: number
+  /**
+   * Mesas unidas para un grupo grande comparten este id. Se atienden como una
+   * sola cuenta; al separarlas cada una recupera su independencia.
+   */
+  grupoId?: string
 }
 
 /** Salón con sus mesas resueltas, para la vista de plano. */
@@ -70,6 +75,22 @@ export interface Categoria {
   /** Orden de aparición en la carta y en la toma de comanda. */
   orden: number
   activa: boolean
+  /** Sin valor: disponible todo el horario del local. */
+  disponibilidad?: DisponibilidadHoraria
+}
+
+/** Franja en la que se ofrece una categoría (desayunos, menú de mediodía…). */
+export interface DisponibilidadHoraria {
+  dias: DiaSemana[]
+  /** `HH:mm`. */
+  desde: string
+  hasta: string
+}
+
+/** Precio distinto al base para un canal (apps de delivery suelen ir más caras). */
+export interface PrecioCanal {
+  canalId: string
+  precio: number
 }
 
 /**
@@ -118,36 +139,179 @@ export interface Producto {
   alergenos: Alergeno[]
   variantes: Variante[]
   gruposModificadores: GrupoModificador[]
+  /** Data URL en mock; URL del archivo con backend. */
+  imagen?: string
+  /** Estación que recibe la comanda del producto. */
+  estacionId?: string
+  /** Precios por canal. Un canal sin entrada usa el precio base. */
+  preciosCanal: PrecioCanal[]
+}
+
+export type TipoCombo = 'combo' | 'menuDia'
+
+/**
+ * Parte de un combo o menú. Con una sola opción es fija («Chicha morada»);
+ * con varias, el cliente elige una («Entrada: causa o tequeños»).
+ */
+export interface GrupoCombo {
+  id: string
+  nombre: string
+  opciones: string[]
+}
+
+export interface Combo {
+  id: string
+  tipo: TipoCombo
+  nombre: string
+  descripcion?: string
+  /** Precio final del combo completo. */
+  precio: number
+  imagen?: string
+  grupos: GrupoCombo[]
+  /** Días en que se ofrece. Vacío = todos. */
+  dias: DiaSemana[]
+  activo: boolean
 }
 
 // ── Inventario ───────────────────────────────────────────────────────────────
 
 export type UnidadMedida = 'kg' | 'g' | 'l' | 'ml' | 'unidad' | 'paquete'
 
+export interface Almacen {
+  id: string
+  nombre: string
+  localId: string
+  descripcion?: string
+  activo: boolean
+}
+
+export interface Existencia {
+  almacenId: string
+  cantidad: number
+}
+
+export type CategoriaInsumo =
+  | 'carnes'
+  | 'pescados'
+  | 'verduras'
+  | 'abarrotes'
+  | 'lacteos'
+  | 'bebidas'
+  | 'descartables'
+  | 'preparaciones'
+
+/**
+ * Subreceta: un insumo que se elabora en cocina a partir de otros (salsa
+ * huancaína, leche de tigre). Su costo sale de sus ingredientes.
+ */
+export interface Preparacion {
+  /** Cantidad de la preparación que rinde la receta, en su unidad. */
+  rendimiento: number
+  ingredientes: IngredienteReceta[]
+}
+
 export interface Insumo {
   id: string
   nombre: string
   unidad: UnidadMedida
+  categoria: CategoriaInsumo
+  /** Stock total: suma de las existencias de todos los almacenes. */
   stock: number
+  existencias: Existencia[]
   /** Umbral por debajo del cual el insumo se marca como bajo. */
   stockMinimo: number
+  /** Costo promedio ponderado, sin IGV. */
   costoUnitario: number
-  proveedor?: string
+  proveedorId?: string
+  preparacion?: Preparacion
   activo: boolean
 }
 
-export type TipoMovimiento = 'entrada' | 'salida' | 'merma' | 'ajuste'
+export type TipoMovimiento =
+  | 'entrada'
+  | 'salida'
+  | 'merma'
+  | 'ajuste'
+  | 'trasladoSalida'
+  | 'trasladoEntrada'
+  | 'produccion'
+  | 'consumoProduccion'
 
 export interface Movimiento {
   id: string
   insumoId: string
+  almacenId: string
   tipo: TipoMovimiento
   /** Siempre positiva: el tipo determina el signo aplicado al stock. */
   cantidad: number
+  /** Costo unitario de la entrada (compras); en el resto, el costo vigente. */
+  costoUnitario?: number
   motivo?: string
+  /** Documento que origina el movimiento: OC-000012, TOMA-0003, TR-… */
+  referencia?: string
   usuarioId: string
   /** ISO 8601. */
   fecha: string
+}
+
+export interface LineaToma {
+  insumoId: string
+  /** Stock del sistema al abrir la toma. */
+  teorico: number
+  /** `null` mientras no se ha contado. */
+  contado: number | null
+}
+
+export type EstadoToma = 'abierta' | 'aplicada' | 'anulada'
+
+export interface TomaInventario {
+  id: string
+  numero: string
+  almacenId: string
+  estado: EstadoToma
+  lineas: LineaToma[]
+  notas?: string
+  usuarioId: string
+  /** ISO 8601. */
+  fecha: string
+  aplicadaEn?: string
+}
+
+// ── Compras ──────────────────────────────────────────────────────────────────
+
+export interface Proveedor {
+  id: string
+  razonSocial: string
+  ruc: string
+  contacto?: string
+  telefono?: string
+  email?: string
+  /** 0 = pago al contado. */
+  diasCredito: number
+  activo: boolean
+}
+
+export type EstadoOrdenCompra = 'borrador' | 'emitida' | 'parcial' | 'recibida' | 'anulada'
+
+export interface LineaOrdenCompra {
+  insumoId: string
+  cantidad: number
+  /** Sin IGV. */
+  costoUnitario: number
+  recibido: number
+}
+
+export interface OrdenCompra {
+  id: string
+  numero: string
+  proveedorId: string
+  almacenId: string
+  estado: EstadoOrdenCompra
+  /** `YYYY-MM-DD`. */
+  fechaEmision: string
+  fechaEntrega?: string
+  lineas: LineaOrdenCompra[]
+  notas?: string
 }
 
 export interface IngredienteReceta {
@@ -166,11 +330,19 @@ export interface Receta {
 /** Payload de creación: sin id (lo asigna el backend). */
 export type NuevoSalon = Omit<Salon, 'id'>
 export type NuevaMesa = Omit<Mesa, 'id'>
+export type NuevoCombo = Omit<Combo, 'id'>
+export type NuevoAlmacen = Omit<Almacen, 'id'>
+export type NuevoProveedor = Omit<Proveedor, 'id'>
+export type NuevaOrdenCompra = Omit<OrdenCompra, 'id' | 'numero' | 'estado'>
 export type NuevaCategoria = Omit<Categoria, 'id'>
 export type NuevoProducto = Omit<Producto, 'id'>
-export type NuevoInsumo = Omit<Insumo, 'id'>
+/** Stock y existencias no se editan desde la ficha: cambian con movimientos. */
+export type NuevoInsumo = Omit<Insumo, 'id' | 'stock' | 'existencias'> & { stockInicial?: number }
 export type NuevoUsuario = Omit<Usuario, 'id'>
-export type NuevoMovimiento = Omit<Movimiento, 'id' | 'fecha'>
+/** Sin `almacenId` se usa el almacén donde el insumo tiene más stock. */
+export type NuevoMovimiento = Omit<Movimiento, 'id' | 'fecha' | 'almacenId'> & {
+  almacenId?: string
+}
 export type NuevoLocal = Omit<Local, 'id'>
 export type NuevoMedioPago = Omit<MedioPago, 'id'>
 export type NuevoCanalVenta = Omit<CanalVenta, 'id'>

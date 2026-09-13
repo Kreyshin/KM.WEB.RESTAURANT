@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 
-export type IconoAccion = 'editar' | 'eliminar' | 'subir' | 'bajar' | 'ver'
+export type IconoAccion =
+  | 'editar'
+  | 'eliminar'
+  | 'subir'
+  | 'bajar'
+  | 'ver'
+  | 'movimiento'
+  | 'recibir'
+  | 'enviar'
+  | 'anular'
+  | 'separar'
 
 const props = withDefaults(
   defineProps<{
@@ -33,6 +43,15 @@ const trazos: Record<IconoAccion, string[]> = {
   subir: ['M18 15l-6-6-6 6'],
   bajar: ['M6 9l6 6 6-6'],
   ver: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
+  movimiento: ['M7 4v16M7 4 3 8M7 4l4 4', 'M17 20V4M17 20l-4-4M17 20l4-4'],
+  recibir: ['M3 7l9-4 9 4v10l-9 4-9-4V7z', 'M8 12l3 3 5-6'],
+  enviar: ['M4 12 20 4l-6 16-3-7-7-1z'],
+  anular: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', 'M5.6 5.6l12.8 12.8'],
+  separar: [
+    'M9 15l6-6',
+    'M11 6l1.5-1.5a4 4 0 0 1 5.7 5.7L17 11.5',
+    'M13 18l-1.5 1.5a4 4 0 0 1-5.7-5.7L7 12.5',
+  ],
 }
 
 const nombreAccesible = computed(() =>

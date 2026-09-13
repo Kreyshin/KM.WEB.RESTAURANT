@@ -51,12 +51,54 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Carta y menú', roles: ['admin'] },
       },
       {
+        path: 'combos',
+        name: 'combos',
+        component: () => import('@/views/carta/CombosView.vue'),
+        meta: { titulo: 'Combos y menús', roles: ['admin'] },
+      },
+      {
         path: 'inventario',
         name: 'inventario',
-        // TODO(fase 1.2): apuntar a @/views/inventario/InventarioView.vue
-        component: () => import('@/views/EnConstruccionView.vue'),
-        meta: { titulo: 'Inventario', roles: ['admin'] },
+        component: () => import('@/views/inventario/InsumosView.vue'),
+        meta: { titulo: 'Insumos', roles: ['admin'] },
       },
+      {
+        path: 'inventario/movimientos',
+        name: 'inv-movimientos',
+        component: () => import('@/views/inventario/MovimientosView.vue'),
+        meta: { titulo: 'Movimientos y kardex', roles: ['admin'] },
+      },
+      {
+        path: 'inventario/recetas',
+        name: 'inv-recetas',
+        component: () => import('@/views/inventario/RecetasView.vue'),
+        meta: { titulo: 'Recetas y costos', roles: ['admin'] },
+      },
+      {
+        path: 'inventario/tomas',
+        name: 'inv-tomas',
+        component: () => import('@/views/inventario/TomasView.vue'),
+        meta: { titulo: 'Toma de inventario', roles: ['admin'] },
+      },
+      {
+        path: 'inventario/almacenes',
+        name: 'inv-almacenes',
+        component: () => import('@/views/inventario/AlmacenesView.vue'),
+        meta: { titulo: 'Almacenes', roles: ['admin'] },
+      },
+      {
+        path: 'compras/proveedores',
+        name: 'compras-proveedores',
+        component: () => import('@/views/compras/ProveedoresView.vue'),
+        meta: { titulo: 'Proveedores', roles: ['admin'] },
+      },
+      {
+        path: 'compras/ordenes',
+        name: 'compras-ordenes',
+        component: () => import('@/views/compras/OrdenesView.vue'),
+        meta: { titulo: 'Órdenes de compra', roles: ['admin'] },
+      },
+      { path: 'compras', redirect: { name: 'compras-ordenes' } },
       { path: 'configuracion', redirect: { name: 'config-empresa' } },
       {
         path: 'configuracion/empresa',

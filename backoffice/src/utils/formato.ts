@@ -1,4 +1,4 @@
-import type { Alergeno, TipoMovimiento, UnidadMedida } from '@/types'
+import type { Alergeno, CategoriaInsumo, TipoMovimiento, UnidadMedida } from '@/types'
 import type { TonoMesa } from '@/types/ui'
 
 const soles = new Intl.NumberFormat('es-PE', {
@@ -61,6 +61,7 @@ export const etiquetaAlergeno: Record<Alergeno, string> = {
   aji: 'Ají',
 }
 
+/** Tipos que se registran a mano; el resto los generan traslados, tomas y producción. */
 export const tiposMovimiento: TipoMovimiento[] = ['entrada', 'salida', 'merma', 'ajuste']
 
 export const etiquetaMovimiento: Record<TipoMovimiento, string> = {
@@ -68,6 +69,10 @@ export const etiquetaMovimiento: Record<TipoMovimiento, string> = {
   salida: 'Salida',
   merma: 'Merma',
   ajuste: 'Ajuste',
+  trasladoSalida: 'Traslado (sale)',
+  trasladoEntrada: 'Traslado (llega)',
+  produccion: 'Producción',
+  consumoProduccion: 'Consumo en producción',
 }
 
 export const tonoMovimiento: Record<TipoMovimiento, TonoMesa> = {
@@ -75,12 +80,36 @@ export const tonoMovimiento: Record<TipoMovimiento, TonoMesa> = {
   salida: 'pizarra',
   merma: 'vino',
   ajuste: 'laton',
+  trasladoSalida: 'neutro',
+  trasladoEntrada: 'neutro',
+  produccion: 'verde',
+  consumoProduccion: 'pizarra',
+}
+
+/** Efecto de cada tipo sobre el stock. */
+export const signoNumerico: Record<TipoMovimiento, 1 | -1> = {
+  entrada: 1,
+  salida: -1,
+  merma: -1,
+  ajuste: 1,
+  trasladoSalida: -1,
+  trasladoEntrada: 1,
+  produccion: 1,
+  consumoProduccion: -1,
 }
 
 /** Signo visible del movimiento, para leer el kardex de un vistazo. */
-export const signoMovimiento: Record<TipoMovimiento, string> = {
-  entrada: '+',
-  salida: '−',
-  merma: '−',
-  ajuste: '+',
+export const signoMovimiento = Object.fromEntries(
+  Object.entries(signoNumerico).map(([t, s]) => [t, s > 0 ? '+' : '−']),
+) as Record<TipoMovimiento, string>
+
+export const etiquetaCategoriaInsumo: Record<CategoriaInsumo, string> = {
+  carnes: 'Carnes y aves',
+  pescados: 'Pescados y mariscos',
+  verduras: 'Frutas y verduras',
+  abarrotes: 'Abarrotes',
+  lacteos: 'Lácteos y huevos',
+  bebidas: 'Bebidas y licores',
+  descartables: 'Descartables',
+  preparaciones: 'Preparaciones',
 }

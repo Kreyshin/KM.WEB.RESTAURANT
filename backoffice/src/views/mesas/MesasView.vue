@@ -154,6 +154,70 @@ async function cambiarEstado(mesa: Mesa, estado: EstadoMesa) {
   }
 }
 
+// ── Unir y separar mesas ──
+const uniendo = ref(false)
+const seleccion = ref<string[]>([])
+
+function alternarModoUnir() {
+  uniendo.value = !uniendo.value
+  seleccion.value = []
+}
+
+function alSeleccionarEnPlano(mesa: Mesa) {
+  if (uniendo.value) {
+    if (mesa.grupoId) {
+      ui.notificar(`${mesa.codigo} ya está unida. Sepárala antes de unirla de nuevo.`)
+      return
+    }
+    seleccion.value = seleccion.value.includes(mesa.id)
+      ? seleccion.value.filter((id) => id !== mesa.id)
+      : [...seleccion.value, mesa.id]
+    return
+  }
+  if (puedeConfigurar.value) abrirEdicion(mesa)
+}
+
+const capacidadSeleccion = computed(() =>
+  mesas.value.filter((m) => seleccion.value.includes(m.id)).reduce((t, m) => t + m.capacidad, 0),
+)
+
+/** Uniones del salón activo, con sus mesas y la capacidad total. */
+const uniones = computed(() => {
+  const grupos = new Map<string, Mesa[]>()
+  for (const m of mesasDelSalon.value) {
+    if (!m.grupoId) continue
+    if (!grupos.has(m.grupoId)) grupos.set(m.grupoId, [])
+    grupos.get(m.grupoId)!.push(m)
+  }
+  return [...grupos.entries()].map(([grupoId, lista]) => ({
+    grupoId,
+    mesas: lista,
+    capacidad: lista.reduce((t, m) => t + m.capacidad, 0),
+  }))
+})
+
+async function unirSeleccion() {
+  try {
+    await mesasService.unir(seleccion.value)
+    ui.exito(`Mesas unidas: ${capacidadSeleccion.value} personas.`)
+    uniendo.value = false
+    seleccion.value = []
+    await cargar()
+  } catch (e) {
+    ui.error((e as ApiError).mensaje ?? 'No se pudieron unir las mesas.')
+  }
+}
+
+async function separar(grupoId: string) {
+  try {
+    await mesasService.separar(grupoId)
+    ui.exito('Mesas separadas.')
+    await cargar()
+  } catch (e) {
+    ui.error((e as ApiError).mensaje ?? 'No se pudieron separar las mesas.')
+  }
+}
+
 async function moverMesa(id: string, posX: number, posY: number) {
   const mesa = mesas.value.find((m) => m.id === id)
   if (!mesa) return
@@ -251,12 +315,50 @@ async function eliminar() {
           : 'Haz clic en una mesa para ver su detalle.'
       "
     >
+      <template #acciones>
+        <template v-if="uniendo">
+          <span class="text-sm text-tenue tabular-nums">
+            {{ seleccion.length }} mesas · {{ capacidadSeleccion }} personas
+          </span>
+          <KmButton variante="secundario" tamano="sm" @click="alternarModoUnir">Cancelar</KmButton>
+          <KmButton tamano="sm" :disabled="seleccion.length < 2" @click="unirSeleccion">
+            Unir mesas
+          </KmButton>
+        </template>
+        <KmButton v-else variante="secundario" tamano="sm" @click="alternarModoUnir">
+          Unir mesas
+        </KmButton>
+      </template>
+
+      <p v-if="uniendo" class="rs-tono rs-tono-laton mb-3 rounded-control border px-3 py-2 text-sm">
+        Toca las mesas que quieres juntar para un grupo. Deben ser del mismo salón.
+      </p>
+
       <PlanoSalon
         :mesas="mesasDelSalon"
-        :editable="puedeConfigurar"
+        :editable="puedeConfigurar && !uniendo"
+        :seleccionando="uniendo"
+        :seleccionadas="seleccion"
         @mover="moverMesa"
-        @seleccionar="puedeConfigurar ? abrirEdicion($event) : undefined"
+        @seleccionar="alSeleccionarEnPlano"
       />
+
+      <ul v-if="uniones.length" class="mt-4 flex flex-wrap gap-2">
+        <li
+          v-for="u in uniones"
+          :key="u.grupoId"
+          class="flex items-center gap-2 rounded-full border border-linea bg-panel py-1 pr-1 pl-3 text-sm"
+        >
+          <span class="text-tinta">{{ u.mesas.map((m) => m.codigo).join(' + ') }}</span>
+          <span class="text-xs text-tenue tabular-nums">{{ u.capacidad }} p.</span>
+          <KmBotonIcono
+            icono="separar"
+            etiqueta="Separar"
+            :contexto="u.mesas.map((m) => m.codigo).join(' y ')"
+            @click="separar(u.grupoId)"
+          />
+        </li>
+      </ul>
     </KmCard>
 
     <!-- Vista de lista -->
@@ -274,6 +376,15 @@ async function eliminar() {
       >
         <template #col-codigo="{ fila }">
           <span class="font-medium text-tinta">{{ fila.codigo }}</span>
+          <p v-if="fila.grupoId" class="text-xs text-laton-texto">
+            Unida con
+            {{
+              mesas
+                .filter((m) => m.grupoId === fila.grupoId && m.id !== fila.id)
+                .map((m) => m.codigo)
+                .join(', ')
+            }}
+          </p>
         </template>
 
         <template #col-salon="{ fila }">{{ nombreSalon(fila.salonId) }}</template>

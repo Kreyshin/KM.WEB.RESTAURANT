@@ -7,6 +7,9 @@ const props = defineProps<{
   mesas: Mesa[]
   /** Cuando es falso, el plano es de solo lectura (sin arrastre). */
   editable: boolean
+  /** Modo unir: el clic marca mesas en vez de abrirlas y no se arrastra. */
+  seleccionando?: boolean
+  seleccionadas?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -28,7 +31,21 @@ function posicionDe(mesa: Mesa) {
   return { left: `${mesa.posX}%`, top: `${mesa.posY}%` }
 }
 
+/** Color estable por unión, para reconocer qué mesas van juntas. */
+const coloresGrupo = ['#c9a227', '#3a6076', '#8f2b2b', '#46a583']
+function colorGrupo(grupoId?: string) {
+  if (!grupoId) return undefined
+  const grupos = [...new Set(props.mesas.map((m) => m.grupoId).filter(Boolean))]
+  return coloresGrupo[grupos.indexOf(grupoId) % coloresGrupo.length]
+}
+
 function iniciarArrastre(mesa: Mesa, evento: PointerEvent) {
+  if (props.seleccionando) {
+    recorrido = 0
+    arrastrando.value = null
+    emit('seleccionar', mesa)
+    return
+  }
   if (!props.editable) return
   arrastrando.value = mesa.id
   posicionTemporal.value = { x: mesa.posX, y: mesa.posY }
@@ -86,8 +103,18 @@ function terminarArrastre(mesa: Mesa) {
         clasePlanoEstado[mesa.estado],
         editable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         arrastrando === mesa.id ? 'z-10 shadow-lg' : '',
+        seleccionadas?.includes(mesa.id)
+          ? 'ring-4 ring-laton ring-offset-2 ring-offset-panel-2'
+          : '',
+        seleccionando ? 'cursor-pointer' : '',
       ]"
-      :style="posicionDe(mesa)"
+      :style="{
+        ...posicionDe(mesa),
+        ...(mesa.grupoId
+          ? { outline: `3px dashed ${colorGrupo(mesa.grupoId)}`, outlineOffset: '4px' }
+          : {}),
+      }"
+      :aria-pressed="seleccionando ? seleccionadas?.includes(mesa.id) : undefined"
       :title="`${mesa.codigo} · ${mesa.capacidad} personas · ${etiquetaEstado[mesa.estado]}`"
       @pointerdown="iniciarArrastre(mesa, $event)"
       @pointermove="moverArrastre"
@@ -99,6 +126,7 @@ function terminarArrastre(mesa: Mesa) {
       </span>
       <span class="mt-1 text-xs leading-none font-bold">{{ mesa.codigo }}</span>
       <span class="mt-0.5 text-[10px] leading-none opacity-80">{{ mesa.capacidad }}p</span>
+      <span v-if="mesa.grupoId" class="sr-only">Unida con otras mesas</span>
       <span class="sr-only">{{ etiquetaEstado[mesa.estado] }}</span>
     </button>
   </div>

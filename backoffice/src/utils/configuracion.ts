@@ -1,5 +1,8 @@
 import type {
   DiaSemana,
+  EstadoOrdenCompra,
+  EstadoToma,
+  TipoCombo,
   TipoCanal,
   TipoComprobante,
   TipoMedioPago,
@@ -64,4 +67,37 @@ export const tonoTipoComprobante: Record<TipoComprobante, TonoMesa> = {
   factura: 'pizarra',
   notaCredito: 'vino',
   notaVenta: 'neutro',
+}
+
+export const etiquetaEstadoOrden: Record<EstadoOrdenCompra, string> = {
+  borrador: 'Borrador',
+  emitida: 'Emitida',
+  parcial: 'Recibida en parte',
+  recibida: 'Recibida',
+  anulada: 'Anulada',
+}
+
+export const tonoEstadoOrden: Record<EstadoOrdenCompra, TonoMesa> = {
+  borrador: 'neutro',
+  emitida: 'pizarra',
+  parcial: 'laton',
+  recibida: 'verde',
+  anulada: 'vino',
+}
+
+export const etiquetaEstadoToma: Record<EstadoToma, string> = {
+  abierta: 'Abierta',
+  aplicada: 'Aplicada',
+  anulada: 'Anulada',
+}
+
+export const tonoEstadoToma: Record<EstadoToma, TonoMesa> = {
+  abierta: 'laton',
+  aplicada: 'verde',
+  anulada: 'neutro',
+}
+
+export const etiquetaTipoCombo: Record<TipoCombo, string> = {
+  combo: 'Combo',
+  menuDia: 'Menú del día',
 }

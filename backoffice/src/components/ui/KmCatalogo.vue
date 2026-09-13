@@ -75,6 +75,7 @@ defineSlots<{
   }): unknown
   filtros?(props: { consulta: Consulta }): unknown
   acciones?(): unknown
+  'acciones-fila'?(props: { fila: T }): unknown
 }>()
 
 const ui = useUiStore()
@@ -317,6 +318,7 @@ defineExpose({ recargar, abrirNuevo })
 
       <template #col-_acciones="{ fila }">
         <div class="flex justify-end gap-0.5">
+          <slot name="acciones-fila" :fila="fila" />
           <KmBotonIcono
             icono="editar"
             etiqueta="Editar"

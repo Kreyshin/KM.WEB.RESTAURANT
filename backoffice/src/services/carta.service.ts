@@ -1,5 +1,35 @@
 import type { Categoria, NuevaCategoria, NuevoProducto, Producto } from '@/types'
 import { db, latencia, nuevoId, persistir } from './mock/db'
+import { errorCampo } from './mock/reglas'
+
+function validarProducto(datos: Partial<NuevoProducto>) {
+  if (datos.estacionId && !db.estaciones.some((e) => e.id === datos.estacionId)) {
+    throw errorCampo('estacionId', 'La estación elegida ya no existe.')
+  }
+  for (const pc of datos.preciosCanal ?? []) {
+    if (!db.canales.some((c) => c.id === pc.canalId)) {
+      throw errorCampo('preciosCanal', 'Hay un precio para un canal que ya no existe.')
+    }
+    if (!(Number(pc.precio) >= 0)) {
+      throw errorCampo('preciosCanal', 'Los precios por canal no pueden ser negativos.')
+    }
+  }
+  if (
+    datos.preciosCanal &&
+    new Set(datos.preciosCanal.map((p) => p.canalId)).size !== datos.preciosCanal.length
+  ) {
+    throw errorCampo('preciosCanal', 'Un canal tiene dos precios.')
+  }
+}
+
+function validarCategoria(datos: Partial<NuevaCategoria>) {
+  const d = datos.disponibilidad
+  if (!d) return
+  if (d.dias.length === 0) throw errorCampo('disponibilidad', 'Elige al menos un día.')
+  if (!d.desde || !d.hasta || d.desde === d.hasta) {
+    throw errorCampo('disponibilidad', 'Indica una hora de inicio y de fin distintas.')
+  }
+}
 
 export const cartaService = {
   // ── Categorías ─────────────────────────────────────────────────────────────
@@ -9,6 +39,7 @@ export const cartaService = {
   },
 
   async crearCategoria(datos: NuevaCategoria): Promise<Categoria> {
+    validarCategoria(datos)
     const nombre = datos.nombre.trim()
     if (db.categorias.some((c) => c.nombre.toLowerCase() === nombre.toLowerCase())) {
       throw {
@@ -25,6 +56,8 @@ export const cartaService = {
   async actualizarCategoria(id: string, datos: Partial<NuevaCategoria>): Promise<Categoria> {
     const categoria = db.categorias.find((c) => c.id === id)
     if (!categoria) throw { mensaje: 'Categoría no encontrada.' }
+    validarCategoria(datos)
+    if ('disponibilidad' in datos && !datos.disponibilidad) delete categoria.disponibilidad
     const nombre = datos.nombre?.trim()
     if (
       nombre &&
@@ -76,6 +109,7 @@ export const cartaService = {
   },
 
   async crearProducto(datos: NuevoProducto): Promise<Producto> {
+    validarProducto(datos)
     const nombre = datos.nombre.trim()
     if (db.productos.some((p) => p.nombre.toLowerCase() === nombre.toLowerCase())) {
       throw {
@@ -92,6 +126,7 @@ export const cartaService = {
   async actualizarProducto(id: string, datos: Partial<NuevoProducto>): Promise<Producto> {
     const producto = db.productos.find((p) => p.id === id)
     if (!producto) throw { mensaje: 'Producto no encontrado.' }
+    validarProducto(datos)
     const nombre = datos.nombre?.trim()
     if (
       nombre &&
@@ -117,6 +152,12 @@ export const cartaService = {
   },
 
   async eliminarProducto(id: string): Promise<void> {
+    const enCombo = db.combos.find((c) => c.grupos.some((g) => g.opciones.includes(id)))
+    if (enCombo) {
+      throw {
+        mensaje: `No se puede eliminar: forma parte de «${enCombo.nombre}». Quítalo del combo antes.`,
+      }
+    }
     db.productos = db.productos.filter((p) => p.id !== id)
     // El escandallo deja de tener sentido sin su producto.
     db.recetas = db.recetas.filter((r) => r.productoId !== id)

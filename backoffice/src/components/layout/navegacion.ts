@@ -57,20 +57,77 @@ export const modulos: ModuloNav[] = [
     ],
   },
   {
-    id: 'operacion',
-    etiqueta: 'Operación',
+    id: 'carta',
+    etiqueta: 'Carta',
     icono: 'M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4zM8 8h7M8 12h7',
     secciones: [
       {
         nombreRuta: 'carta',
         etiqueta: 'Carta y menú',
-        descripcion: 'Categorías, precios y variantes',
+        descripcion: 'Productos, categorías y precios',
         roles: ['admin'],
       },
       {
+        nombreRuta: 'combos',
+        etiqueta: 'Combos y menús',
+        descripcion: 'Menú del día y promociones armadas',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    id: 'inventario',
+    etiqueta: 'Inventario',
+    icono: 'M3 7l9-4 9 4v10l-9 4-9-4V7zM3 7l9 4 9-4M12 11v10',
+    secciones: [
+      {
         nombreRuta: 'inventario',
-        etiqueta: 'Inventario',
-        descripcion: 'Insumos y control de stock',
+        etiqueta: 'Insumos',
+        descripcion: 'Stock y alertas de mínimo',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-movimientos',
+        etiqueta: 'Movimientos y kardex',
+        descripcion: 'Entradas, salidas y traslados',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-recetas',
+        etiqueta: 'Recetas y costos',
+        descripcion: 'Costo por plato y margen',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-tomas',
+        etiqueta: 'Toma de inventario',
+        descripcion: 'Conteo físico y ajustes',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-almacenes',
+        etiqueta: 'Almacenes',
+        descripcion: 'Dónde se guarda por local',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    id: 'compras',
+    etiqueta: 'Compras',
+    icono:
+      'M3 4h2l2.4 11h11.2L21 8H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+    secciones: [
+      {
+        nombreRuta: 'compras-ordenes',
+        etiqueta: 'Órdenes de compra',
+        descripcion: 'Pedidos y recepción',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-proveedores',
+        etiqueta: 'Proveedores',
+        descripcion: 'Quién nos abastece',
         roles: ['admin'],
       },
     ],

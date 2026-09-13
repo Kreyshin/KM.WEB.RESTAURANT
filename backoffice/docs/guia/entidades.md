@@ -128,6 +128,95 @@ Regla: no se elimina una impresora asignada a estaciones.
 
 Reglas: la serie es única por tipo en todo el RUC. Tipo, local y serie no cambian tras crearla. Solo se elimina si nunca emitió (`correlativo = 0`). El número completo se muestra como `B001-00000123`.
 
+## Carta: fase 3
+
+Campos añadidos:
+
+| Entidad   | Campo            | Tipo                      | Notas                                                                                 |
+| --------- | ---------------- | ------------------------- | ------------------------------------------------------------------------------------- |
+| Mesa      | `grupoId`        | string?                   | Mesas unidas comparten grupo. Solo del mismo salón; no se separa con una mesa ocupada |
+| Categoria | `disponibilidad` | `{ dias, desde, hasta }`? | Franja en que se ofrece                                                               |
+| Producto  | `imagen`         | string?                   |                                                                                       |
+| Producto  | `estacionId`     | string?                   | → EstacionProduccion                                                                  |
+| Producto  | `preciosCanal`   | `{ canalId, precio }[]`   | Sin entrada, el canal usa el precio base                                              |
+
+### Combo
+
+| Campo                   | Tipo                                       | Notas                                              |
+| ----------------------- | ------------------------------------------ | -------------------------------------------------- |
+| `tipo`                  | `'combo' \| 'menuDia'`                     |                                                    |
+| `nombre`                | string                                     | Único                                              |
+| `precio`                | number                                     | Precio cerrado, mayor que 0                        |
+| `grupos`                | `{ id, nombre, opciones: productoId[] }[]` | Una opción = parte fija; varias = el cliente elige |
+| `dias`                  | `DiaSemana[]`                              | Vacío = todos. Obligatorio en menú del día         |
+| `imagen`, `descripcion` | string?                                    |                                                    |
+
+Un producto que forma parte de un combo no se puede eliminar.
+
+## Inventario y compras: fase 4
+
+### Almacen
+
+| Campo     | Tipo    | Notas                                                         |
+| --------- | ------- | ------------------------------------------------------------- |
+| `nombre`  | string  | Único por local                                               |
+| `localId` | string  | → Local                                                       |
+| `activo`  | boolean | No se desactiva con stock dentro; no se elimina con historial |
+
+### Insumo (ampliado)
+
+| Campo           | Tipo                             | Notas                                                                                |
+| --------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
+| `categoria`     | CategoriaInsumo                  | carnes, pescados, verduras, abarrotes, lácteos, bebidas, descartables, preparaciones |
+| `existencias`   | `{ almacenId, cantidad }[]`      | Stock por almacén                                                                    |
+| `stock`         | number                           | Suma de existencias (derivado)                                                       |
+| `costoUnitario` | number                           | Promedio ponderado sin IGV; en preparaciones se calcula                              |
+| `proveedorId`   | string?                          | → Proveedor habitual                                                                 |
+| `preparacion`   | `{ rendimiento, ingredientes }`? | Subreceta                                                                            |
+
+### Movimiento (ampliado)
+
+| Campo           | Tipo           | Notas                                                                                          |
+| --------------- | -------------- | ---------------------------------------------------------------------------------------------- |
+| `almacenId`     | string         | → Almacen                                                                                      |
+| `tipo`          | TipoMovimiento | entrada, salida, merma, ajuste, trasladoSalida, trasladoEntrada, produccion, consumoProduccion |
+| `costoUnitario` | number?        | Costo de la entrada o vigente                                                                  |
+| `referencia`    | string?        | OC-000041, TOMA-0008, TR-…, PR-…                                                               |
+
+Reglas: el stock de un almacén nunca queda negativo. Traslados, producciones, tomas y recepciones se aplican como transacción: si un movimiento falla, no se guarda ninguno.
+
+### TomaInventario
+
+| Campo       | Tipo                                   | Notas                             |
+| ----------- | -------------------------------------- | --------------------------------- |
+| `numero`    | string                                 | TOMA-0008                         |
+| `almacenId` | string                                 | Una sola toma abierta por almacén |
+| `estado`    | `'abierta' \| 'aplicada' \| 'anulada'` |                                   |
+| `lineas`    | `{ insumoId, teorico, contado }[]`     | `contado: null` = sin contar      |
+
+Al aplicar, la diferencia con el stock actual genera `ajuste` (sobrante) o `merma` (faltante).
+
+### Proveedor
+
+| Campo                           | Tipo    | Notas          |
+| ------------------------------- | ------- | -------------- |
+| `razonSocial`                   | string  |                |
+| `ruc`                           | string  | Válido y único |
+| `contacto`, `telefono`, `email` | string? |                |
+| `diasCredito`                   | number  | 0 = contado    |
+
+### OrdenCompra
+
+| Campo                          | Tipo                                                              | Notas                               |
+| ------------------------------ | ----------------------------------------------------------------- | ----------------------------------- |
+| `numero`                       | string                                                            | OC-000042, correlativo              |
+| `proveedorId`, `almacenId`     | string                                                            | Destino de la mercadería            |
+| `estado`                       | `'borrador' \| 'emitida' \| 'parcial' \| 'recibida' \| 'anulada'` |                                     |
+| `fechaEmision`, `fechaEntrega` | `YYYY-MM-DD`                                                      | Entrega ≥ emisión                   |
+| `lineas`                       | `{ insumoId, cantidad, costoUnitario, recibido }[]`               | Costos sin IGV; un insumo por línea |
+
+Reglas: solo un borrador se edita o elimina; solo una orden emitida se anula; no se recibe más de lo pendiente; cada recepción crea entradas con la referencia de la orden y actualiza el costo promedio.
+
 ## Personal
 
 ### Usuario

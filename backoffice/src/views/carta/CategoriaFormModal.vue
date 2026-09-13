@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import KmSwitch from '@/components/ui/KmSwitch.vue'
+import type { DiaSemana } from '@/types'
+import { etiquetaDia } from '@/utils/configuracion'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmCampoEstado from '@/components/ui/KmCampoEstado.vue'
 import KmField from '@/components/ui/KmField.vue'
@@ -25,13 +28,35 @@ watch(abierto, (esta) => {
   errores.value = {}
   guardando.value = false
   form.value = props.categoria
-    ? { ...props.categoria }
+    ? structuredClone({ ...props.categoria })
     : { nombre: '', descripcion: '', orden: props.ordenSugerido, activa: true }
 })
+
+const conHorario = computed({
+  get: () => !!form.value.disponibilidad,
+  set: (v: boolean) => {
+    form.value.disponibilidad = v
+      ? { dias: [0, 1, 2, 3, 4, 5, 6], desde: '12:00', hasta: '16:00' }
+      : undefined
+  },
+})
+
+const dias = [0, 1, 2, 3, 4, 5, 6] as DiaSemana[]
+
+function alternarDia(dia: DiaSemana) {
+  const d = form.value.disponibilidad
+  if (!d) return
+  d.dias = d.dias.includes(dia) ? d.dias.filter((x) => x !== dia) : [...d.dias, dia].sort()
+}
 
 function validar() {
   errores.value = {}
   if (!form.value.nombre.trim()) errores.value.nombre = 'El nombre es obligatorio.'
+  const d = form.value.disponibilidad
+  if (d && d.dias.length === 0) errores.value.disponibilidad = 'Elige al menos un día.'
+  else if (d && (!d.desde || !d.hasta || d.desde === d.hasta)) {
+    errores.value.disponibilidad = 'Indica una hora de inicio y de fin distintas.'
+  }
   return Object.keys(errores.value).length === 0
 }
 
@@ -62,6 +87,51 @@ defineExpose({ mostrarError })
       <KmField v-slot="{ id }" label="Descripción" ayuda="Aparece bajo el nombre en la carta.">
         <KmInput :id="id" v-model="form.descripcion" placeholder="Ej. Para empezar" />
       </KmField>
+
+      <section class="flex flex-col gap-3 rounded-card border border-linea p-4">
+        <KmSwitch
+          v-model="conHorario"
+          etiqueta="Horario de disponibilidad"
+          descripcion="Fuera de esta franja la categoría no se ofrece. Sin horario, se ofrece siempre."
+        />
+        <template v-if="form.disponibilidad">
+          <div class="flex flex-wrap gap-1.5" role="group" aria-label="Días">
+            <button
+              v-for="d in dias"
+              :key="d"
+              type="button"
+              class="rounded-full border px-2.5 py-1 text-xs font-medium transition-colors"
+              :class="
+                form.disponibilidad.dias.includes(d)
+                  ? 'border-rail bg-rail text-rail-tinta'
+                  : 'border-linea text-tenue hover:border-verde hover:text-tinta'
+              "
+              :aria-pressed="form.disponibilidad.dias.includes(d)"
+              @click="alternarDia(d)"
+            >
+              {{ etiquetaDia[d].slice(0, 3) }}
+            </button>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <input
+              v-model="form.disponibilidad.desde"
+              type="time"
+              aria-label="Desde"
+              class="rs-campo h-9 rounded-control border border-linea bg-panel px-2 text-tinta"
+            />
+            <span class="text-tenue">a</span>
+            <input
+              v-model="form.disponibilidad.hasta"
+              type="time"
+              aria-label="Hasta"
+              class="rs-campo h-9 rounded-control border border-linea bg-panel px-2 text-tinta"
+            />
+          </div>
+        </template>
+        <p v-if="errores.disponibilidad" class="text-xs font-medium text-vino">
+          {{ errores.disponibilidad }}
+        </p>
+      </section>
 
       <KmCampoEstado
         v-if="categoria"

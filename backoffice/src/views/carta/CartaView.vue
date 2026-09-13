@@ -16,6 +16,7 @@ import { dependenciasService } from '@/services/dependencias.service'
 import { useUiStore } from '@/stores/ui.store'
 import type { ApiError, Categoria, NuevaCategoria, NuevoProducto, Producto } from '@/types'
 import type { ColumnaTabla } from '@/types/ui'
+import { etiquetaDia } from '@/utils/configuracion'
 import { etiquetaAlergeno, formatearSoles } from '@/utils/formato'
 
 const ui = useUiStore()
@@ -285,16 +286,28 @@ async function eliminar() {
           mensaje-vacio="No hay productos que coincidan. Crea el primero para empezar la carta."
         >
           <template #col-nombre="{ fila }">
-            <p class="font-semibold text-tinta">{{ fila.nombre }}</p>
-            <p v-if="fila.descripcion" class="mt-0.5 text-xs text-tenue">{{ fila.descripcion }}</p>
-            <div v-if="fila.alergenos.length" class="mt-1.5 flex flex-wrap gap-1">
-              <span
-                v-for="a in fila.alergenos"
-                :key="a"
-                class="rs-tono rs-tono-laton rounded-full border px-1.5 py-px text-[10px] font-semibold"
-              >
-                {{ etiquetaAlergeno[a] }}
-              </span>
+            <div class="flex items-start gap-3">
+              <img
+                v-if="fila.imagen"
+                :src="fila.imagen"
+                alt=""
+                class="size-10 shrink-0 rounded-control object-cover"
+              />
+              <div class="min-w-0">
+                <p class="font-semibold text-tinta">{{ fila.nombre }}</p>
+                <p v-if="fila.descripcion" class="mt-0.5 text-xs text-tenue">
+                  {{ fila.descripcion }}
+                </p>
+                <div v-if="fila.alergenos.length" class="mt-1.5 flex flex-wrap gap-1">
+                  <span
+                    v-for="a in fila.alergenos"
+                    :key="a"
+                    class="rs-tono rs-tono-laton rounded-full border px-1.5 py-px text-[10px] font-semibold"
+                  >
+                    {{ etiquetaAlergeno[a] }}
+                  </span>
+                </div>
+              </div>
             </div>
           </template>
 
@@ -377,6 +390,14 @@ async function eliminar() {
 
         <template #col-nombre="{ fila }">
           <p class="font-semibold text-tinta">{{ fila.nombre }}</p>
+          <p v-if="fila.disponibilidad" class="text-xs text-laton-texto">
+            {{
+              fila.disponibilidad.dias.length === 7
+                ? 'Todos los días'
+                : fila.disponibilidad.dias.map((d) => etiquetaDia[d].slice(0, 3)).join(', ')
+            }}
+            · {{ fila.disponibilidad.desde }}–{{ fila.disponibilidad.hasta }}
+          </p>
           <p v-if="fila.descripcion" class="text-xs text-tenue">{{ fila.descripcion }}</p>
         </template>
 

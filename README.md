@@ -74,7 +74,9 @@ npm run docs:dev   # documentación en local
 | F0 · Higiene | Git, lint, formato, pruebas | ✅ |
 | F1 · Cimientos | Componentes y capa de datos mock | ✅ |
 | F2 · Configuración | Empresa, locales, impuestos, pagos, series | ✅ |
-| F3–F6 · Maestros | Sala y carta, inventario, personal, clientes | 🚧 |
+| F3 · Sala y carta | Combos, precios por canal, mesas unidas | ✅ |
+| F4 · Inventario y compras | Almacenes, kardex, recetas, tomas, órdenes de compra | ✅ |
+| F5–F6 · Maestros | Personal y permisos, clientes y promociones | ⏳ |
 | F7–F8 · Operación | Ventas, caja y comprobantes | ⏳ |
 | F9–F10 · Análisis | Reportes, pulido y entidades | ⏳ |
 

@@ -62,6 +62,45 @@ export const mesasService = {
     return latencia(mesa, 0)
   },
 
+  /**
+   * Une mesas del mismo salón para atender a un grupo grande. Comparten
+   * `grupoId` y pasan a estado ocupada o reservada juntas desde la operación.
+   */
+  async unir(ids: string[]): Promise<Mesa[]> {
+    const mesas = ids.map((id) => db.mesas.find((m) => m.id === id))
+    if (mesas.length < 2 || mesas.some((m) => !m)) {
+      throw { mensaje: 'Elige al menos dos mesas para unirlas.' }
+    }
+    const lista = mesas as Mesa[]
+    if (new Set(lista.map((m) => m.salonId)).size > 1) {
+      throw { mensaje: 'Solo se pueden unir mesas del mismo salón.' }
+    }
+    const agrupadas = lista.filter((m) => m.grupoId)
+    if (agrupadas.length) {
+      throw {
+        mensaje: `${agrupadas.map((m) => m.codigo).join(', ')} ya forman parte de otra unión.`,
+      }
+    }
+    if (lista.some((m) => m.estado === 'inactiva')) {
+      throw { mensaje: 'No se puede unir una mesa inactiva.' }
+    }
+    const grupoId = nuevoId('gr')
+    for (const m of lista) m.grupoId = grupoId
+    persistir()
+    return latencia(lista)
+  },
+
+  async separar(grupoId: string): Promise<Mesa[]> {
+    const lista = db.mesas.filter((m) => m.grupoId === grupoId)
+    if (lista.length === 0) throw { mensaje: 'La unión ya no existe.' }
+    if (lista.some((m) => m.estado === 'ocupada')) {
+      throw { mensaje: 'No se puede separar una unión con la cuenta abierta. Libérala primero.' }
+    }
+    for (const m of lista) delete m.grupoId
+    persistir()
+    return latencia(lista)
+  },
+
   async eliminar(id: string): Promise<void> {
     const mesa = db.mesas.find((m) => m.id === id)
     if (mesa && mesa.estado === 'ocupada') {

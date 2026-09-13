@@ -1,12 +1,24 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
 import KmModal from '@/components/ui/KmModal.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
-import type { Alergeno, ApiError, Categoria, NuevoProducto, Producto } from '@/types'
+import KmUploadImagen from '@/components/ui/KmUploadImagen.vue'
+import { canalesService } from '@/services/comercial.service'
+import { estacionesService } from '@/services/produccion.service'
+import { useUiStore } from '@/stores/ui.store'
+import type {
+  Alergeno,
+  ApiError,
+  CanalVenta,
+  Categoria,
+  EstacionProduccion,
+  NuevoProducto,
+  Producto,
+} from '@/types'
 import type { OpcionSelect } from '@/types/ui'
 import { alergenos, etiquetaAlergeno, formatearSoles } from '@/utils/formato'
 
@@ -30,7 +42,37 @@ const vacio = (): NuevoProducto => ({
   alergenos: [],
   variantes: [],
   gruposModificadores: [],
+  preciosCanal: [],
+  estacionId: undefined,
+  imagen: undefined,
 })
+
+const ui = useUiStore()
+const canales = shallowRef<CanalVenta[]>([])
+const estaciones = shallowRef<EstacionProduccion[]>([])
+
+onMounted(async () => {
+  ;[canales.value, estaciones.value] = await Promise.all([
+    canalesService.todos(),
+    estacionesService.todos(),
+  ])
+})
+
+const opcionesEstacion = computed<OpcionSelect[]>(() => [
+  { valor: '', etiqueta: 'Sin estación' },
+  ...estaciones.value.filter((e) => e.activo).map((e) => ({ valor: e.id, etiqueta: e.nombre })),
+])
+
+/** Precio por canal: vacío significa «usa el precio base». */
+function precioCanal(canalId: string) {
+  return form.value.preciosCanal.find((p) => p.canalId === canalId)?.precio ?? null
+}
+
+function fijarPrecioCanal(canalId: string, precio: number | null | undefined) {
+  const lista = form.value.preciosCanal.filter((p) => p.canalId !== canalId)
+  if (precio !== null && precio !== undefined) lista.push({ canalId, precio })
+  form.value.preciosCanal = lista
+}
 
 const form = ref<NuevoProducto>(vacio())
 const errores = ref<Record<string, string>>({})
@@ -41,7 +83,9 @@ watch(abierto, (esta) => {
   errores.value = {}
   guardando.value = false
   // structuredClone evita editar en vivo el objeto de la tabla.
-  form.value = props.producto ? structuredClone({ ...props.producto }) : vacio()
+  form.value = props.producto
+    ? { ...structuredClone({ ...props.producto }), preciosCanal: props.producto.preciosCanal ?? [] }
+    : vacio()
 })
 
 const opcionesCategoria = computed<OpcionSelect[]>(() =>
@@ -173,6 +217,7 @@ function enviar() {
         ...f,
         precio: Number(f.precio),
         tiempoPreparacionMin: f.tiempoPreparacionMin ? Number(f.tiempoPreparacionMin) : undefined,
+        estacionId: f.estacionId || undefined,
         variantes: f.variantes.map((v) => ({ ...v, precio: Number(v.precio) })),
         gruposModificadores: f.gruposModificadores.map((g) => ({
           ...g,
@@ -265,6 +310,65 @@ defineExpose({ mostrarError })
             <span class="text-sm text-tinta">Disponible hoy</span>
           </label>
         </div>
+      </div>
+
+      <!-- Imagen y estación -->
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="flex flex-col gap-2">
+          <span class="text-sm font-semibold text-tinta">Foto</span>
+          <KmUploadImagen v-model="form.imagen" etiqueta="Foto del plato" @error="ui.error" />
+        </div>
+        <KmField
+          v-slot="{ id, invalido }"
+          label="Estación de producción"
+          ayuda="Donde se imprime o muestra la comanda de este producto."
+          :error="errores.estacionId"
+        >
+          <KmSelect
+            :id="id"
+            :model-value="form.estacionId ?? ''"
+            :opciones="opcionesEstacion"
+            :invalido="invalido"
+            @update:model-value="form.estacionId = ($event as string) || undefined"
+          />
+        </KmField>
+      </div>
+
+      <!-- Precios por canal -->
+      <div>
+        <p class="rs-etiqueta text-laton-texto">Precio por canal</p>
+        <p class="mt-1 mb-2.5 text-xs text-tenue">
+          Déjalo vacío para cobrar el precio base. Útil en apps de delivery que cobran comisión.
+        </p>
+        <p v-if="errores.preciosCanal" class="mb-2 text-xs font-medium text-vino">
+          {{ errores.preciosCanal }}
+        </p>
+        <ul class="grid gap-2 sm:grid-cols-2">
+          <li
+            v-for="c in canales.filter((x) => x.activo)"
+            :key="c.id"
+            class="flex items-center justify-between gap-3 rounded-control border border-linea px-3 py-2"
+          >
+            <span class="min-w-0">
+              <span class="block truncate text-sm text-tinta">{{ c.nombre }}</span>
+              <span v-if="c.comisionPorcentaje" class="block text-[11px] text-tenue">
+                Comisión {{ c.comisionPorcentaje }} %
+              </span>
+            </span>
+            <div class="w-32 shrink-0">
+              <KmNumero
+                :model-value="precioCanal(c.id)"
+                :min="0"
+                :decimales="2"
+                prefijo="S/"
+                :controles="false"
+                :placeholder="String(Number(form.precio || 0).toFixed(2))"
+                :aria-label="`Precio en ${c.nombre}`"
+                @update:model-value="fijarPrecioCanal(c.id, $event)"
+              />
+            </div>
+          </li>
+        </ul>
       </div>
 
       <!-- Alérgenos -->

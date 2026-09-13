@@ -6,7 +6,13 @@
  */
 
 import type {
+  Almacen,
   CanalVenta,
+  CategoriaInsumo,
+  Combo,
+  OrdenCompra,
+  Proveedor,
+  TomaInventario,
   Categoria,
   ConfigImpuestos,
   Empresa,
@@ -31,9 +37,14 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v4'
+const CLAVE = 'km.restaurante.mock.v5'
 
 export interface Esquema {
+  combos: Combo[]
+  almacenes: Almacen[]
+  proveedores: Proveedor[]
+  ordenesCompra: OrdenCompra[]
+  tomas: TomaInventario[]
   empresa: Empresa
   impuestos: ConfigImpuestos
   locales: Local[]
@@ -526,7 +537,7 @@ function semilla(): Esquema {
     ],
   })
 
-  const productos: Producto[] = [
+  const productosBase: Omit<Producto, 'preciosCanal'>[] = [
     {
       id: 'p1',
       categoriaId: 'c1',
@@ -746,7 +757,9 @@ function semilla(): Esquema {
     },
   ]
 
-  const insumos: Insumo[] = [
+  const insumosBase: (Omit<Insumo, 'existencias' | 'proveedorId' | 'categoria'> & {
+    proveedor?: string
+  })[] = [
     {
       id: 'i1',
       nombre: 'Lomo fino de res',
@@ -930,7 +943,7 @@ function semilla(): Esquema {
   const ahora = Date.now()
   const hace = (horas: number) => new Date(ahora - horas * 3600_000).toISOString()
 
-  const movimientos: Movimiento[] = [
+  const movimientosBase: Omit<Movimiento, 'almacenId'>[] = [
     {
       id: 'mv1',
       insumoId: 'i2',
@@ -1005,7 +1018,294 @@ function semilla(): Esquema {
     },
   ]
 
+  // ── Fase 3: carta ──
+  const estacionPorCategoria: Record<string, string> = {
+    c1: 'es1',
+    c2: 'es2',
+    c3: 'es1',
+    c4: 'es1',
+    c5: 'es1',
+    c6: 'es3',
+    c7: 'es1',
+  }
+  const productos: Producto[] = productosBase.map((p) => ({
+    ...p,
+    estacionId: estacionPorCategoria[p.categoriaId],
+    // Rappi cobra 25 % de comisión: los platos de fondo suben de precio en la app.
+    preciosCanal: p.precio >= 30 ? [{ canalId: 'cv4', precio: Math.round(p.precio * 1.15) }] : [],
+  }))
+
+  const c7 = categorias.find((c) => c.id === 'c7')
+  if (c7) c7.disponibilidad = { dias: [0, 1, 2, 3, 4], desde: '12:00', hasta: '16:00' }
+
+  const combos: Combo[] = [
+    {
+      id: 'cb1',
+      tipo: 'menuDia',
+      nombre: 'Menú ejecutivo',
+      descripcion: 'Entrada, fondo y refresco. De lunes a viernes al mediodía.',
+      precio: 32,
+      grupos: [
+        { id: 'cb1-g1', nombre: 'Entrada', opciones: ['p1', 'p2'] },
+        { id: 'cb1-g2', nombre: 'Fondo', opciones: ['p6', 'p7', 'p8'] },
+        { id: 'cb1-g3', nombre: 'Bebida', opciones: ['p13'] },
+      ],
+      dias: [0, 1, 2, 3, 4],
+      activo: true,
+    },
+    {
+      id: 'cb2',
+      tipo: 'combo',
+      nombre: 'Combo marino',
+      descripcion: 'Cebiche clásico, chicharrón de calamar y dos pisco sour.',
+      precio: 125,
+      grupos: [
+        { id: 'cb2-g1', nombre: 'Cebiche', opciones: ['p3'] },
+        { id: 'cb2-g2', nombre: 'Chicharrón', opciones: ['p10'] },
+        { id: 'cb2-g3', nombre: 'Pisco sour', opciones: ['p14'] },
+        { id: 'cb2-g4', nombre: 'Segundo pisco sour', opciones: ['p14'] },
+      ],
+      dias: [],
+      activo: true,
+    },
+  ]
+
+  // ── Fase 4: inventario y compras ──
+  const almacenes: Almacen[] = [
+    {
+      id: 'al1',
+      nombre: 'Almacén principal',
+      localId: 'l1',
+      descripcion: 'Secos y abarrotes',
+      activo: true,
+    },
+    {
+      id: 'al2',
+      nombre: 'Cámara de frío',
+      localId: 'l1',
+      descripcion: 'Carnes, pescados y lácteos',
+      activo: true,
+    },
+    { id: 'al3', nombre: 'Barra', localId: 'l1', descripcion: 'Bebidas y licores', activo: true },
+    { id: 'al4', nombre: 'Almacén San Isidro', localId: 'l2', activo: true },
+  ]
+
+  const proveedores: Proveedor[] = [
+    {
+      id: 'pv1',
+      razonSocial: 'Carnes del Sur S.A.C.',
+      ruc: '20512345676',
+      contacto: 'Julio Mendoza',
+      telefono: '987 654 321',
+      email: 'ventas@carnesdelsur.pe',
+      diasCredito: 15,
+      activo: true,
+    },
+    {
+      id: 'pv2',
+      razonSocial: 'Pesquera Villa E.I.R.L.',
+      ruc: '20600123455',
+      contacto: 'Rosa Villa',
+      telefono: '945 112 233',
+      diasCredito: 7,
+      activo: true,
+    },
+    {
+      id: 'pv3',
+      razonSocial: 'Mercado Mayorista N.° 2 · Puesto 118',
+      ruc: '10458796321',
+      contacto: 'Don Teodoro',
+      telefono: '999 000 118',
+      diasCredito: 0,
+      activo: true,
+    },
+    {
+      id: 'pv4',
+      razonSocial: 'Distribuidora Central S.A.',
+      ruc: '20100047218',
+      email: 'pedidos@dcentral.com.pe',
+      diasCredito: 30,
+      activo: true,
+    },
+    {
+      id: 'pv5',
+      razonSocial: 'Granja San Pedro S.A.C.',
+      ruc: '20487654329',
+      diasCredito: 7,
+      activo: true,
+    },
+    {
+      id: 'pv6',
+      razonSocial: 'Bodega Ica S.R.L.',
+      ruc: '20234567891',
+      contacto: 'Carmen Soto',
+      diasCredito: 30,
+      activo: false,
+    },
+  ]
+  const proveedorPorNombre: Record<string, string> = {
+    'Carnes del Sur': 'pv1',
+    'Pesquera Villa': 'pv2',
+    'Mercado Mayorista': 'pv3',
+    'Distribuidora Central': 'pv4',
+    'Granja San Pedro': 'pv5',
+    'Bodega Ica': 'pv6',
+  }
+  const categoriaPorInsumo: Record<string, CategoriaInsumo> = {
+    i1: 'carnes',
+    i2: 'pescados',
+    i3: 'verduras',
+    i4: 'verduras',
+    i5: 'verduras',
+    i6: 'verduras',
+    i7: 'verduras',
+    i8: 'abarrotes',
+    i9: 'abarrotes',
+    i10: 'lacteos',
+    i11: 'lacteos',
+    i12: 'pescados',
+    i13: 'abarrotes',
+    i14: 'bebidas',
+    i15: 'descartables',
+  }
+  /** Almacén donde se guarda cada categoría en Miraflores. */
+  const almacenPorCategoria: Record<CategoriaInsumo, string> = {
+    carnes: 'al2',
+    pescados: 'al2',
+    lacteos: 'al2',
+    verduras: 'al1',
+    abarrotes: 'al1',
+    descartables: 'al1',
+    preparaciones: 'al2',
+    bebidas: 'al3',
+  }
+
+  const insumos: Insumo[] = insumosBase.map(({ proveedor, ...i }) => {
+    const categoria = categoriaPorInsumo[i.id] ?? 'abarrotes'
+    const almacenId = almacenPorCategoria[categoria]
+    // Una quinta parte del stock está en San Isidro para que el traslado tenga sentido.
+    const enSanIsidro = Math.round(i.stock * 0.2 * 10) / 10
+    return {
+      ...i,
+      categoria,
+      proveedorId: proveedor ? proveedorPorNombre[proveedor] : undefined,
+      existencias: [
+        { almacenId, cantidad: Math.round((i.stock - enSanIsidro) * 1000) / 1000 },
+        { almacenId: 'al4', cantidad: enSanIsidro },
+      ],
+    }
+  })
+
+  // Subreceta: leche de tigre, que usan los cebiches.
+  insumos.push({
+    id: 'i16',
+    nombre: 'Leche de tigre (base)',
+    unidad: 'l',
+    categoria: 'preparaciones',
+    stock: 1.5,
+    existencias: [{ almacenId: 'al2', cantidad: 1.5 }],
+    stockMinimo: 1,
+    costoUnitario: 0,
+    preparacion: {
+      rendimiento: 1,
+      ingredientes: [
+        { insumoId: 'i6', cantidad: 0.6 },
+        { insumoId: 'i2', cantidad: 0.15 },
+        { insumoId: 'i5', cantidad: 0.1 },
+        { insumoId: 'i7', cantidad: 0.05 },
+      ],
+    },
+    activo: true,
+  })
+  const i16 = insumos.at(-1)!
+  i16.costoUnitario =
+    Math.round(
+      i16.preparacion!.ingredientes.reduce(
+        (t, g) => t + (insumos.find((x) => x.id === g.insumoId)?.costoUnitario ?? 0) * g.cantidad,
+        0,
+      ) * 100,
+    ) / 100
+
+  const movimientos: Movimiento[] = movimientosBase.map((m) => ({
+    ...m,
+    almacenId: almacenPorCategoria[categoriaPorInsumo[m.insumoId] ?? 'abarrotes'],
+  }))
+
+  const hoyIso = new Date(ahora).toISOString().slice(0, 10)
+  const diaIso = (dias: number) => new Date(ahora + dias * 86_400_000).toISOString().slice(0, 10)
+
+  const ordenesCompra: OrdenCompra[] = [
+    {
+      id: 'oc1',
+      numero: 'OC-000041',
+      proveedorId: 'pv1',
+      almacenId: 'al2',
+      estado: 'emitida',
+      fechaEmision: hoyIso,
+      fechaEntrega: diaIso(1),
+      lineas: [{ insumoId: 'i1', cantidad: 12, costoUnitario: 51.5, recibido: 0 }],
+      notas: 'Entregar antes de las 9:00.',
+    },
+    {
+      id: 'oc2',
+      numero: 'OC-000040',
+      proveedorId: 'pv3',
+      almacenId: 'al1',
+      estado: 'parcial',
+      fechaEmision: diaIso(-2),
+      fechaEntrega: diaIso(-1),
+      lineas: [
+        { insumoId: 'i6', cantidad: 15, costoUnitario: 7.2, recibido: 10 },
+        { insumoId: 'i5', cantidad: 10, costoUnitario: 3.6, recibido: 10 },
+        { insumoId: 'i3', cantidad: 20, costoUnitario: 4.4, recibido: 0 },
+      ],
+    },
+    {
+      id: 'oc3',
+      numero: 'OC-000039',
+      proveedorId: 'pv4',
+      almacenId: 'al1',
+      estado: 'recibida',
+      fechaEmision: diaIso(-6),
+      fechaEntrega: diaIso(-5),
+      lineas: [
+        { insumoId: 'i8', cantidad: 50, costoUnitario: 4.1, recibido: 50 },
+        { insumoId: 'i9', cantidad: 20, costoUnitario: 8.9, recibido: 20 },
+      ],
+    },
+    {
+      id: 'oc4',
+      numero: 'OC-000042',
+      proveedorId: 'pv2',
+      almacenId: 'al2',
+      estado: 'borrador',
+      fechaEmision: hoyIso,
+      lineas: [{ insumoId: 'i12', cantidad: 8, costoUnitario: 37, recibido: 0 }],
+    },
+  ]
+
+  const tomas: TomaInventario[] = [
+    {
+      id: 'tm1',
+      numero: 'TOMA-0007',
+      almacenId: 'al1',
+      estado: 'aplicada',
+      fecha: new Date(ahora - 7 * 86_400_000).toISOString(),
+      aplicadaEn: new Date(ahora - 7 * 86_400_000 + 3_600_000).toISOString(),
+      usuarioId: 'u1',
+      lineas: [
+        { insumoId: 'i3', teorico: 30, contado: 29.5 },
+        { insumoId: 'i8', teorico: 58, contado: 58 },
+      ],
+    },
+  ]
+
   return {
+    combos,
+    almacenes,
+    proveedores,
+    ordenesCompra,
+    tomas,
     empresa,
     impuestos,
     locales,
