@@ -327,13 +327,15 @@ async function eliminar() {
             <div class="flex justify-end gap-0.5">
               <KmBotonIcono
                 icono="editar"
-                :etiqueta="`Editar ${fila.nombre}`"
+                etiqueta="Editar"
+                :contexto="fila.nombre"
                 @click="editarProducto(fila)"
               />
               <KmBotonIcono
                 icono="eliminar"
                 tono="peligro"
-                :etiqueta="`Eliminar ${fila.nombre}`"
+                etiqueta="Eliminar"
+                :contexto="fila.nombre"
                 @click="pedirEliminar('producto', fila.id, fila.nombre)"
               />
             </div>
@@ -360,12 +362,14 @@ async function eliminar() {
             <span class="w-5 text-tenue tabular-nums">{{ fila.orden }}</span>
             <KmBotonIcono
               icono="subir"
-              :etiqueta="`Subir ${fila.nombre}`"
+              etiqueta="Subir"
+              :contexto="fila.nombre"
               @click="reordenar(fila.id, 'arriba')"
             />
             <KmBotonIcono
               icono="bajar"
-              :etiqueta="`Bajar ${fila.nombre}`"
+              etiqueta="Bajar"
+              :contexto="fila.nombre"
               @click="reordenar(fila.id, 'abajo')"
             />
           </div>
@@ -390,13 +394,15 @@ async function eliminar() {
           <div class="flex justify-end gap-0.5">
             <KmBotonIcono
               icono="editar"
-              :etiqueta="`Editar ${fila.nombre}`"
+              etiqueta="Editar"
+              :contexto="fila.nombre"
               @click="editarCategoria(fila)"
             />
             <KmBotonIcono
               icono="eliminar"
               tono="peligro"
-              :etiqueta="`Eliminar ${fila.nombre}`"
+              etiqueta="Eliminar"
+              :contexto="fila.nombre"
               @click="pedirEliminar('categoria', fila.id, fila.nombre)"
             />
           </div>

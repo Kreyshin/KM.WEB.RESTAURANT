@@ -231,13 +231,15 @@ async function eliminar() {
           <div class="flex justify-end gap-0.5">
             <KmBotonIcono
               icono="editar"
-              :etiqueta="`Editar ${fila.nombre}`"
+              etiqueta="Editar"
+              :contexto="fila.nombre"
               @click="abrirEdicion(fila)"
             />
             <KmBotonIcono
               icono="eliminar"
               tono="peligro"
-              :etiqueta="`Eliminar ${fila.nombre}`"
+              etiqueta="Eliminar"
+              :contexto="fila.nombre"
               @click="pedirEliminar(fila)"
             />
           </div>

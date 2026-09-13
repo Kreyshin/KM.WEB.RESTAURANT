@@ -130,14 +130,15 @@ Para pantallas que no usan `KmCatalogo` (salones, categorías), la misma experie
 
 ## Acciones de fila
 
-Las acciones usan `KmBotonIcono`: botón de 36 px con icono, nombre accesible que incluye el registro («Editar Terraza») y tooltip inmediato al pasar el ratón o con el foco del teclado.
+Las acciones usan `KmBotonIcono`: botón cuadrado de 32 px con borde e icono. El tooltip muestra solo la acción («Eliminar») y se dibuja fuera de la tabla, así nunca la recorta ni genera scroll. Con `contexto` el nombre accesible incluye el registro («Eliminar Terraza») para lectores de pantalla y pruebas.
 
 ```vue
-<KmBotonIcono icono="editar" :etiqueta="`Editar ${fila.nombre}`" @click="editar(fila)" />
+<KmBotonIcono icono="editar" etiqueta="Editar" :contexto="fila.nombre" @click="editar(fila)" />
 <KmBotonIcono
   icono="eliminar"
   tono="peligro"
-  :etiqueta="`Eliminar ${fila.nombre}`"
+  etiqueta="Eliminar"
+  :contexto="fila.nombre"
   @click="eliminar(fila)"
 />
 ```

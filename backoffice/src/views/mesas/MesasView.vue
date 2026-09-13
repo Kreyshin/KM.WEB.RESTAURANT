@@ -301,13 +301,15 @@ async function eliminar() {
           <div v-if="puedeConfigurar" class="flex justify-end gap-0.5">
             <KmBotonIcono
               icono="editar"
-              :etiqueta="`Editar mesa ${fila.codigo}`"
+              etiqueta="Editar"
+              :contexto="`mesa ${fila.codigo}`"
               @click="abrirEdicion(fila)"
             />
             <KmBotonIcono
               icono="eliminar"
               tono="peligro"
-              :etiqueta="`Eliminar mesa ${fila.codigo}`"
+              etiqueta="Eliminar"
+              :contexto="`mesa ${fila.codigo}`"
               @click="pedirEliminar(fila)"
             />
           </div>

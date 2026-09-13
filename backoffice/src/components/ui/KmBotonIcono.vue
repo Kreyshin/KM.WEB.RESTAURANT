@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 export type IconoAccion = 'editar' | 'eliminar' | 'subir' | 'bajar' | 'ver'
 
 const props = withDefaults(
   defineProps<{
     icono: IconoAccion
-    /** Nombre accesible y texto del tooltip: «Editar Terraza». */
+    /** Texto corto del tooltip: «Editar». */
     etiqueta: string
+    /**
+     * Registro sobre el que actúa: «Terraza». No se ve, pero completa el nombre
+     * accesible («Editar Terraza») para lectores de pantalla y pruebas.
+     */
+    contexto?: string
     tono?: 'neutro' | 'peligro'
     disabled?: boolean
   }>(),
@@ -30,43 +35,81 @@ const trazos: Record<IconoAccion, string[]> = {
   ver: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
 }
 
+const nombreAccesible = computed(() =>
+  props.contexto ? `${props.etiqueta} ${props.contexto}` : props.etiqueta,
+)
+
 const clases = computed(() =>
   props.tono === 'peligro'
-    ? 'text-tenue hover:bg-vino/10 hover:text-vino focus-visible:text-vino'
-    : 'text-tenue hover:bg-seleccion hover:text-tinta focus-visible:text-tinta',
+    ? 'text-vino hover:border-vino/60 hover:bg-vino/10'
+    : 'text-tenue hover:border-verde hover:text-verde',
 )
+
+// ── Tooltip ──
+// Se teletransporta a <body> con posición fija: así no lo recorta ni genera
+// scroll el contenedor con overflow de la tabla.
+const boton = ref<HTMLButtonElement | null>(null)
+const tooltip = ref<HTMLElement | null>(null)
+const visible = ref(false)
+const posicion = ref({ top: 0, left: 0 })
+
+async function mostrar() {
+  if (props.disabled || !boton.value) return
+  visible.value = true
+  await nextTick()
+  const r = boton.value.getBoundingClientRect()
+  const ancho = tooltip.value?.offsetWidth ?? 0
+  const margen = 8
+  // Centrado sobre el botón, sin salirse de la ventana.
+  const left = Math.min(
+    Math.max(r.left + r.width / 2 - ancho / 2, margen),
+    window.innerWidth - ancho - margen,
+  )
+  posicion.value = { top: r.top - 6, left }
+}
+
+function ocultar() {
+  visible.value = false
+}
 </script>
 
 <template>
-  <span class="group relative inline-flex">
-    <button
-      type="button"
-      class="grid size-9 place-items-center rounded-control transition-colors duration-150 disabled:pointer-events-none disabled:opacity-40"
-      :class="clases"
-      :aria-label="etiqueta"
-      :disabled="disabled"
-      @click="$emit('click', $event)"
+  <button
+    ref="boton"
+    type="button"
+    class="grid size-8 place-items-center rounded-control border border-linea bg-panel transition-colors duration-150 disabled:pointer-events-none disabled:opacity-40"
+    :class="clases"
+    :aria-label="nombreAccesible"
+    :disabled="disabled"
+    @click="$emit('click', $event)"
+    @mouseenter="mostrar"
+    @mouseleave="ocultar"
+    @focus="mostrar"
+    @blur="ocultar"
+  >
+    <svg
+      class="size-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
     >
-      <svg
-        class="size-[18px]"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path v-for="d in trazos[icono]" :key="d" :d="d" />
-      </svg>
-    </button>
+      <path v-for="d in trazos[icono]" :key="d" :d="d" />
+    </svg>
+  </button>
 
-    <!-- Tooltip propio: aparece al instante con ratón y con foco de teclado. -->
+  <Teleport to="body">
     <span
+      v-if="visible"
+      ref="tooltip"
       role="presentation"
-      class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 rounded-md bg-rail px-2 py-1 text-[11px] font-medium whitespace-nowrap text-rail-tinta opacity-0 transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100"
+      class="pointer-events-none fixed z-[70] -translate-y-full rounded-md bg-rail px-2 py-1 text-[11px] font-medium whitespace-nowrap text-rail-tinta shadow-md"
+      :style="{ top: `${posicion.top}px`, left: `${posicion.left}px` }"
     >
       {{ etiqueta }}
     </span>
-  </span>
+  </Teleport>
 </template>

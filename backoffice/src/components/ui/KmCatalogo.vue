@@ -319,14 +319,16 @@ defineExpose({ recargar, abrirNuevo })
         <div class="flex justify-end gap-0.5">
           <KmBotonIcono
             icono="editar"
-            :etiqueta="`Editar ${nombreDe(fila)}`"
+            etiqueta="Editar"
+            :contexto="nombreDe(fila)"
             @click="abrirEdicion(fila)"
           />
           <KmBotonIcono
             v-if="servicio.eliminar"
             icono="eliminar"
             tono="peligro"
-            :etiqueta="`Eliminar ${nombreDe(fila)}`"
+            etiqueta="Eliminar"
+            :contexto="nombreDe(fila)"
             @click="pedirEliminar(fila)"
           />
         </div>
