@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+﻿import { expect, test } from './fixtures'
 
 test.describe('Pedidos internos', () => {
   test('pedir, despachar y recibir con faltante', async ({ page, entrar }) => {
@@ -10,7 +10,7 @@ test.describe('Pedidos internos', () => {
     // Nuevo pedido con varias líneas
     await page.getByRole('button', { name: 'Nuevo pedido' }).click()
     const drawer = page.getByRole('dialog')
-    await drawer.getByLabel('Quién pide').selectOption({ label: 'Barra' })
+    await drawer.getByLabel('Quién pide').selectOption({ label: 'Almacén San Isidro' })
     await drawer.getByLabel('A quién se pide').selectOption({ label: 'Almacén principal' })
     await drawer.getByRole('button', { name: 'Añadir los que están bajo mínimo' }).click()
     await drawer.getByRole('button', { name: 'Enviar pedido' }).click()

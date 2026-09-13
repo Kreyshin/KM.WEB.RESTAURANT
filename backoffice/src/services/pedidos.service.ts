@@ -206,20 +206,23 @@ export const pedidosService = {
     return latencia(undefined)
   },
 
-  /** Insumos que el almacén de destino tiene por debajo de su mínimo. */
+  /**
+   * Insumos que el destino maneja (ya tiene existencia registrada) y están por
+   * debajo de su mínimo. Pide hasta el mínimo, sin superar lo que hay en origen.
+   * Pendiente: mínimo propio por almacén; hoy se usa el del insumo.
+   */
   async sugerir(destinoId: string, origenId: string): Promise<LineaPedidoInterno[]> {
     const lineas = db.insumos
-      .filter(
-        (i) => i.activo && i.existencias.some((e) => e.almacenId === origenId && e.cantidad > 0),
-      )
-      .map((i) => {
-        const hay = i.existencias.find((e) => e.almacenId === destinoId)?.cantidad ?? 0
-        return { i, hay }
-      })
-      .filter(({ i, hay }) => hay < i.stockMinimo)
-      .map(({ i, hay }) => ({
+      .filter((i) => i.activo && i.existencias.some((e) => e.almacenId === destinoId))
+      .map((i) => ({
+        i,
+        hay: i.existencias.find((e) => e.almacenId === destinoId)?.cantidad ?? 0,
+        disponible: i.existencias.find((e) => e.almacenId === origenId)?.cantidad ?? 0,
+      }))
+      .filter(({ i, hay, disponible }) => hay < i.stockMinimo && disponible > 0)
+      .map(({ i, hay, disponible }) => ({
         insumoId: i.id,
-        solicitado: r3(i.stockMinimo * 2 - hay),
+        solicitado: r3(Math.min(i.stockMinimo - hay, disponible)),
         despachado: 0,
         recibido: 0,
       }))

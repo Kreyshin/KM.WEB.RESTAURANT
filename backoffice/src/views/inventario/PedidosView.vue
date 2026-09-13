@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, shallowRef } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
@@ -81,7 +81,7 @@ function vacio(): NuevoPedidoInterno {
     origenId: '',
     fecha: aFechaIso(new Date()),
     fechaRequerida: aFechaIso(new Date()),
-    lineas: [{ insumoId: '', solicitado: 0, despachado: 0, recibido: 0 }],
+    lineas: [],
     notas: '',
     usuarioId: usuarioId(),
   }
@@ -104,12 +104,34 @@ function abrir(p: PedidoInterno) {
 
 const soloLectura = computed(() => !!editando.value && editando.value.estado !== 'borrador')
 
+const rutaElegida = computed(() => !!form.value.destinoId && !!form.value.origenId)
+const lineasConInsumo = computed(() => form.value.lineas.filter((l) => l.insumoId))
+
+const cantidadTexto = (insumoId: string, almacenId: string) =>
+  formatearCantidad(existencia(insumoId, almacenId), insumo(insumoId)?.unidad ?? 'unidad')
+const noAlcanza = (l: { insumoId: string; solicitado: number }) =>
+  !soloLectura.value && existencia(l.insumoId, form.value.origenId) < (Number(l.solicitado) || 0)
+
 /** Solo se ofrecen insumos que el almacén de origen tiene. */
 const opcionesInsumo = computed<OpcionSelect[]>(() =>
   catalogos.insumos.value
     .filter((i) => i.activo && (!form.value.origenId || existencia(i.id, form.value.origenId) > 0))
     .map((i) => ({ valor: i.id, etiqueta: i.nombre })),
 )
+
+const opcionesParaAnadir = computed(() =>
+  opcionesInsumo.value.filter((o) => !form.value.lineas.some((l) => l.insumoId === o.valor)),
+)
+
+function anadirInsumo(id: string | number | undefined) {
+  if (!id) return
+  form.value.lineas.push({ insumoId: String(id), solicitado: 0, despachado: 0, recibido: 0 })
+  errores.value = {}
+}
+
+function quitarInsumo(id: string) {
+  form.value.lineas = form.value.lineas.filter((l) => l.insumoId !== id)
+}
 
 async function sugerir() {
   if (!form.value.destinoId || !form.value.origenId) {
@@ -372,187 +394,193 @@ const enCamino = computed(() => items.value.filter((p) => p.estado === 'despacha
     >
       <form
         id="form-pedido"
-        class="flex flex-col gap-4"
+        class="flex flex-col gap-6"
         novalidate
         @submit.prevent="guardar(false)"
       >
-        <div class="grid gap-4 sm:grid-cols-2">
-          <KmField
-            v-slot="{ id, invalido }"
-            label="Quién pide"
-            requerido
-            :error="errores.destinoId"
-          >
-            <KmSelect
-              :id="id"
-              v-model="form.destinoId"
-              placeholder="Almacén que recibe"
-              :opciones="catalogos.opcionesAlmacen.value"
-              :invalido="invalido"
-              :disabled="soloLectura"
-            />
-          </KmField>
-          <KmField
-            v-slot="{ id, invalido }"
-            label="A quién se pide"
-            requerido
-            :error="errores.origenId"
-          >
-            <KmSelect
-              :id="id"
-              v-model="form.origenId"
-              placeholder="Almacén que despacha"
-              :opciones="catalogos.opcionesAlmacen.value.filter((o) => o.valor !== form.destinoId)"
-              :invalido="invalido"
-              :disabled="soloLectura"
-            />
-          </KmField>
-          <KmField v-slot="{ id }" label="Se necesita para">
-            <KmFecha
-              :id="id"
-              :model-value="form.fechaRequerida ?? null"
-              :min="form.fecha"
-              :disabled="soloLectura"
-              @update:model-value="form.fechaRequerida = $event || undefined"
-            />
-          </KmField>
-          <KmField v-slot="{ id }" label="Notas">
-            <KmInput
-              :id="id"
-              v-model="form.notas"
-              placeholder="Ej. Para el turno de la noche"
-              :disabled="soloLectura"
-            />
-          </KmField>
-        </div>
+        <!-- Ruta del pedido -->
+        <section class="flex flex-col gap-4">
+          <div class="grid items-start gap-3 sm:grid-cols-[1fr_2rem_1fr]">
+            <KmField
+              v-slot="{ id, invalido }"
+              label="Quién pide"
+              requerido
+              :error="errores.destinoId"
+            >
+              <KmSelect
+                :id="id"
+                v-model="form.destinoId"
+                placeholder="Almacén que recibe"
+                :opciones="catalogos.opcionesAlmacen.value"
+                :invalido="invalido"
+                :disabled="soloLectura"
+              />
+            </KmField>
+            <svg
+              viewBox="0 0 24 24"
+              class="mt-9 hidden size-5 justify-self-center text-tenue sm:block"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              aria-hidden="true"
+            >
+              <path d="M19 12H5m0 0l6-6m-6 6l6 6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <KmField
+              v-slot="{ id, invalido }"
+              label="A quién se pide"
+              requerido
+              :error="errores.origenId"
+            >
+              <KmSelect
+                :id="id"
+                v-model="form.origenId"
+                placeholder="Almacén que despacha"
+                :opciones="
+                  catalogos.opcionesAlmacen.value.filter((o) => o.valor !== form.destinoId)
+                "
+                :invalido="invalido"
+                :disabled="soloLectura"
+              />
+            </KmField>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-[1fr_2rem_1fr]">
+            <KmField v-slot="{ id }" label="Se necesita para">
+              <KmFecha
+                :id="id"
+                :model-value="form.fechaRequerida ?? null"
+                :min="form.fecha"
+                :limpiable="false"
+                :disabled="soloLectura"
+                @update:model-value="form.fechaRequerida = $event || undefined"
+              />
+            </KmField>
+            <span class="hidden sm:block"></span>
+            <KmField v-slot="{ id }" label="Notas">
+              <KmInput
+                :id="id"
+                v-model="form.notas"
+                placeholder="Ej. Para el turno de la noche"
+                :disabled="soloLectura"
+              />
+            </KmField>
+          </div>
+        </section>
 
-        <section class="flex flex-col gap-2">
-          <div class="flex items-center justify-between gap-3">
-            <p class="rs-etiqueta text-laton-texto">Insumos</p>
-            <KmButton v-if="!soloLectura" variante="secundario" tamano="sm" @click="sugerir">
+        <!-- Insumos -->
+        <section class="flex flex-col gap-3 border-t border-linea pt-5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-semibold text-tinta">Insumos del pedido</h3>
+              <p class="text-xs text-tenue">
+                {{
+                  lineasConInsumo.length === 1 ? '1 insumo' : `${lineasConInsumo.length} insumos`
+                }}
+              </p>
+            </div>
+            <KmButton
+              v-if="!soloLectura"
+              variante="secundario"
+              tamano="sm"
+              :disabled="!rutaElegida"
+              @click="sugerir"
+            >
               Añadir los que están bajo mínimo
             </KmButton>
           </div>
+
+          <KmSelect
+            v-if="!soloLectura"
+            :model-value="undefined"
+            :placeholder="
+              rutaElegida ? 'Añadir insumo al pedido…' : 'Elige primero quién pide y a quién'
+            "
+            :opciones="opcionesParaAnadir"
+            :disabled="!rutaElegida"
+            etiqueta="Añadir insumo"
+            @update:model-value="anadirInsumo"
+          />
+
           <p v-if="errores.lineas" class="text-xs font-medium text-vino">{{ errores.lineas }}</p>
 
-          <div class="overflow-x-auto rounded-card border border-linea">
-            <table class="w-full min-w-[36rem] text-sm">
-              <thead>
-                <tr class="border-b border-linea bg-panel-2">
-                  <th class="rs-etiqueta px-3 py-2 text-left text-tenue">Insumo</th>
-                  <th class="rs-etiqueta w-28 px-3 py-2 text-right text-tenue">Hay en destino</th>
-                  <th class="rs-etiqueta w-28 px-3 py-2 text-right text-tenue">Hay en origen</th>
-                  <th class="rs-etiqueta w-36 px-3 py-2 text-left text-tenue">Pedido</th>
-                  <th v-if="soloLectura" class="rs-etiqueta w-24 px-3 py-2 text-right text-tenue">
-                    Despachado
-                  </th>
-                  <th v-if="soloLectura" class="rs-etiqueta w-24 px-3 py-2 text-right text-tenue">
-                    Recibido
-                  </th>
-                  <th v-if="!soloLectura" class="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(l, i) in form.lineas"
-                  :key="i"
-                  class="border-b border-linea last:border-0"
-                >
-                  <td class="px-3 py-1.5">
-                    <KmSelect
-                      v-if="!soloLectura"
-                      :model-value="l.insumoId"
-                      placeholder="Elige un insumo"
-                      :opciones="
-                        opcionesInsumo.filter(
-                          (o) =>
-                            o.valor === l.insumoId ||
-                            !form.lineas.some((x) => x.insumoId === o.valor),
-                        )
-                      "
-                      etiqueta="Insumo"
-                      @update:model-value="l.insumoId = String($event ?? '')"
-                    />
-                    <span v-else class="text-tinta">{{ insumo(l.insumoId)?.nombre }}</span>
-                  </td>
-                  <td class="px-3 py-1.5 text-right text-tenue tabular-nums">
-                    <template v-if="l.insumoId && form.destinoId">
-                      {{
-                        formatearCantidad(
-                          existencia(l.insumoId, form.destinoId),
-                          insumo(l.insumoId)?.unidad ?? 'unidad',
-                        )
-                      }}
-                    </template>
-                  </td>
-                  <td class="px-3 py-1.5 text-right tabular-nums">
-                    <template v-if="l.insumoId && form.origenId">
-                      <span
-                        :class="
-                          !soloLectura &&
-                          existencia(l.insumoId, form.origenId) < Number(l.solicitado)
-                            ? 'font-semibold text-vino'
-                            : 'text-tenue'
-                        "
-                      >
-                        {{
-                          formatearCantidad(
-                            existencia(l.insumoId, form.origenId),
-                            insumo(l.insumoId)?.unidad ?? 'unidad',
-                          )
-                        }}
-                      </span>
-                    </template>
-                  </td>
-                  <td class="px-3 py-1.5">
-                    <KmNumero
-                      v-if="!soloLectura"
-                      v-model="l.solicitado"
-                      :min="0"
-                      :decimales="3"
-                      :controles="false"
-                      :sufijo="unidad(l.insumoId)"
-                    />
-                    <span v-else class="tabular-nums"
-                      >{{ l.solicitado }} {{ unidad(l.insumoId) }}</span
-                    >
-                  </td>
-                  <td v-if="soloLectura" class="px-3 py-1.5 text-right tabular-nums">
-                    {{ l.despachado }}
-                  </td>
-                  <td
-                    v-if="soloLectura"
-                    class="px-3 py-1.5 text-right tabular-nums"
+          <div
+            v-if="lineasConInsumo.length === 0"
+            class="flex flex-col items-center gap-1 rounded-card border border-dashed border-linea px-6 py-8 text-center"
+          >
+            <p class="text-sm font-medium text-tinta">Aún no hay insumos</p>
+            <p class="text-xs text-tenue">
+              Añádelos con el buscador o carga de golpe los que están bajo su mínimo.
+            </p>
+          </div>
+
+          <ul v-else class="divide-y divide-linea rounded-card border border-linea">
+            <li
+              v-for="l in lineasConInsumo"
+              :key="l.insumoId"
+              class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3"
+            >
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-tinta">{{ insumo(l.insumoId)?.nombre }}</p>
+                <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs text-tenue">
+                  <span>
+                    {{ nombreAlmacen(form.destinoId) }} tiene
+                    <b class="text-tinta tabular-nums">{{
+                      cantidadTexto(l.insumoId, form.destinoId)
+                    }}</b>
+                  </span>
+                  <span :class="{ 'font-semibold text-vino': noAlcanza(l) }">
+                    {{ nombreAlmacen(form.origenId) }} tiene
+                    <b class="tabular-nums" :class="noAlcanza(l) ? 'text-vino' : 'text-tinta'">{{
+                      cantidadTexto(l.insumoId, form.origenId)
+                    }}</b>
+                    <template v-if="noAlcanza(l)"> · no alcanza</template>
+                  </span>
+                </p>
+              </div>
+
+              <template v-if="!soloLectura">
+                <div class="w-44">
+                  <KmNumero
+                    v-model="l.solicitado"
+                    :min="0"
+                    :decimales="2"
+                    :sufijo="unidad(l.insumoId)"
+                    :aria-label="`Cantidad de ${insumo(l.insumoId)?.nombre}`"
+                  />
+                </div>
+                <KmBotonIcono
+                  icono="eliminar"
+                  tono="peligro"
+                  etiqueta="Quitar"
+                  :contexto="insumo(l.insumoId)?.nombre"
+                  @click="quitarInsumo(l.insumoId)"
+                />
+              </template>
+              <dl v-else class="grid grid-cols-3 gap-4 text-right text-xs">
+                <div>
+                  <dt class="text-tenue">Pedido</dt>
+                  <dd class="font-semibold text-tinta tabular-nums">{{ l.solicitado }}</dd>
+                </div>
+                <div>
+                  <dt class="text-tenue">Despachado</dt>
+                  <dd class="font-semibold text-tinta tabular-nums">{{ l.despachado }}</dd>
+                </div>
+                <div>
+                  <dt class="text-tenue">Recibido</dt>
+                  <dd
+                    class="font-semibold tabular-nums"
                     :class="
                       editando?.estado === 'recibido' && l.recibido < l.despachado
-                        ? 'font-semibold text-vino'
-                        : ''
+                        ? 'text-vino'
+                        : 'text-tinta'
                     "
                   >
                     {{ l.recibido }}
-                  </td>
-                  <td v-if="!soloLectura" class="px-1 py-1.5">
-                    <KmBotonIcono
-                      icono="eliminar"
-                      tono="peligro"
-                      etiqueta="Quitar"
-                      :contexto="insumo(l.insumoId)?.nombre"
-                      @click="form.lineas.splice(i, 1)"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <KmButton
-            v-if="!soloLectura"
-            variante="secundario"
-            tamano="sm"
-            class="self-start"
-            @click="form.lineas.push({ insumoId: '', solicitado: 0, despachado: 0, recibido: 0 })"
-          >
-            Añadir insumo
-          </KmButton>
+                  </dd>
+                </div>
+              </dl>
+            </li>
+          </ul>
         </section>
       </form>
 

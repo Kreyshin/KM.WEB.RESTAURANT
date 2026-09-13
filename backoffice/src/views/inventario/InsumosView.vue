@@ -1,9 +1,6 @@
-<script setup lang="ts">
-import { computed, ref, shallowRef } from 'vue'
-import KardexDrawer from './KardexDrawer.vue'
-import MovimientoModal from './MovimientoModal.vue'
+﻿<script setup lang="ts">
+import { computed, ref } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
-import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmCatalogo, { type ServicioCatalogo } from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
@@ -22,9 +19,7 @@ import {
 } from '@/utils/formato'
 
 const catalogos = useCatalogos(['almacenes', 'proveedores', 'insumos', 'locales'])
-const { almacenes, opcionesProveedor, nombreProveedor } = catalogos
-
-const catalogo = ref<{ recargar: () => Promise<void> } | null>(null)
+const { opcionesProveedor, nombreProveedor } = catalogos
 
 /** Adaptador: la ficha no toca el stock; el alta carga el stock inicial como entrada. */
 const servicio: ServicioCatalogo<Insumo> = {
@@ -88,28 +83,6 @@ function filtrar(consulta: Consulta, campo: string, valor: string | number | und
   consulta.filtros = { ...consulta.filtros, [campo]: valor || undefined }
 }
 
-// ── Kardex y movimientos ──
-const seleccionado = shallowRef<Insumo | null>(null)
-const kardexAbierto = ref(false)
-const movimientoAbierto = ref(false)
-const modo = ref<'movimiento' | 'traslado' | 'produccion'>('movimiento')
-
-function verKardex(i: Insumo) {
-  seleccionado.value = catalogos.insumo(i.id) ?? i
-  kardexAbierto.value = true
-}
-
-async function abrirMovimiento(i: Insumo, m: typeof modo.value) {
-  await catalogos.recargar()
-  seleccionado.value = catalogos.insumo(i.id) ?? i
-  modo.value = m
-  movimientoAbierto.value = true
-}
-
-async function trasMovimiento() {
-  await Promise.all([catalogo.value?.recargar(), catalogos.recargar()])
-}
-
 const alertas = computed(() =>
   catalogos.insumos.value.filter((i) => i.activo && estadoStock(i.stock, i.stockMinimo) !== 'ok'),
 )
@@ -137,7 +110,6 @@ const alertas = computed(() =>
     </div>
 
     <KmCatalogo
-      ref="catalogo"
       titulo="Insumos"
       subtitulo="Materia prima y preparaciones, con su stock por almacén y su costo promedio."
       entidad="insumo"
@@ -211,21 +183,6 @@ const alertas = computed(() =>
         <span class="text-tenue tabular-nums">{{
           formatearSoles(fila.stock * fila.costoUnitario)
         }}</span>
-      </template>
-
-      <template #acciones-fila="{ fila }">
-        <KmBotonIcono
-          icono="ver"
-          etiqueta="Kardex"
-          :contexto="fila.nombre"
-          @click="verKardex(fila)"
-        />
-        <KmBotonIcono
-          icono="movimiento"
-          etiqueta="Registrar movimiento"
-          :contexto="fila.nombre"
-          @click="abrirMovimiento(fila, 'movimiento')"
-        />
       </template>
 
       <template #formulario="{ borrador, errores, editando }">
@@ -311,20 +268,10 @@ const alertas = computed(() =>
           </KmField>
         </div>
         <p v-else class="text-xs text-tenue">
-          El stock ({{ formatearCantidad(borrador.stock, borrador.unidad) }}) cambia con
-          movimientos, compras o tomas de inventario, nunca editándolo aquí.
+          El stock ({{ formatearCantidad(borrador.stock, borrador.unidad) }}) cambia con compras,
+          pedidos internos y mermas, nunca editándolo aquí. Su historial está en Movimientos.
         </p>
       </template>
     </KmCatalogo>
-
-    <KardexDrawer v-model="kardexAbierto" :insumo="seleccionado" :almacenes="almacenes" />
-    <MovimientoModal
-      v-model="movimientoAbierto"
-      :insumo="seleccionado"
-      :almacenes="almacenes"
-      :insumos="catalogos.insumos.value"
-      :modo="modo"
-      @guardado="trasMovimiento"
-    />
   </div>
 </template>
