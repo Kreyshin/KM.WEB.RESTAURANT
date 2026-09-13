@@ -1,4 +1,4 @@
-/**
+﻿/**
  * "Base de datos" en memoria + localStorage para el modo mock.
  *
  * Sustituible por completo: cuando llegue el backend real, los servicios dejan
@@ -31,14 +31,14 @@ import type {
   Salon,
   Usuario,
 } from '@/types'
-import { ilustracionCombo, ilustracionProducto } from './ilustraciones'
+import { ilustracionCombo, imagenPlato } from './ilustraciones'
 import { simularRed } from './red'
 
 /**
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v8'
+const CLAVE = 'km.restaurante.mock.v11'
 
 export interface Esquema {
   combos: Combo[]
@@ -1065,7 +1065,7 @@ function semilla(): Esquema {
   }
   const productos: Producto[] = productosBase.map((p) => ({
     ...p,
-    imagen: ilustracionProducto(p.id),
+    imagen: imagenPlato(p.nombre),
     estacionId: estacionPorCategoria[p.categoriaId],
     // Rappi cobra 25 % de comisión: los platos de fondo suben de precio en la app.
     preciosCanal: p.precio >= 30 ? [{ canalId: 'cv4', precio: Math.round(p.precio * 1.15) }] : [],
@@ -1108,8 +1108,7 @@ function semilla(): Esquema {
 
   for (const c of combos)
     c.imagen = ilustracionCombo(
-      c.id,
-      c.grupos.flatMap((g) => g.opciones),
+      c.grupos.map((g) => productos.find((p) => p.id === g.opciones[0])?.nombre ?? ''),
     )
 
   // ── Fase 4: inventario y compras ──

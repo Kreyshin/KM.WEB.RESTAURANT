@@ -116,6 +116,23 @@ test.describe('Humo: botones de cada pantalla', () => {
     expect(errores).toEqual([])
   })
 
+  test('vista POS: tarjetas de carta, menú del día y combos', async ({ page, entrar }) => {
+    const errores = vigilarErrores(page)
+    await entrar()
+    await page.goto('/carta/vista-pos')
+    await expect(page.getByRole('button', { name: /^Ají de gallina, S\// })).toBeVisible()
+    await page.getByRole('button', { name: 'Postres', exact: true }).click()
+    await expect(page.getByRole('button', { name: /^Lomo saltado/ })).toHaveCount(0)
+    await page.getByRole('button', { name: /^Picarones/ }).click()
+    await expect(page.getByRole('dialog', { name: 'Picarones' })).toBeVisible()
+    await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).click()
+    await page.getByRole('tab', { name: /Menú del día/ }).click()
+    await expect(page.getByRole('button', { name: /^Menú ejecutivo/ })).toBeVisible()
+    await page.getByRole('tab', { name: /Combos/ }).click()
+    await expect(page.getByRole('button', { name: /^Combo marino/ })).toBeVisible()
+    expect(errores).toEqual([])
+  })
+
   test('los productos muestran su ilustración y el editor la conserva', async ({
     page,
     entrar,

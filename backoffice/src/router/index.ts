@@ -51,6 +51,12 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Carta y menú', roles: ['admin'] },
       },
       {
+        path: 'carta/vista-pos',
+        name: 'carta-pos',
+        component: () => import('@/views/carta/VistaPosView.vue'),
+        meta: { titulo: 'Vista POS', roles: ['admin'] },
+      },
+      {
         path: 'combos',
         name: 'combos',
         component: () => import('@/views/carta/CombosView.vue'),

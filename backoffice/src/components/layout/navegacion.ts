@@ -73,6 +73,12 @@ export const modulos: ModuloNav[] = [
         descripcion: 'Menú del día y promociones armadas',
         roles: ['admin'],
       },
+      {
+        nombreRuta: 'carta-pos',
+        etiqueta: 'Vista POS',
+        descripcion: 'Tarjetas de carta, menús y combos como en caja',
+        roles: ['admin'],
+      },
     ],
   },
   {
