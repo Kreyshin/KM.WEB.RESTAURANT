@@ -428,8 +428,6 @@ export interface ConfigImpuestos {
   recargoConsumoActivo: boolean
   /** Máximo legal: 13 %. */
   recargoConsumoPorcentaje: number
-  /** Canales de venta a los que se aplica el recargo al consumo. */
-  recargoConsumoCanales: string[]
   /** Impuesto a las bolsas de plástico, en soles por unidad. */
   icbperMonto: number
 }
@@ -447,12 +445,19 @@ export interface MedioPago {
   activo: boolean
 }
 
+/**
+ * Modalidad de atención: cómo se atiende un pedido del canal. Es una lista
+ * cerrada porque cada modalidad corresponde a un flujo de operación
+ * programado (mesa, mostrador, reparto, pedido de app). Ver docs/guia/decisiones.md.
+ */
 export type TipoCanal = 'salon' | 'llevar' | 'delivery' | 'plataforma'
 
 export interface CanalVenta {
   id: string
   nombre: string
   tipo: TipoCanal
+  /** Se suma el recargo al consumo configurado en Impuestos. */
+  aplicaRecargoConsumo: boolean
   /** Comisión que cobra el canal (apps de delivery), en %. */
   comisionPorcentaje: number
   activo: boolean

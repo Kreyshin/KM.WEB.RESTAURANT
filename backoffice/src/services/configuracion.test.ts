@@ -111,10 +111,15 @@ describe('medios de pago y canales', () => {
     await expect(mediosPagoService.eliminar('mp1')).rejects.toBeTruthy()
   })
 
-  it('al eliminar un canal se quita del recargo al consumo', async () => {
-    db.impuestos.recargoConsumoCanales = ['cv1', 'cv2']
-    await canalesService.eliminar('cv2')
-    expect(db.impuestos.recargoConsumoCanales).toEqual(['cv1'])
+  it('un canal que no es app de delivery no guarda comisión', async () => {
+    const canal = await canalesService.crear({
+      nombre: 'Barra',
+      tipo: 'salon',
+      comisionPorcentaje: 15,
+      aplicaRecargoConsumo: false,
+      activo: true,
+    })
+    expect(canal.comisionPorcentaje).toBe(0)
   })
 })
 
@@ -127,13 +132,10 @@ describe('empresa, impuestos y locales', () => {
     })
   })
 
-  it('el recargo al consumo no supera el 13 % y necesita canales', async () => {
+  it('el recargo al consumo no supera el 13 %', async () => {
     await expect(
       impuestosService.guardar({ ...db.impuestos, recargoConsumoPorcentaje: 15 }),
     ).rejects.toBeTruthy()
-    await expect(
-      impuestosService.guardar({ ...db.impuestos, recargoConsumoCanales: [] }),
-    ).rejects.toMatchObject({ campos: { recargoConsumoCanales: expect.any(String) } })
   })
 
   it('no elimina un local con series asociadas', async () => {

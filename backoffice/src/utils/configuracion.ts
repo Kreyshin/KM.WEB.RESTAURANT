@@ -34,10 +34,18 @@ export const etiquetaTipoMedioPago: Record<TipoMedioPago, string> = {
 export const opcionesTipoMedioPago = opciones(etiquetaTipoMedioPago)
 
 export const etiquetaTipoCanal: Record<TipoCanal, string> = {
-  salon: 'Salón',
-  llevar: 'Para llevar',
-  delivery: 'Delivery propio',
-  plataforma: 'Plataforma externa',
+  salon: 'En mesa',
+  llevar: 'Mostrador o para llevar',
+  delivery: 'Reparto propio',
+  plataforma: 'App de delivery',
+}
+
+/** Qué pide la operación en cada modalidad. Se aplicará al tomar pedidos (Ventas, F7). */
+export const ayudaTipoCanal: Record<TipoCanal, string> = {
+  salon: 'Pide mesa y mesero. Permite dividir la cuenta.',
+  llevar: 'Sin mesa: pide nombre o número de turno del cliente.',
+  delivery: 'Pide dirección, zona y repartidor. Puede cobrar envío.',
+  plataforma: 'El pedido llega de una app que cobra comisión y entrega ella.',
 }
 export const opcionesTipoCanal = opciones(etiquetaTipoCanal)
 

@@ -71,7 +71,7 @@ export const dependenciasService = {
   async canal(id: string, activar: boolean) {
     if (activar) return latencia(['Se pueden volver a registrar pedidos por este canal.'])
     const lineas = ['No se podrán registrar pedidos nuevos por este canal.']
-    if (db.impuestos.recargoConsumoCanales.includes(id)) {
+    if (db.canales.find((c) => c.id === id)?.aplicaRecargoConsumo) {
       lineas.push('Tiene configurado el recargo al consumo; se mantendrá por si lo reactivas.')
     }
     return latencia(lineas)

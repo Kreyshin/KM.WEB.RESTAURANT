@@ -37,7 +37,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v5'
+const CLAVE = 'km.restaurante.mock.v6'
 
 export interface Esquema {
   combos: Combo[]
@@ -91,7 +91,6 @@ function semilla(): Esquema {
     preciosIncluyenIgv: true,
     recargoConsumoActivo: true,
     recargoConsumoPorcentaje: 10,
-    recargoConsumoCanales: ['cv1'],
     icbperMonto: 0.5,
   }
 
@@ -194,11 +193,46 @@ function semilla(): Esquema {
   ]
 
   const canales: CanalVenta[] = [
-    { id: 'cv1', nombre: 'Salón', tipo: 'salon', comisionPorcentaje: 0, activo: true },
-    { id: 'cv2', nombre: 'Para llevar', tipo: 'llevar', comisionPorcentaje: 0, activo: true },
-    { id: 'cv3', nombre: 'Delivery propio', tipo: 'delivery', comisionPorcentaje: 0, activo: true },
-    { id: 'cv4', nombre: 'Rappi', tipo: 'plataforma', comisionPorcentaje: 25, activo: true },
-    { id: 'cv5', nombre: 'PedidosYa', tipo: 'plataforma', comisionPorcentaje: 22, activo: false },
+    {
+      id: 'cv1',
+      nombre: 'Salón',
+      tipo: 'salon',
+      comisionPorcentaje: 0,
+      aplicaRecargoConsumo: true,
+      activo: true,
+    },
+    {
+      id: 'cv2',
+      nombre: 'Para llevar',
+      tipo: 'llevar',
+      comisionPorcentaje: 0,
+      aplicaRecargoConsumo: false,
+      activo: true,
+    },
+    {
+      id: 'cv3',
+      nombre: 'Delivery propio',
+      tipo: 'delivery',
+      comisionPorcentaje: 0,
+      aplicaRecargoConsumo: false,
+      activo: true,
+    },
+    {
+      id: 'cv4',
+      nombre: 'Rappi',
+      tipo: 'plataforma',
+      comisionPorcentaje: 25,
+      aplicaRecargoConsumo: false,
+      activo: true,
+    },
+    {
+      id: 'cv5',
+      nombre: 'PedidosYa',
+      tipo: 'plataforma',
+      comisionPorcentaje: 22,
+      aplicaRecargoConsumo: false,
+      activo: false,
+    },
   ]
 
   const impresoras: Impresora[] = [

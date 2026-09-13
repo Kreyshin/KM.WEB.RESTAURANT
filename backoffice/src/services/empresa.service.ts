@@ -44,13 +44,6 @@ export const impuestosService = {
         'Máximo 13 %',
       )
     }
-    if (datos.recargoConsumoActivo && datos.recargoConsumoCanales.length === 0) {
-      throw errorCampo(
-        'recargoConsumoCanales',
-        'Elige al menos un canal donde aplicar el recargo al consumo.',
-        'Elige al menos un canal',
-      )
-    }
     if (!Number.isFinite(datos.icbperMonto) || datos.icbperMonto < 0) {
       throw errorCampo('icbperMonto', 'El ICBPER no puede ser negativo.', 'Monto inválido')
     }

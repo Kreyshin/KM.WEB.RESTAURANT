@@ -44,12 +44,7 @@ async function cargar() {
 
 onMounted(cargar)
 
-function alternarCanal(id: string) {
-  const lista = form.value!.recargoConsumoCanales
-  form.value!.recargoConsumoCanales = lista.includes(id)
-    ? lista.filter((c) => c !== id)
-    : [...lista, id]
-}
+const canalesConRecargo = computed(() => canales.value.filter((c) => c.aplicaRecargoConsumo))
 
 async function guardar() {
   if (!form.value) return
@@ -174,29 +169,30 @@ const ejemplo = computed(() =>
                 </div>
               </KmField>
 
-              <fieldset class="flex flex-col gap-2">
-                <legend class="mb-1 text-sm font-semibold text-tinta">Aplica en</legend>
+              <div class="flex flex-col gap-2">
+                <p class="text-sm font-semibold text-tinta">Se cobra en</p>
                 <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="c in canales"
+                  <span
+                    v-for="c in canalesConRecargo"
                     :key="c.id"
-                    type="button"
-                    class="rounded-full border px-3 py-1.5 text-sm transition-colors"
-                    :class="
-                      form.recargoConsumoCanales.includes(c.id)
-                        ? 'border-rail bg-rail text-rail-tinta'
-                        : 'border-linea text-tenue hover:border-verde hover:text-tinta'
-                    "
-                    :aria-pressed="form.recargoConsumoCanales.includes(c.id)"
-                    @click="alternarCanal(c.id)"
+                    class="rounded-full border border-linea px-3 py-1 text-sm text-tinta"
                   >
                     {{ c.nombre }}
-                  </button>
+                  </span>
+                  <span v-if="canalesConRecargo.length === 0" class="text-sm text-vino">
+                    Ningún canal lo cobra todavía.
+                  </span>
                 </div>
-                <p v-if="errores.recargoConsumoCanales" class="text-xs font-medium text-vino">
-                  {{ errores.recargoConsumoCanales }}
+                <p class="text-xs text-tenue">
+                  Se decide en cada canal.
+                  <RouterLink
+                    :to="{ name: 'config-canales' }"
+                    class="font-semibold text-verde hover:underline"
+                  >
+                    Ir a Canales de venta
+                  </RouterLink>
                 </p>
-              </fieldset>
+              </div>
             </template>
           </div>
         </KmCard>

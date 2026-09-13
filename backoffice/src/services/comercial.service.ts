@@ -6,7 +6,7 @@ import type {
   NuevoMedioPago,
   NuevoMotivo,
 } from '@/types'
-import { db, persistir } from './mock/db'
+import { db } from './mock/db'
 import { errorCampo, esPorcentaje, existeOtro } from './mock/reglas'
 import { crearRepositorio } from './mock/repositorio'
 
@@ -80,20 +80,20 @@ export const canalesService = {
 
   async crear(datos: NuevoCanalVenta): Promise<CanalVenta> {
     validarCanal(datos)
+    // Solo una app de delivery cobra comisión.
+    if (datos.tipo !== 'plataforma') datos = { ...datos, comisionPorcentaje: 0 }
     return repoCanales.crear({ ...datos, nombre: datos.nombre.trim() })
   },
 
   async actualizar(id: string, datos: Partial<NuevoCanalVenta>): Promise<CanalVenta> {
     validarCanal(datos, id)
+    if (datos.tipo && datos.tipo !== 'plataforma') datos = { ...datos, comisionPorcentaje: 0 }
     return repoCanales.actualizar(id, datos)
   },
 
   async eliminar(id: string): Promise<void> {
     validarCanal({ activo: false }, id)
     await repoCanales.eliminar(id)
-    // El recargo al consumo deja de apuntar a un canal que ya no existe.
-    db.impuestos.recargoConsumoCanales = db.impuestos.recargoConsumoCanales.filter((c) => c !== id)
-    persistir()
   },
 }
 

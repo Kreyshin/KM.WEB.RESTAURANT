@@ -57,14 +57,13 @@ Reglas: si `cierre` es menor que `apertura`, el turno cruza la medianoche. No se
 
 Registro único por cuenta.
 
-| Campo                      | Tipo     | Notas                                               |
-| -------------------------- | -------- | --------------------------------------------------- |
-| `igvPorcentaje`            | number   | 0–30. 18 general                                    |
-| `preciosIncluyenIgv`       | boolean  |                                                     |
-| `recargoConsumoActivo`     | boolean  |                                                     |
-| `recargoConsumoPorcentaje` | number   | Máximo 13 %                                         |
-| `recargoConsumoCanales`    | string[] | → CanalVenta. Obligatorio si el recargo está activo |
-| `icbperMonto`              | number   | Soles por bolsa                                     |
+| Campo                      | Tipo    | Notas            |
+| -------------------------- | ------- | ---------------- |
+| `igvPorcentaje`            | number  | 0–30. 18 general |
+| `preciosIncluyenIgv`       | boolean |                  |
+| `recargoConsumoActivo`     | boolean |                  |
+| `recargoConsumoPorcentaje` | number  | Máximo 13 %      |
+| `icbperMonto`              | number  | Soles por bolsa  |
 
 El recargo al consumo se calcula sobre el valor sin IGV (`utils/impuestos.ts`).
 
@@ -81,12 +80,13 @@ El recargo al consumo se calcula sobre el valor sin IGV (`utils/impuestos.ts`).
 
 ### CanalVenta
 
-| Campo                | Tipo                                                | Notas                           |
-| -------------------- | --------------------------------------------------- | ------------------------------- |
-| `nombre`             | string                                              | Único                           |
-| `tipo`               | `'salon' \| 'llevar' \| 'delivery' \| 'plataforma'` |                                 |
-| `comisionPorcentaje` | number                                              | Comisión de la plataforma       |
-| `activo`             | boolean                                             | Debe quedar al menos uno activo |
+| Campo                  | Tipo                                                | Notas                                                                                           |
+| ---------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `nombre`               | string                                              | Único                                                                                           |
+| `tipo`                 | `'salon' \| 'llevar' \| 'delivery' \| 'plataforma'` | Modalidad de atención. Ver [D-001](./decisiones#d-001-canales-de-venta-y-modalidad-de-atencion) |
+| `aplicaRecargoConsumo` | boolean                                             | Cobra el recargo configurado en Impuestos                                                       |
+| `comisionPorcentaje`   | number                                              | Comisión de la plataforma                                                                       |
+| `activo`               | boolean                                             | Debe quedar al menos uno activo                                                                 |
 
 ### Impresora
 
