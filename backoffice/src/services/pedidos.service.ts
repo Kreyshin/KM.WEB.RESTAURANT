@@ -11,6 +11,7 @@ import { aplicarConsulta } from './mock/consulta'
 import { db, latencia, nuevoId, persistir } from './mock/db'
 import { clonar } from './mock/red'
 import { errorCampo } from './mock/reglas'
+import { aBase, deBase, unidadOperativa } from '@/utils/unidades'
 
 /**
  * Pedidos internos de mercadería entre almacenes (cocina o sucursal pide al
@@ -35,7 +36,8 @@ function siguienteNumero() {
 }
 
 const nombreAlmacen = (id: string) => db.almacenes.find((a) => a.id === id)?.nombre ?? 'almacén'
-const nombreInsumo = (id: string) => db.insumos.find((i) => i.id === id)?.nombre ?? 'un insumo'
+const insumoDe = (id: string) => db.insumos.find((i) => i.id === id)
+const nombreInsumo = (id: string) => insumoDe(id)?.nombre ?? 'un insumo'
 
 function validar(datos: NuevoPedidoInterno): LineaPedidoInterno[] {
   if (!datos.destinoId) throw errorCampo('destinoId', 'Elige quién pide la mercadería.')
@@ -115,7 +117,7 @@ export const pedidosService = {
         insumoId: c.insumoId,
         almacenId: pedido.origenId,
         tipo: 'trasladoSalida' as const,
-        cantidad: Number(c.cantidad),
+        cantidad: aBase(insumoDe(c.insumoId), 'recepcion', Number(c.cantidad)),
         motivo: `Despacho a ${nombreAlmacen(pedido.destinoId)}`,
         referencia: pedido.numero,
         usuarioId,
@@ -161,7 +163,7 @@ export const pedidosService = {
             ...base,
             insumoId: l.insumoId,
             tipo: 'trasladoEntrada' as const,
-            cantidad: l.despachado,
+            cantidad: aBase(insumoDe(l.insumoId), 'recepcion', l.despachado),
             motivo: `Recepción desde ${nombreAlmacen(pedido.origenId)}`,
           },
           ...(faltante > 0
@@ -170,7 +172,7 @@ export const pedidosService = {
                   ...base,
                   insumoId: l.insumoId,
                   tipo: 'merma' as const,
-                  cantidad: faltante,
+                  cantidad: aBase(insumoDe(l.insumoId), 'recepcion', faltante),
                   motivo: 'Faltante en traslado',
                 },
               ]
@@ -220,9 +222,16 @@ export const pedidosService = {
         disponible: i.existencias.find((e) => e.almacenId === origenId)?.cantidad ?? 0,
       }))
       .filter(({ i, hay, disponible }) => hay < i.stockMinimo && disponible > 0)
-      .map(({ i, hay, disponible }) => ({
+      .map(({ i, hay, disponible }) => {
+        // Se pide en unidades enteras de pedido, sin superar lo que hay en origen.
+        const factor = unidadOperativa(i, 'pedido').factor
+        const faltan = Math.ceil(deBase(i, 'pedido', i.stockMinimo - hay))
+        return { i, cantidad: Math.min(faltan, Math.floor(r3(disponible / factor))) }
+      })
+      .filter(({ cantidad }) => cantidad > 0)
+      .map(({ i, cantidad }) => ({
         insumoId: i.id,
-        solicitado: r3(Math.min(i.stockMinimo - hay, disponible)),
+        solicitado: cantidad,
         despachado: 0,
         recibido: 0,
       }))

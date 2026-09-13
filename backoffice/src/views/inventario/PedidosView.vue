@@ -25,7 +25,8 @@ import type { ColumnaTabla, OpcionSelect } from '@/types/ui'
 import { copiar } from '@/utils/copiar'
 import { etiquetaEstadoPedido, tonoEstadoPedido } from '@/utils/configuracion'
 import { aFechaIso } from '@/utils/fechas'
-import { etiquetaUnidad, formatearCantidad } from '@/utils/formato'
+import { formatearCantidad } from '@/utils/formato'
+import { aBase, deBase, textoOperativo, unidadOperativa } from '@/utils/unidades'
 
 const ui = useUiStore()
 const auth = useAuthStore()
@@ -60,7 +61,6 @@ function filtrar(campo: string, valor: string | number | undefined) {
 }
 
 const fechaCorta = (iso?: string) => (iso ? iso.split('-').reverse().join('/') : '—')
-const unidad = (id: string) => etiquetaUnidad[insumo(id)?.unidad ?? 'unidad']
 const existencia = (insumoId: string, almacenId: string) =>
   insumo(insumoId)?.existencias.find((e) => e.almacenId === almacenId)?.cantidad ?? 0
 
@@ -110,7 +110,19 @@ const lineasConInsumo = computed(() => form.value.lineas.filter((l) => l.insumoI
 const cantidadTexto = (insumoId: string, almacenId: string) =>
   formatearCantidad(existencia(insumoId, almacenId), insumo(insumoId)?.unidad ?? 'unidad')
 const noAlcanza = (l: { insumoId: string; solicitado: number }) =>
-  !soloLectura.value && existencia(l.insumoId, form.value.origenId) < (Number(l.solicitado) || 0)
+  !soloLectura.value &&
+  existencia(l.insumoId, form.value.origenId) <
+    aBase(insumo(l.insumoId), 'pedido', Number(l.solicitado) || 0)
+
+const nombrePedido = (id: string) => unidadOperativa(insumo(id), 'pedido').nombre
+const nombreRecepcion = (id: string) => unidadOperativa(insumo(id), 'recepcion').nombre
+/** «= 15 kg» bajo la cantidad cuando la unidad de pedido no es la de stock. */
+function equivalencia(id: string, cantidad: number) {
+  const u = unidadOperativa(insumo(id), 'pedido')
+  return u.factor === 1
+    ? ''
+    : `= ${formatearCantidad(aBase(insumo(id), 'pedido', Number(cantidad) || 0), insumo(id)?.unidad ?? 'unidad')}`
+}
 
 /** Solo se ofrecen insumos que el almacén de origen tiene. */
 const opcionesInsumo = computed<OpcionSelect[]>(() =>
@@ -177,7 +189,9 @@ async function guardar(enviar = false) {
 
 // ── Despachar y recibir ──
 const operacion = ref<{ tipo: 'despachar' | 'recibir'; pedido: PedidoInterno } | null>(null)
-const cantidades = ref<{ insumoId: string; referencia: number; cantidad: number | null }[]>([])
+const cantidades = ref<
+  { insumoId: string; referencia: number; textoReferencia: string; cantidad: number | null }[]
+>([])
 const errorOperacion = ref('')
 const operacionAbierta = computed({
   get: () => !!operacion.value,
@@ -189,12 +203,25 @@ function abrirOperacion(tipo: 'despachar' | 'recibir', pedido: PedidoInterno) {
   cantidades.value = pedido.lineas
     .filter((l) => tipo === 'despachar' || l.despachado > 0)
     .map((l) => {
-      const referencia = tipo === 'despachar' ? l.solicitado : l.despachado
-      const tope =
+      // Se despacha y recibe en la unidad de recepción del insumo.
+      const i = insumo(l.insumoId)
+      const referencia =
         tipo === 'despachar'
-          ? Math.min(referencia, existencia(l.insumoId, pedido.origenId))
-          : referencia
-      return { insumoId: l.insumoId, referencia, cantidad: tope }
+          ? deBase(i, 'recepcion', aBase(i, 'pedido', l.solicitado))
+          : l.despachado
+      const disponible = deBase(i, 'recepcion', existencia(l.insumoId, pedido.origenId))
+      return {
+        insumoId: l.insumoId,
+        referencia,
+        textoReferencia:
+          tipo === 'despachar'
+            ? textoOperativo(i, 'pedido', l.solicitado)
+            : textoOperativo(i, 'recepcion', l.despachado),
+        cantidad:
+          tipo === 'despachar'
+            ? Math.min(referencia, Math.floor(disponible * 1000) / 1000)
+            : referencia,
+      }
     })
   operacion.value = { tipo, pedido }
 }
@@ -539,14 +566,17 @@ const enCamino = computed(() => items.value.filter((p) => p.estado === 'despacha
               </div>
 
               <template v-if="!soloLectura">
-                <div class="w-44">
+                <div class="flex w-56 flex-col items-end gap-0.5">
                   <KmNumero
                     v-model="l.solicitado"
                     :min="0"
-                    :decimales="2"
-                    :sufijo="unidad(l.insumoId)"
+                    :decimales="unidadOperativa(insumo(l.insumoId), 'pedido').factor === 1 ? 2 : 0"
+                    :sufijo="nombrePedido(l.insumoId)"
                     :aria-label="`Cantidad de ${insumo(l.insumoId)?.nombre}`"
                   />
+                  <span class="text-[11px] text-tenue tabular-nums">{{
+                    equivalencia(l.insumoId, l.solicitado)
+                  }}</span>
                 </div>
                 <KmBotonIcono
                   icono="eliminar"
@@ -559,11 +589,15 @@ const enCamino = computed(() => items.value.filter((p) => p.estado === 'despacha
               <dl v-else class="grid grid-cols-3 gap-4 text-right text-xs">
                 <div>
                   <dt class="text-tenue">Pedido</dt>
-                  <dd class="font-semibold text-tinta tabular-nums">{{ l.solicitado }}</dd>
+                  <dd class="font-semibold text-tinta tabular-nums">
+                    {{ l.solicitado }} {{ nombrePedido(l.insumoId) }}
+                  </dd>
                 </div>
                 <div>
                   <dt class="text-tenue">Despachado</dt>
-                  <dd class="font-semibold text-tinta tabular-nums">{{ l.despachado }}</dd>
+                  <dd class="font-semibold text-tinta tabular-nums">
+                    {{ l.despachado }} {{ nombreRecepcion(l.insumoId) }}
+                  </dd>
                 </div>
                 <div>
                   <dt class="text-tenue">Recibido</dt>
@@ -575,7 +609,7 @@ const enCamino = computed(() => items.value.filter((p) => p.estado === 'despacha
                         : 'text-tinta'
                     "
                   >
-                    {{ l.recibido }}
+                    {{ l.recibido }} {{ nombreRecepcion(l.insumoId) }}
                   </dd>
                 </div>
               </dl>
@@ -635,7 +669,7 @@ const enCamino = computed(() => items.value.filter((p) => p.estado === 'despacha
                 >
                   Disponible
                 </th>
-                <th class="rs-etiqueta w-40 px-3 py-2 text-left text-tenue">
+                <th class="rs-etiqueta w-52 px-3 py-2 text-left text-tenue">
                   {{ operacion.tipo === 'despachar' ? 'Sale' : 'Llegó' }}
                 </th>
               </tr>
@@ -648,7 +682,7 @@ const enCamino = computed(() => items.value.filter((p) => p.estado === 'despacha
               >
                 <td class="px-3 py-2 text-tinta">{{ insumo(c.insumoId)?.nombre }}</td>
                 <td class="px-3 py-2 text-right text-tenue tabular-nums">
-                  {{ formatearCantidad(c.referencia, insumo(c.insumoId)?.unidad ?? 'unidad') }}
+                  {{ c.textoReferencia }}
                 </td>
                 <td
                   v-if="operacion.tipo === 'despachar'"
@@ -668,7 +702,7 @@ const enCamino = computed(() => items.value.filter((p) => p.estado === 'despacha
                     :max="operacion.tipo === 'recibir' ? c.referencia : undefined"
                     :decimales="3"
                     :controles="false"
-                    :sufijo="unidad(c.insumoId)"
+                    :sufijo="nombreRecepcion(c.insumoId)"
                     :etiqueta="`Cantidad de ${insumo(c.insumoId)?.nombre}`"
                   />
                 </td>

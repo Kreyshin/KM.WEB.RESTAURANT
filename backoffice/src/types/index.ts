@@ -210,6 +210,15 @@ export interface Preparacion {
   ingredientes: IngredienteReceta[]
 }
 
+/**
+ * Unidad con la que el restaurante pide o recepciona un insumo y cuánto
+ * equivale en la unidad de stock (Jaba = 30 unidades). La define el ERP.
+ */
+export interface UnidadOperativa {
+  nombre: string
+  factor: number
+}
+
 export interface Insumo {
   id: string
   nombre: string
@@ -223,6 +232,10 @@ export interface Insumo {
   /** Costo promedio ponderado, sin IGV. */
   costoUnitario: number
   proveedorId?: string
+  /** Sin valor, se pide en la unidad de stock. */
+  unidadPedido?: UnidadOperativa
+  /** Sin valor, se recepciona en la unidad de stock. */
+  unidadRecepcion?: UnidadOperativa
   preparacion?: Preparacion
   activo: boolean
 }
@@ -339,8 +352,11 @@ export type EstadoPedidoInterno = 'borrador' | 'enviado' | 'despachado' | 'recib
 
 export interface LineaPedidoInterno {
   insumoId: string
+  /** En la unidad de pedido del insumo. */
   solicitado: number
+  /** En la unidad de recepción del insumo. */
   despachado: number
+  /** En la unidad de recepción del insumo. */
   recibido: number
 }
 

@@ -60,3 +60,16 @@ Reglas de trabajo:
 - Los pedidos mueven stock en dos pasos: **sale al despachar**, **entra al recibir**. Lo despachado que no llega se registra como merma «Faltante en traslado».
 
 **Pendiente de evaluar (vertical).** Condición de conservación del insumo (ambiente, refrigerado, congelado) y qué admite cada almacén; vida útil y vencimientos; unidad de compra frente a unidad de uso. Afectan a qué se puede pedir o trasladar y a las alertas.
+
+## D-003 · Unidades para pedir y recepcionar
+
+**Contexto.** Hay insumos que se piden por empaque (bidón, caja, jaba) y otros por peso. Las conversiones completas (presentaciones de proveedor, empaques múltiples) son responsabilidad del ERP.
+
+**Decisión (básica).**
+
+- El stock, el kardex, los costos y las recetas siguen en la **unidad del insumo** (kg, L, u.).
+- Cada insumo tiene como máximo **una unidad para pedir** y **una para recepcionar**, cada una con su equivalencia fija (Jaba x30 = 30 u.). Sin valor, se usa la unidad del insumo.
+- Pedidos internos: se pide en la unidad de pedido; se despacha y se recibe en la unidad de recepción. Los movimientos se registran convertidos a la unidad del insumo.
+- La sugerencia bajo mínimo pide unidades enteras de pedido sin superar lo disponible en origen.
+
+**Con ERP.** Las equivalencias llegan del ERP; la ficha del insumo solo las muestra o permite ajustarlas mientras no haya integración. Varias presentaciones por insumo, redondeos y conversiones de proveedor quedan fuera del restaurante.

@@ -39,7 +39,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v12'
+const CLAVE = 'km.restaurante.mock.v13'
 
 export interface Esquema {
   combos: Combo[]
@@ -871,6 +871,8 @@ function semilla(): Esquema {
       id: 'i8',
       nombre: 'Arroz extra',
       unidad: 'kg',
+      unidadPedido: { nombre: 'Bolsa 5 kg', factor: 5 },
+      unidadRecepcion: { nombre: 'Bolsa 5 kg', factor: 5 },
       stock: 60,
       stockMinimo: 30,
       costoUnitario: 4.1,
@@ -881,6 +883,8 @@ function semilla(): Esquema {
       id: 'i9',
       nombre: 'Aceite vegetal',
       unidad: 'l',
+      unidadPedido: { nombre: 'Bidón 5 L', factor: 5 },
+      unidadRecepcion: { nombre: 'Bidón 5 L', factor: 5 },
       stock: 22,
       stockMinimo: 15,
       costoUnitario: 8.9,
@@ -891,6 +895,8 @@ function semilla(): Esquema {
       id: 'i10',
       nombre: 'Leche evaporada',
       unidad: 'unidad',
+      unidadPedido: { nombre: 'Caja x24', factor: 24 },
+      unidadRecepcion: { nombre: 'Caja x24', factor: 24 },
       stock: 40,
       stockMinimo: 24,
       costoUnitario: 4.3,
@@ -901,6 +907,8 @@ function semilla(): Esquema {
       id: 'i11',
       nombre: 'Huevo',
       unidad: 'unidad',
+      unidadPedido: { nombre: 'Jaba x30', factor: 30 },
+      unidadRecepcion: { nombre: 'Unidad', factor: 1 },
       stock: 120,
       stockMinimo: 60,
       costoUnitario: 0.6,
@@ -1355,7 +1363,7 @@ function semilla(): Esquema {
       lineas: [
         { insumoId: 'i3', solicitado: 3, despachado: 0, recibido: 0 },
         { insumoId: 'i6', solicitado: 2, despachado: 0, recibido: 0 },
-        { insumoId: 'i8', solicitado: 5, despachado: 0, recibido: 0 },
+        { insumoId: 'i8', solicitado: 2, despachado: 0, recibido: 0 },
       ],
       notas: 'Para el turno de la noche',
       usuarioId: 'u1',

@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed, ref } from 'vue'
+import EditorUnidadOperativa from './EditorUnidadOperativa.vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmCatalogo, { type ServicioCatalogo } from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
@@ -76,6 +77,12 @@ function validar(i: Omit<Insumo, 'id'>): Record<string, string> {
   if (!(Number(i.stockMinimo) >= 0)) e.stockMinimo = 'No puede ser negativo.'
   if (!(Number(i.costoUnitario) >= 0)) e.costoUnitario = 'No puede ser negativo.'
   i.proveedorId = i.proveedorId || undefined
+  for (const campo of ['unidadPedido', 'unidadRecepcion'] as const) {
+    const u = i[campo]
+    if (!u || !u.nombre.trim()) i[campo] = undefined
+    else if (!(u.factor > 0)) e[campo] = 'La equivalencia debe ser mayor que cero.'
+    else i[campo] = { nombre: u.nombre.trim(), factor: Number(u.factor) }
+  }
   return e
 }
 
@@ -245,6 +252,29 @@ const alertas = computed(() =>
             @update:model-value="borrador.proveedorId = ($event as string) || undefined"
           />
         </KmField>
+
+        <section class="flex flex-col gap-3 rounded-card border border-linea p-4">
+          <div>
+            <p class="text-sm font-semibold text-tinta">Unidades de operación</p>
+            <p class="text-xs text-tenue">
+              Cómo se pide y cómo se recepciona. El stock se lleva en «{{
+                etiquetaUnidad[borrador.unidad]
+              }}». Con el ERP conectado, estas equivalencias llegarán desde allí.
+            </p>
+          </div>
+          <EditorUnidadOperativa
+            v-model="borrador.unidadPedido"
+            etiqueta="Unidad para pedir"
+            :unidad-base="etiquetaUnidad[borrador.unidad]"
+            :error="errores.unidadPedido"
+          />
+          <EditorUnidadOperativa
+            v-model="borrador.unidadRecepcion"
+            etiqueta="Unidad para recepcionar"
+            :unidad-base="etiquetaUnidad[borrador.unidad]"
+            :error="errores.unidadRecepcion"
+          />
+        </section>
 
         <div
           v-if="!editando"
