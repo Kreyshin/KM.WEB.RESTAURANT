@@ -6,7 +6,7 @@ Once fases, todas de **front-end** y sobre datos de ejemplo. Una fase no empieza
 | --------------------------------- | --------- | ------------------------------------------------------------ | --------- |
 | F0 · Higiene                      | Base      | Git, lint, formato, tipos y pruebas                          | ✅ Hecha  |
 | F1 · Cimientos de interfaz y mock | Base      | Componentes y capa de datos reutilizables                    | ✅ Hecha* |
-| F2 · Configuración del negocio    | Base      | Empresa, locales, impuestos, medios de pago, canales, series | Pendiente |
+| F2 · Configuración del negocio    | Base      | Empresa, locales, impuestos, medios de pago, canales, series | ✅ Hecha  |
 | F3 · Sala y carta                 | Maestros  | Cierre de sala y carta: imagen, combos, precio por canal     | En curso  |
 | F4 · Inventario y compras         | Maestros  | Stock, kardex, recetas, proveedores, órdenes de compra       | En curso  |
 | F5 · Personal y permisos          | Maestros  | Usuarios, matriz de permisos, turnos, auditoría              | Pendiente |
@@ -52,14 +52,14 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 
 ## F2 · Configuración del negocio
 
-- [ ] Datos de empresa: RUC, razón social, logo
-- [ ] Locales con horario
-- [ ] Impuestos: IGV y recargo al consumo
-- [ ] Medios de pago: efectivo, tarjeta, Yape, Plin
-- [ ] Canales de venta: salón, para llevar, delivery
-- [ ] Estaciones de producción e impresoras
-- [ ] Motivos de anulación y descuento
-- [ ] Series y correlativos por local
+- [x] Datos de empresa: RUC con dígito verificador, razón social, logo
+- [x] Locales con horario semanal y código de establecimiento SUNAT
+- [x] Impuestos: IGV, recargo al consumo por canal (máx. 13 %) e ICBPER, con ticket de ejemplo
+- [x] Medios de pago: efectivo, tarjeta, Yape, Plin, transferencia, crédito
+- [x] Canales de venta: salón, para llevar, delivery y plataformas con comisión
+- [x] Estaciones de producción e impresoras por local
+- [x] Motivos de anulación, descuento y cortesía
+- [x] Series y correlativos por local
 
 ## Fuera de alcance
 

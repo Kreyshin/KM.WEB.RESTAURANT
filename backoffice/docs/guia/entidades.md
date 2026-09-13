@@ -11,7 +11,10 @@ Convenciones del contrato:
 ## Mapa de relaciones
 
 ```text
-Local
+Empresa (única) · ConfigImpuestos (única) ─* CanalVenta
+Local 1──* SerieComprobante
+      1──* Impresora 1──* EstacionProduccion *──1 Local
+MedioPago · Motivo (anulación, descuento, cortesía)
 Salon 1──* Mesa *──0..1 Usuario (mesero)
 Categoria 1──* Producto 1──* Variante
                         1──* GrupoModificador 1──* Modificador
@@ -19,18 +22,111 @@ Categoria 1──* Producto 1──* Variante
 Insumo 1──* Movimiento *──1 Usuario
 ```
 
-## Empresa
+## Empresa y configuración
+
+### Empresa
+
+Registro único por cuenta.
+
+| Campo               | Tipo    | Notas                                                          |
+| ------------------- | ------- | -------------------------------------------------------------- |
+| `ruc`               | string  | 11 dígitos, prefijo 10/15/17/20 y dígito verificador módulo 11 |
+| `razonSocial`       | string  |                                                                |
+| `nombreComercial`   | string  | El que ve el cliente                                           |
+| `direccionFiscal`   | string  |                                                                |
+| `telefono`, `email` | string? | Correo de facturación                                          |
+| `logo`              | string? | Data URL en mock; URL con backend                              |
+| `moneda`            | `'PEN'` |                                                                |
+| `zonaHoraria`       | string  | `America/Lima`                                                 |
 
 ### Local
 
-| Campo       | Tipo    | Notas                                    |
-| ----------- | ------- | ---------------------------------------- |
-| `id`        | string  |                                          |
-| `nombre`    | string  | «Miraflores»                             |
-| `direccion` | string  |                                          |
-| `distrito`  | string  |                                          |
-| `telefono`  | string? |                                          |
-| `activo`    | boolean | Los inactivos no aparecen en el selector |
+| Campo                   | Tipo           | Notas                                                                           |
+| ----------------------- | -------------- | ------------------------------------------------------------------------------- |
+| `id`                    | string         |                                                                                 |
+| `nombre`                | string         | Único                                                                           |
+| `direccion`, `distrito` | string         |                                                                                 |
+| `telefono`              | string?        |                                                                                 |
+| `codigoEstablecimiento` | string         | 4 dígitos, único. `0000` = domicilio fiscal                                     |
+| `horario`               | `HorarioDia[]` | 7 días: `dia` (0 lunes … 6 domingo), `abierto`, `apertura`, `cierre` en `HH:mm` |
+| `activo`                | boolean        | Debe quedar al menos uno activo                                                 |
+
+Reglas: si `cierre` es menor que `apertura`, el turno cruza la medianoche. No se elimina un local con series, estaciones o impresoras.
+
+### ConfigImpuestos
+
+Registro único por cuenta.
+
+| Campo                      | Tipo     | Notas                                               |
+| -------------------------- | -------- | --------------------------------------------------- |
+| `igvPorcentaje`            | number   | 0–30. 18 general                                    |
+| `preciosIncluyenIgv`       | boolean  |                                                     |
+| `recargoConsumoActivo`     | boolean  |                                                     |
+| `recargoConsumoPorcentaje` | number   | Máximo 13 %                                         |
+| `recargoConsumoCanales`    | string[] | → CanalVenta. Obligatorio si el recargo está activo |
+| `icbperMonto`              | number   | Soles por bolsa                                     |
+
+El recargo al consumo se calcula sobre el valor sin IGV (`utils/impuestos.ts`).
+
+### MedioPago
+
+| Campo                | Tipo                                                                     | Notas                           |
+| -------------------- | ------------------------------------------------------------------------ | ------------------------------- |
+| `nombre`             | string                                                                   | Único                           |
+| `tipo`               | `'efectivo' \| 'tarjeta' \| 'billetera' \| 'transferencia' \| 'credito'` |                                 |
+| `requiereReferencia` | boolean                                                                  | Pide número de operación        |
+| `comisionPorcentaje` | number                                                                   | 0–100                           |
+| `orden`              | number                                                                   | Orden en caja                   |
+| `activo`             | boolean                                                                  | Debe quedar al menos uno activo |
+
+### CanalVenta
+
+| Campo                | Tipo                                                | Notas                           |
+| -------------------- | --------------------------------------------------- | ------------------------------- |
+| `nombre`             | string                                              | Único                           |
+| `tipo`               | `'salon' \| 'llevar' \| 'delivery' \| 'plataforma'` |                                 |
+| `comisionPorcentaje` | number                                              | Comisión de la plataforma       |
+| `activo`             | boolean                                             | Debe quedar al menos uno activo |
+
+### Impresora
+
+| Campo         | Tipo                                           | Notas                                     |
+| ------------- | ---------------------------------------------- | ----------------------------------------- |
+| `nombre`      | string                                         | Único por local                           |
+| `localId`     | string                                         | → Local                                   |
+| `uso`         | `'comandas' \| 'precuentas' \| 'comprobantes'` |                                           |
+| `ancho`       | `'58mm' \| '80mm'`                             |                                           |
+| `conexion`    | `'red' \| 'usb'`                               |                                           |
+| `direccionIp` | string?                                        | IPv4 obligatoria si la conexión es de red |
+
+Regla: no se elimina una impresora asignada a estaciones.
+
+### EstacionProduccion
+
+| Campo         | Tipo    | Notas                           |
+| ------------- | ------- | ------------------------------- |
+| `nombre`      | string  | Único por local                 |
+| `localId`     | string  | → Local                         |
+| `impresoraId` | string? | → Impresora del **mismo** local |
+
+### Motivo
+
+| Campo                  | Tipo                                       | Notas                                |
+| ---------------------- | ------------------------------------------ | ------------------------------------ |
+| `tipo`                 | `'anulacion' \| 'descuento' \| 'cortesia'` |                                      |
+| `descripcion`          | string                                     | Única dentro de su tipo              |
+| `requiereAutorizacion` | boolean                                    | Exige aprobación de un administrador |
+
+### SerieComprobante
+
+| Campo         | Tipo                                                    | Notas                                                                |
+| ------------- | ------------------------------------------------------- | -------------------------------------------------------------------- |
+| `localId`     | string                                                  | → Local                                                              |
+| `tipo`        | `'boleta' \| 'factura' \| 'notaCredito' \| 'notaVenta'` |                                                                      |
+| `serie`       | string                                                  | 4 caracteres. Boleta `B…`, factura `F…`, nota de crédito `B…` o `F…` |
+| `correlativo` | number                                                  | Último número emitido. Solo avanza                                   |
+
+Reglas: la serie es única por tipo en todo el RUC. Tipo, local y serie no cambian tras crearla. Solo se elimina si nunca emitió (`correlativo = 0`). El número completo se muestra como `B001-00000123`.
 
 ## Personal
 

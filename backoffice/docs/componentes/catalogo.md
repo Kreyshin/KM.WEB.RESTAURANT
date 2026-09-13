@@ -1,0 +1,117 @@
+# KmCatalogo
+
+Pantalla de mantenimiento completa en un solo componente. Pensado para catálogos simples: medios de pago, canales, motivos, series, locales…
+
+Incluye, sin escribir nada más:
+
+- Búsqueda, filtro de estado y filtros propios por slot
+- Tabla ordenable con columna **Estado** (clic para activar o desactivar) y acciones **Editar** / **Eliminar**
+- Paginación y exportación a Excel o CSV de todo lo filtrado
+- Drawer de alta y edición con validación en cliente y errores del servicio por campo
+- Confirmación de borrado y avisos de éxito o error
+- Estados de carga, vacío y error
+
+La vista solo aporta **servicio, columnas, registro vacío y formulario**. Puedes verlo funcionando en la [demo](https://kreyshin.github.io/KM.WEB.RESTAURANT/demo/#/configuracion/medios-pago), en Configuración.
+
+## Uso
+
+```vue
+<script setup lang="ts">
+import KmCatalogo from '@/components/ui/KmCatalogo.vue'
+import KmField from '@/components/ui/KmField.vue'
+import KmInput from '@/components/ui/KmInput.vue'
+import { canalesService } from '@/services/comercial.service'
+import type { CanalVenta, NuevoCanalVenta } from '@/types'
+import type { ColumnaTabla } from '@/types/ui'
+
+const columnas: ColumnaTabla[] = [
+  { clave: 'nombre', etiqueta: 'Canal', ordenable: true },
+  { clave: 'comisionPorcentaje', etiqueta: 'Comisión', clase: 'w-28 text-right' },
+]
+
+const nuevo = (): NuevoCanalVenta => ({
+  nombre: '',
+  tipo: 'plataforma',
+  comisionPorcentaje: 0,
+  activo: true,
+})
+
+function validar(c: NuevoCanalVenta): Record<string, string> {
+  return c.nombre.trim() ? {} : { nombre: 'El nombre es obligatorio.' }
+}
+</script>
+
+<template>
+  <KmCatalogo
+    titulo="Canales de venta"
+    subtitulo="Por dónde entran los pedidos."
+    entidad="canal"
+    :servicio="canalesService"
+    :columnas="columnas"
+    :nuevo="nuevo"
+    :validar="validar"
+    :nombre-de="(c: CanalVenta) => c.nombre"
+    :exportacion="[{ etiqueta: 'Canal', valor: (c: CanalVenta) => c.nombre }]"
+  >
+    <template #col-comisionPorcentaje="{ fila }">{{ fila.comisionPorcentaje }} %</template>
+
+    <template #formulario="{ borrador, errores }">
+      <KmField v-slot="{ id, invalido }" label="Nombre" requerido :error="errores.nombre">
+        <KmInput :id="id" v-model="borrador.nombre" :invalido="invalido" />
+      </KmField>
+    </template>
+  </KmCatalogo>
+</template>
+```
+
+## Requisitos del registro y del servicio
+
+- Cada registro tiene `id: string` y `activo: boolean`.
+- El servicio implementa `consultar`, `crear` y `actualizar`. Si además tiene `eliminar`, aparece el botón.
+- Las reglas de negocio viven en el servicio y lanzan `ApiError` con `campos`: el drawer las muestra en su campo.
+
+## Props
+
+| Prop                  | Tipo                                   | Descripción                                                 |
+| --------------------- | -------------------------------------- | ----------------------------------------------------------- |
+| `titulo`, `subtitulo` | `string`                               | Cabecera de la tarjeta                                      |
+| `entidad`             | `string`                               | Singular en minúscula: textos de botones, drawer y avisos   |
+| `femenino`            | `boolean`                              | «Nueva serie», «Activa», «creada»                           |
+| `servicio`            | `ServicioCatalogo<T>`                  | `consultar`, `crear`, `actualizar`, `eliminar?`             |
+| `columnas`            | `ColumnaTabla[]`                       | Sin Estado ni acciones: se añaden solas                     |
+| `nuevo`               | `() => Omit<T, 'id'>`                  | Registro vacío para el alta                                 |
+| `nombreDe`            | `(item: T) => string`                  | Nombre en la confirmación de borrado                        |
+| `validar`             | `(borrador) => Record<string, string>` | Validación en cliente antes de llamar al servicio           |
+| `filtrosFijos`        | `Consulta['filtros']`                  | Filtro permanente; también se copia en los registros nuevos |
+| `orden`               | `Orden`                                | Orden inicial                                               |
+| `exportacion`         | `ColumnaExportable<T>[]`               | Activa el botón Exportar                                    |
+| `archivo`             | `string`                               | Nombre base del archivo exportado                           |
+| `anchoDrawer`         | `'sm' \| 'md' \| 'lg'`                 | Por defecto `md`                                            |
+| `sinTarjeta`          | `boolean`                              | Sin `KmCard`: para usarlo dentro de pestañas                |
+
+## Slots
+
+| Slot           | Props                             | Uso                                                              |
+| -------------- | --------------------------------- | ---------------------------------------------------------------- |
+| `#formulario`  | `{ borrador, errores, editando }` | Campos del drawer. `editando` permite bloquear campos inmutables |
+| `#col-<clave>` | `{ fila }`                        | Celda personalizada                                              |
+| `#filtros`     | `{ consulta }`                    | Selects extra junto a la búsqueda                                |
+| `#acciones`    | —                                 | Botones extra en la cabecera                                     |
+
+## Eventos y métodos
+
+| Nombre         | Descripción                                                                    |
+| -------------- | ------------------------------------------------------------------------------ |
+| `@cambio`      | Tras crear, editar, activar o eliminar. Útil para refrescar datos relacionados |
+| `recargar()`   | Vuelve a consultar (vía `ref`)                                                 |
+| `abrirNuevo()` | Abre el drawer de alta (vía `ref`)                                             |
+
+## Varios catálogos del mismo tipo
+
+Para pestañas que filtran por un campo (p. ej. motivos por tipo), usa `filtrosFijos` y un `key` para crear un catálogo nuevo en cada pestaña:
+
+```vue
+<KmTabs v-model="tipo" :pestanas="pestanas">
+  <KmCatalogo :key="tipo" :filtros-fijos="{ tipo }" sin-tarjeta ... />
+</KmTabs>
+```

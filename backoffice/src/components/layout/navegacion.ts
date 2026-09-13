@@ -100,6 +100,62 @@ export const modulos: ModuloNav[] = [
       },
     ],
   },
+  {
+    id: 'configuracion',
+    etiqueta: 'Config.',
+    icono:
+      'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
+    secciones: [
+      {
+        nombreRuta: 'config-empresa',
+        etiqueta: 'Empresa',
+        descripcion: 'RUC, razón social y logo',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-locales',
+        etiqueta: 'Locales',
+        descripcion: 'Sucursales, horario y código SUNAT',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-impuestos',
+        etiqueta: 'Impuestos y cargos',
+        descripcion: 'IGV, recargo al consumo e ICBPER',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-medios-pago',
+        etiqueta: 'Medios de pago',
+        descripcion: 'Formas de cobro en caja',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-canales',
+        etiqueta: 'Canales de venta',
+        descripcion: 'Salón, llevar, delivery y apps',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-produccion',
+        etiqueta: 'Estaciones e impresoras',
+        descripcion: 'Dónde se prepara y se imprime',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-motivos',
+        etiqueta: 'Motivos',
+        descripcion: 'Anulación, descuento y cortesía',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-series',
+        etiqueta: 'Series de comprobantes',
+        descripcion: 'Numeración de comprobantes',
+        roles: ['admin'],
+      },
+    ],
+  },
 ]
 
 /** Módulo al que pertenece una ruta, para resaltar la barra principal. */

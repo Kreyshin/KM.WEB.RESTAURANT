@@ -23,6 +23,8 @@ import KmButton from '@/components/ui/KmButton.vue'
 | `KmField`        | Etiqueta, ayuda y error de un campo              | [Formularios](./formularios)                     |
 | `KmInput`        | Campo de texto y número                          | [Formularios](./formularios)                     |
 | `KmSelect`       | Lista desplegable                                | [Formularios](./formularios)                     |
+| `KmSwitch`       | Interruptor sí/no con etiqueta                   | [Formularios](./formularios#kmswitch)            |
+| `KmCatalogo`     | Pantalla de mantenimiento completa               | [KmCatalogo](./catalogo)                         |
 | `KmButton`       | Botón con variantes, tamaños y carga             | [Botones](./botones)                             |
 | `KmBadge`        | Insignia de estado                               | [Botones](./botones)                             |
 | `KmCard`         | Tarjeta con cabecera y acciones                  | [Botones](./botones)                             |

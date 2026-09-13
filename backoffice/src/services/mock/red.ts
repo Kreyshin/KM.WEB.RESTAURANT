@@ -48,10 +48,21 @@ export const errorSimulado: ApiError = {
  * con `errorSimulado` según la tasa de error.
  */
 export function simularRed<T>(valor: T, ms = configRed.latenciaMs): Promise<T> {
+  // Se copia antes de esperar: si falla, rechaza en vez de perderse dentro del temporizador.
+  const copia = clonar(valor)
   return new Promise((resolve, reject) =>
     setTimeout(() => {
       if (configRed.tasaError > 0 && Math.random() < configRed.tasaError) reject(errorSimulado)
-      else resolve(structuredClone(valor))
+      else resolve(copia)
     }, ms),
   )
+}
+
+/**
+ * Copia profunda por JSON, igual que viajarían los datos por HTTP. A diferencia
+ * de structuredClone, admite los proxies reactivos que llegan desde formularios,
+ * y garantiza que la base mock nunca comparta referencias con una vista.
+ */
+export function clonar<T>(valor: T): T {
+  return valor === undefined ? valor : (JSON.parse(JSON.stringify(valor)) as T)
 }

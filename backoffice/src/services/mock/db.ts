@@ -6,9 +6,18 @@
  */
 
 import type {
+  CanalVenta,
   Categoria,
+  ConfigImpuestos,
+  Empresa,
+  EstacionProduccion,
+  HorarioDia,
+  Impresora,
   Insumo,
   Local,
+  MedioPago,
+  Motivo,
+  SerieComprobante,
   Mesa,
   Movimiento,
   Producto,
@@ -22,10 +31,18 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v3'
+const CLAVE = 'km.restaurante.mock.v4'
 
 export interface Esquema {
+  empresa: Empresa
+  impuestos: ConfigImpuestos
   locales: Local[]
+  mediosPago: MedioPago[]
+  canales: CanalVenta[]
+  estaciones: EstacionProduccion[]
+  impresoras: Impresora[]
+  motivos: Motivo[]
+  series: SerieComprobante[]
   salones: Salon[]
   mesas: Mesa[]
   usuarios: Usuario[]
@@ -36,7 +53,37 @@ export interface Esquema {
   recetas: Receta[]
 }
 
+/** Horario semanal con el mismo turno todos los días, salvo los cerrados. */
+function horarioSemanal(apertura: string, cierre: string, cerrados: number[] = []): HorarioDia[] {
+  return ([0, 1, 2, 3, 4, 5, 6] as const).map((dia) => ({
+    dia,
+    abierto: !cerrados.includes(dia),
+    apertura,
+    cierre,
+  }))
+}
+
 function semilla(): Esquema {
+  const empresa: Empresa = {
+    ruc: '20100070970',
+    razonSocial: 'Karma Corp Restaurantes S.A.C.',
+    nombreComercial: 'Mesa · Cocina Limeña',
+    direccionFiscal: 'Av. José Larco 812, Miraflores, Lima',
+    telefono: '01 445 2210',
+    email: 'facturacion@kmrestaurante.pe',
+    moneda: 'PEN',
+    zonaHoraria: 'America/Lima',
+  }
+
+  const impuestos: ConfigImpuestos = {
+    igvPorcentaje: 18,
+    preciosIncluyenIgv: true,
+    recargoConsumoActivo: true,
+    recargoConsumoPorcentaje: 10,
+    recargoConsumoCanales: ['cv1'],
+    icbperMonto: 0.5,
+  }
+
   const locales: Local[] = [
     {
       id: 'l1',
@@ -44,6 +91,8 @@ function semilla(): Esquema {
       direccion: 'Av. José Larco 812',
       distrito: 'Miraflores',
       telefono: '01 445 2210',
+      codigoEstablecimiento: '0000',
+      horario: horarioSemanal('12:00', '23:00'),
       activo: true,
     },
     {
@@ -52,6 +101,8 @@ function semilla(): Esquema {
       direccion: 'Calle Las Begonias 475',
       distrito: 'San Isidro',
       telefono: '01 422 8930',
+      codigoEstablecimiento: '0001',
+      horario: horarioSemanal('12:00', '17:00', [6]),
       activo: true,
     },
     {
@@ -59,8 +110,200 @@ function semilla(): Esquema {
       nombre: 'Barranco',
       direccion: 'Jr. Pedro de Osma 135',
       distrito: 'Barranco',
+      codigoEstablecimiento: '0002',
+      horario: horarioSemanal('19:00', '02:00', [0, 1]),
       activo: false,
     },
+  ]
+
+  const mediosPago: MedioPago[] = [
+    {
+      id: 'mp1',
+      nombre: 'Efectivo',
+      tipo: 'efectivo',
+      requiereReferencia: false,
+      comisionPorcentaje: 0,
+      orden: 1,
+      activo: true,
+    },
+    {
+      id: 'mp2',
+      nombre: 'Tarjeta Visa',
+      tipo: 'tarjeta',
+      requiereReferencia: true,
+      comisionPorcentaje: 3.5,
+      orden: 2,
+      activo: true,
+    },
+    {
+      id: 'mp3',
+      nombre: 'Tarjeta Mastercard',
+      tipo: 'tarjeta',
+      requiereReferencia: true,
+      comisionPorcentaje: 3.5,
+      orden: 3,
+      activo: true,
+    },
+    {
+      id: 'mp4',
+      nombre: 'Yape',
+      tipo: 'billetera',
+      requiereReferencia: true,
+      comisionPorcentaje: 0,
+      orden: 4,
+      activo: true,
+    },
+    {
+      id: 'mp5',
+      nombre: 'Plin',
+      tipo: 'billetera',
+      requiereReferencia: true,
+      comisionPorcentaje: 0,
+      orden: 5,
+      activo: true,
+    },
+    {
+      id: 'mp6',
+      nombre: 'Transferencia BCP',
+      tipo: 'transferencia',
+      requiereReferencia: true,
+      comisionPorcentaje: 0,
+      orden: 6,
+      activo: false,
+    },
+    {
+      id: 'mp7',
+      nombre: 'Crédito empresas',
+      tipo: 'credito',
+      requiereReferencia: false,
+      comisionPorcentaje: 0,
+      orden: 7,
+      activo: true,
+    },
+  ]
+
+  const canales: CanalVenta[] = [
+    { id: 'cv1', nombre: 'Salón', tipo: 'salon', comisionPorcentaje: 0, activo: true },
+    { id: 'cv2', nombre: 'Para llevar', tipo: 'llevar', comisionPorcentaje: 0, activo: true },
+    { id: 'cv3', nombre: 'Delivery propio', tipo: 'delivery', comisionPorcentaje: 0, activo: true },
+    { id: 'cv4', nombre: 'Rappi', tipo: 'plataforma', comisionPorcentaje: 25, activo: true },
+    { id: 'cv5', nombre: 'PedidosYa', tipo: 'plataforma', comisionPorcentaje: 22, activo: false },
+  ]
+
+  const impresoras: Impresora[] = [
+    {
+      id: 'im1',
+      nombre: 'Cocina caliente',
+      localId: 'l1',
+      uso: 'comandas',
+      ancho: '80mm',
+      conexion: 'red',
+      direccionIp: '192.168.1.50',
+      activo: true,
+    },
+    {
+      id: 'im2',
+      nombre: 'Barra',
+      localId: 'l1',
+      uso: 'comandas',
+      ancho: '58mm',
+      conexion: 'red',
+      direccionIp: '192.168.1.51',
+      activo: true,
+    },
+    {
+      id: 'im3',
+      nombre: 'Caja principal',
+      localId: 'l1',
+      uso: 'comprobantes',
+      ancho: '80mm',
+      conexion: 'usb',
+      activo: true,
+    },
+    {
+      id: 'im4',
+      nombre: 'Cocina San Isidro',
+      localId: 'l2',
+      uso: 'comandas',
+      ancho: '80mm',
+      conexion: 'red',
+      direccionIp: '192.168.10.20',
+      activo: true,
+    },
+  ]
+
+  const estaciones: EstacionProduccion[] = [
+    { id: 'es1', nombre: 'Cocina caliente', localId: 'l1', impresoraId: 'im1', activo: true },
+    {
+      id: 'es2',
+      nombre: 'Cocina fría (cebichería)',
+      localId: 'l1',
+      impresoraId: 'im1',
+      activo: true,
+    },
+    { id: 'es3', nombre: 'Barra', localId: 'l1', impresoraId: 'im2', activo: true },
+    { id: 'es4', nombre: 'Cocina', localId: 'l2', impresoraId: 'im4', activo: true },
+  ]
+
+  const motivos: Motivo[] = [
+    {
+      id: 'mo1',
+      tipo: 'anulacion',
+      descripcion: 'Error al tomar el pedido',
+      requiereAutorizacion: false,
+      activo: true,
+    },
+    {
+      id: 'mo2',
+      tipo: 'anulacion',
+      descripcion: 'Cliente se retiró',
+      requiereAutorizacion: true,
+      activo: true,
+    },
+    {
+      id: 'mo3',
+      tipo: 'anulacion',
+      descripcion: 'Producto agotado',
+      requiereAutorizacion: false,
+      activo: true,
+    },
+    {
+      id: 'mo4',
+      tipo: 'descuento',
+      descripcion: 'Cliente frecuente',
+      requiereAutorizacion: false,
+      activo: true,
+    },
+    {
+      id: 'mo5',
+      tipo: 'descuento',
+      descripcion: 'Demora en el servicio',
+      requiereAutorizacion: true,
+      activo: true,
+    },
+    {
+      id: 'mo6',
+      tipo: 'cortesia',
+      descripcion: 'Cumpleaños',
+      requiereAutorizacion: true,
+      activo: true,
+    },
+    {
+      id: 'mo7',
+      tipo: 'cortesia',
+      descripcion: 'Degustación de la casa',
+      requiereAutorizacion: false,
+      activo: false,
+    },
+  ]
+
+  const series: SerieComprobante[] = [
+    { id: 'sr1', localId: 'l1', tipo: 'boleta', serie: 'B001', correlativo: 18342, activo: true },
+    { id: 'sr2', localId: 'l1', tipo: 'factura', serie: 'F001', correlativo: 2431, activo: true },
+    { id: 'sr3', localId: 'l1', tipo: 'notaCredito', serie: 'BC01', correlativo: 57, activo: true },
+    { id: 'sr4', localId: 'l1', tipo: 'notaVenta', serie: 'NV01', correlativo: 904, activo: true },
+    { id: 'sr5', localId: 'l2', tipo: 'boleta', serie: 'B002', correlativo: 6120, activo: true },
+    { id: 'sr6', localId: 'l2', tipo: 'factura', serie: 'F002', correlativo: 1188, activo: true },
   ]
 
   const usuarios: Usuario[] = [
@@ -762,7 +1005,25 @@ function semilla(): Esquema {
     },
   ]
 
-  return { locales, salones, mesas, usuarios, categorias, productos, insumos, movimientos, recetas }
+  return {
+    empresa,
+    impuestos,
+    locales,
+    mediosPago,
+    canales,
+    estaciones,
+    impresoras,
+    motivos,
+    series,
+    salones,
+    mesas,
+    usuarios,
+    categorias,
+    productos,
+    insumos,
+    movimientos,
+    recetas,
+  }
 }
 
 function cargar(): Esquema {

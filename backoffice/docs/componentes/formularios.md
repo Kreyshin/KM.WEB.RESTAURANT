@@ -4,9 +4,11 @@ import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
+import KmSwitch from '@/components/ui/KmSwitch.vue'
 
 const form = ref({ nombre: 'Ceviche clásico', precio: 38, categoria: 'frios', tiempo: '' })
 const errores = ref({})
+const incluyeIgv = ref(true)
 
 function validar() {
   errores.value = {}
@@ -96,3 +98,27 @@ try {
   errores.value = err.campos ?? {}
 }
 ```
+
+## KmSwitch
+
+<Demo>
+  <KmSwitch v-model="incluyeIgv" etiqueta="Los precios incluyen IGV" descripcion="Si lo desactivas, el IGV se suma al cobrar." />
+  <p class="mt-3 text-xs text-tenue">Valor: <code>{{ incluyeIgv }}</code></p>
+</Demo>
+
+```vue
+<KmSwitch
+  v-model="config.preciosIncluyenIgv"
+  etiqueta="Los precios incluyen IGV"
+  descripcion="Si lo desactivas, el IGV se suma al cobrar."
+/>
+```
+
+| Prop          | Tipo      | Descripción                        |
+| ------------- | --------- | ---------------------------------- |
+| `v-model`     | `boolean` | Estado                             |
+| `etiqueta`    | `string`  | Texto principal y nombre accesible |
+| `descripcion` | `string`  | Explicación bajo la etiqueta       |
+| `disabled`    | `boolean` |                                    |
+
+Usa `role="switch"` con `aria-checked`. Para una opción que se aplica al guardar un formulario; para acciones inmediatas sobre una fila, usa un botón.

@@ -1,6 +1,7 @@
 import type { ApiError, Consulta, Paginado } from '@/types'
 import { aplicarConsulta } from './consulta'
 import { db, latencia, nuevoId, persistir, type Esquema } from './db'
+import { clonar } from './red'
 
 type Coleccion = {
   [K in keyof Esquema]: Esquema[K] extends { id: string }[] ? K : never
@@ -47,14 +48,15 @@ export function crearRepositorio<K extends Coleccion>(
     },
 
     async crear(datos: Omit<T, 'id'>): Promise<T> {
-      const item = { ...datos, id: nuevoId(opciones.prefijo) } as T
+      const item = { ...clonar(datos), id: nuevoId(opciones.prefijo) } as T
       const resultado = await latencia(item)
       items().push(item)
       persistir()
       return resultado
     },
 
-    async actualizar(id: string, datos: Partial<Omit<T, 'id'>>): Promise<T> {
+    async actualizar(id: string, cambios: Partial<Omit<T, 'id'>>): Promise<T> {
+      const datos = clonar(cambios)
       const item = items().find((i) => i.id === id)
       if (!item) throw noEncontrado()
       const actualizado = { ...item, ...datos }

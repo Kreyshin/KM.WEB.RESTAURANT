@@ -78,6 +78,7 @@ export default defineConfig({
           text: 'Componentes',
           items: [
             { text: 'Resumen', link: '/componentes/' },
+            { text: 'KmCatalogo', link: '/componentes/catalogo' },
             { text: 'KmTable y paginación', link: '/componentes/tabla' },
             { text: 'KmTabs', link: '/componentes/tabs' },
             { text: 'KmDrawer', link: '/componentes/drawer' },
