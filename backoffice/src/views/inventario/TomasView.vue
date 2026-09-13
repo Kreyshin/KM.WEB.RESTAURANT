@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
@@ -90,7 +91,7 @@ const confirmarAplicar = ref(false)
 
 function abrirDetalle(t: TomaInventario) {
   actual.value = t
-  lineas.value = structuredClone(t.lineas)
+  lineas.value = copiar(t.lineas)
   notas.value = t.notas ?? ''
   soloDiferencias.value = false
   detalleAbierto.value = true

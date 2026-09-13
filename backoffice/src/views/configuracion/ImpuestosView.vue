@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
@@ -33,7 +34,7 @@ async function cargar() {
   try {
     const [config, lista] = await Promise.all([impuestosService.obtener(), canalesService.todos()])
     original.value = config
-    form.value = structuredClone(config)
+    form.value = copiar(config)
     canales.value = lista.filter((c) => c.activo)
   } catch (e) {
     errorCarga.value = (e as ApiError).mensaje ?? 'No se pudo cargar la configuración.'
@@ -59,7 +60,7 @@ async function guardar() {
     }
     const guardada = await impuestosService.guardar(datos)
     original.value = guardada
-    form.value = structuredClone(guardada)
+    form.value = copiar(guardada)
     ui.exito('Impuestos y cargos guardados.')
   } catch (e) {
     const err = e as ApiError
@@ -71,7 +72,7 @@ async function guardar() {
 }
 
 function descartar() {
-  form.value = structuredClone(original.value)
+  form.value = copiar(original.value)
   errores.value = {}
 }
 

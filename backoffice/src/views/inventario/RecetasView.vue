@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import EditorIngredientes from './EditorIngredientes.vue'
 import MovimientoModal from './MovimientoModal.vue'
@@ -138,7 +139,7 @@ const guardando = ref(false)
 
 function editar(f: FilaPlato) {
   editando.value = f.producto
-  borrador.value = structuredClone(f.receta?.ingredientes ?? [])
+  borrador.value = copiar(f.receta?.ingredientes ?? [])
   if (borrador.value.length === 0) borrador.value.push({ insumoId: '', cantidad: 0 })
   editorAbierto.value = true
 }
@@ -181,9 +182,7 @@ function editarPreparacion(i?: Insumo) {
   prepErrores.value = {}
   prepInsumoId.value = i?.id ?? ''
   prepRendimiento.value = i?.preparacion?.rendimiento ?? 1
-  prepIngredientes.value = structuredClone(
-    i?.preparacion?.ingredientes ?? [{ insumoId: '', cantidad: 0 }],
-  )
+  prepIngredientes.value = copiar(i?.preparacion?.ingredientes ?? [{ insumoId: '', cantidad: 0 }])
   prepAbierto.value = true
 }
 

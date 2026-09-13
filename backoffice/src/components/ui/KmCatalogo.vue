@@ -1,4 +1,5 @@
 <script setup lang="ts" generic="T extends { id: string; activo: boolean }">
+import { copiar } from '@/utils/copiar'
 import { computed, ref, shallowRef, type Ref } from 'vue'
 import KmBadge from './KmBadge.vue'
 import KmBotonIcono from './KmBotonIcono.vue'
@@ -138,7 +139,7 @@ function abrirNuevo() {
 }
 
 function abrirEdicion(fila: T) {
-  const { id, ...resto } = structuredClone(JSON.parse(JSON.stringify(fila))) as T
+  const { id, ...resto } = copiar(fila) as T
   editandoId.value = id
   borrador.value = resto
   activoOriginal.value = fila.activo

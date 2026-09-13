@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
@@ -82,9 +83,9 @@ watch(abierto, (esta) => {
   if (!esta) return
   errores.value = {}
   guardando.value = false
-  // structuredClone evita editar en vivo el objeto de la tabla.
+  // Copia: evita editar en vivo el objeto de la tabla.
   form.value = props.producto
-    ? { ...structuredClone({ ...props.producto }), preciosCanal: props.producto.preciosCanal ?? [] }
+    ? { ...copiar({ ...props.producto }), preciosCanal: props.producto.preciosCanal ?? [] }
     : vacio()
 })
 

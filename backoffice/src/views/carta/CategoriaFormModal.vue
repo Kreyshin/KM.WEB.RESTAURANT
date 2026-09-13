@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copiar } from '@/utils/copiar'
 import { computed, ref, watch } from 'vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
 import type { DiaSemana } from '@/types'
@@ -28,7 +29,7 @@ watch(abierto, (esta) => {
   errores.value = {}
   guardando.value = false
   form.value = props.categoria
-    ? structuredClone({ ...props.categoria })
+    ? copiar({ ...props.categoria })
     : { nombre: '', descripcion: '', orden: props.ordenSugerido, activa: true }
 })
 

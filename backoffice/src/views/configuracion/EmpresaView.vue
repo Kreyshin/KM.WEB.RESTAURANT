@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
@@ -40,7 +41,7 @@ async function cargar() {
   try {
     const empresa = await empresaService.obtener()
     original.value = empresa
-    form.value = structuredClone(empresa)
+    form.value = copiar(empresa)
   } catch (e) {
     errorCarga.value = (e as ApiError).mensaje ?? 'No se pudieron cargar los datos.'
   } finally {
@@ -68,7 +69,7 @@ async function guardar() {
   try {
     const guardada = await empresaService.guardar(form.value)
     original.value = guardada
-    form.value = structuredClone(guardada)
+    form.value = copiar(guardada)
     ui.exito('Datos de la empresa guardados.')
   } catch (e) {
     const err = e as ApiError
@@ -80,7 +81,7 @@ async function guardar() {
 }
 
 function descartar() {
-  form.value = structuredClone(original.value)
+  form.value = copiar(original.value)
   errores.value = {}
 }
 

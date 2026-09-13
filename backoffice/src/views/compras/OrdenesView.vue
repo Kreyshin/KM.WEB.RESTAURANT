@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
@@ -106,7 +107,7 @@ function nueva(base?: Partial<NuevaOrdenCompra>) {
 
 function abrir(o: OrdenCompra) {
   editando.value = o
-  const { id: _i, numero: _n, estado: _e, ...resto } = structuredClone(o)
+  const { id: _i, numero: _n, estado: _e, ...resto } = copiar(o)
   form.value = resto
   errores.value = {}
   editorAbierto.value = true
@@ -221,7 +222,7 @@ async function recibir() {
 
 // ── Sugerencias ──
 function desdeSugerencia(s: { proveedorId?: string; lineas: LineaOrdenCompra[] }) {
-  nueva({ proveedorId: s.proveedorId, lineas: structuredClone(s.lineas) })
+  nueva({ proveedorId: s.proveedorId, lineas: copiar(s.lineas) })
 }
 
 const sugerencias = shallowRef<Awaited<ReturnType<typeof ordenesCompraService.sugerencias>>>([])

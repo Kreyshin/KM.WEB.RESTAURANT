@@ -31,13 +31,14 @@ import type {
   Salon,
   Usuario,
 } from '@/types'
+import { ilustracionCombo, ilustracionProducto } from './ilustraciones'
 import { simularRed } from './red'
 
 /**
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v6'
+const CLAVE = 'km.restaurante.mock.v8'
 
 export interface Esquema {
   combos: Combo[]
@@ -1064,6 +1065,7 @@ function semilla(): Esquema {
   }
   const productos: Producto[] = productosBase.map((p) => ({
     ...p,
+    imagen: ilustracionProducto(p.id),
     estacionId: estacionPorCategoria[p.categoriaId],
     // Rappi cobra 25 % de comisión: los platos de fondo suben de precio en la app.
     preciosCanal: p.precio >= 30 ? [{ canalId: 'cv4', precio: Math.round(p.precio * 1.15) }] : [],
@@ -1104,6 +1106,12 @@ function semilla(): Esquema {
     },
   ]
 
+  for (const c of combos)
+    c.imagen = ilustracionCombo(
+      c.id,
+      c.grupos.flatMap((g) => g.opciones),
+    )
+
   // ── Fase 4: inventario y compras ──
   const almacenes: Almacen[] = [
     {
@@ -1128,7 +1136,7 @@ function semilla(): Esquema {
     {
       id: 'pv1',
       razonSocial: 'Carnes del Sur S.A.C.',
-      ruc: '20512345676',
+      ruc: '20512345671',
       contacto: 'Julio Mendoza',
       telefono: '987 654 321',
       email: 'ventas@carnesdelsur.pe',
@@ -1138,7 +1146,7 @@ function semilla(): Esquema {
     {
       id: 'pv2',
       razonSocial: 'Pesquera Villa E.I.R.L.',
-      ruc: '20600123455',
+      ruc: '20600123450',
       contacto: 'Rosa Villa',
       telefono: '945 112 233',
       diasCredito: 7,
@@ -1147,7 +1155,7 @@ function semilla(): Esquema {
     {
       id: 'pv3',
       razonSocial: 'Mercado Mayorista N.° 2 · Puesto 118',
-      ruc: '10458796321',
+      ruc: '10458796322',
       contacto: 'Don Teodoro',
       telefono: '999 000 118',
       diasCredito: 0,
@@ -1164,14 +1172,14 @@ function semilla(): Esquema {
     {
       id: 'pv5',
       razonSocial: 'Granja San Pedro S.A.C.',
-      ruc: '20487654329',
+      ruc: '20487654320',
       diasCredito: 7,
       activo: true,
     },
     {
       id: 'pv6',
       razonSocial: 'Bodega Ica S.R.L.',
-      ruc: '20234567891',
+      ruc: '20234567897',
       contacto: 'Carmen Soto',
       diasCredito: 30,
       activo: false,
