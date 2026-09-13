@@ -470,3 +470,22 @@ body {
 .rs-sin-anillo:focus-visible {
   box-shadow: none;
 }
+
+/*
+ * Foco de los campos de formulario: borde verde con un halo suave del mismo
+ * color. Sustituye al anillo de latón global, que sobre un borde verde se
+ * veía como un doble contorno.
+ */
+.rs-campo:focus-visible,
+.rs-campo:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rs-primary) 22%, transparent);
+}
+
+.rs-campo[aria-invalid='true']:focus-visible,
+.rs-campo:has([aria-invalid='true']):focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rs-vino) 22%, transparent);
+}
+
+.dp--input:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rs-primary) 22%, transparent);
+}

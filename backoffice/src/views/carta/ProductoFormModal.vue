@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmModal from '@/components/ui/KmModal.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import type { Alergeno, ApiError, Categoria, NuevoProducto, Producto } from '@/types'
@@ -240,11 +241,18 @@ defineExpose({ mostrarError })
           "
           requerido
         >
-          <KmInput :id="id" v-model="form.precio" type="number" min="0" :invalido="invalido" />
+          <KmNumero
+            :id="id"
+            v-model="form.precio"
+            :min="0"
+            :invalido="invalido"
+            prefijo="S/"
+            :decimales="2"
+          />
         </KmField>
 
         <KmField v-slot="{ id }" label="Preparación (min)">
-          <KmInput :id="id" v-model="form.tiempoPreparacionMin" type="number" min="0" />
+          <KmNumero :id="id" v-model="form.tiempoPreparacionMin" :min="0" sufijo="min" />
         </KmField>
 
         <div class="flex items-end pb-2">
@@ -309,7 +317,14 @@ defineExpose({ mostrarError })
             class="grid grid-cols-[1fr_110px_auto_auto] items-center gap-2"
           >
             <KmInput v-model="v.nombre" placeholder="Nombre" />
-            <KmInput v-model="v.precio" type="number" min="0" placeholder="Precio" />
+            <KmNumero
+              v-model="v.precio"
+              :min="0"
+              placeholder="Precio"
+              prefijo="S/"
+              :decimales="2"
+              :controles="false"
+            />
             <label class="flex items-center gap-1.5 px-1 text-xs text-tenue">
               <input
                 v-model="v.activa"
@@ -351,8 +366,18 @@ defineExpose({ mostrarError })
           >
             <div class="grid grid-cols-[1fr_84px_84px_auto] items-center gap-2">
               <KmInput v-model="g.nombre" placeholder="Nombre del grupo" />
-              <KmInput v-model="g.seleccionMinima" type="number" min="0" placeholder="Mín." />
-              <KmInput v-model="g.seleccionMaxima" type="number" min="1" placeholder="Máx." />
+              <KmNumero
+                v-model="g.seleccionMinima"
+                :min="0"
+                placeholder="Mín."
+                :controles="false"
+              />
+              <KmNumero
+                v-model="g.seleccionMaxima"
+                :min="1"
+                placeholder="Máx."
+                :controles="false"
+              />
               <KmButton variante="fantasma" tamano="sm" @click="quitarGrupo(ig)">
                 <span class="text-vino">Quitar</span>
               </KmButton>
@@ -371,7 +396,14 @@ defineExpose({ mostrarError })
                 class="grid grid-cols-[1fr_110px_auto_auto] items-center gap-2"
               >
                 <KmInput v-model="m.nombre" placeholder="Opción" />
-                <KmInput v-model="m.recargo" type="number" min="0" placeholder="Recargo" />
+                <KmNumero
+                  v-model="m.recargo"
+                  :min="0"
+                  placeholder="Recargo"
+                  prefijo="S/"
+                  :decimales="2"
+                  :controles="false"
+                />
                 <label class="flex items-center gap-1.5 px-1 text-xs text-tenue">
                   <input
                     v-model="m.activo"

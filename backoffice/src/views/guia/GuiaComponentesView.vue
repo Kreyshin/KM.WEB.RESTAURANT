@@ -9,6 +9,7 @@ import KmEstado from '@/components/ui/KmEstado.vue'
 import KmFecha from '@/components/ui/KmFecha.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmRangoFechas from '@/components/ui/KmRangoFechas.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmTabs from '@/components/ui/KmTabs.vue'
@@ -209,7 +210,7 @@ const codigoEstados = `<KmEstado tipo="vacio" mensaje="Aún no hay proveedores r
                 />
               </KmField>
               <KmField v-slot="{ id }" label="Stock mínimo" ayuda="Por debajo se marca como bajo.">
-                <KmInput :id="id" v-model="insumo.stockMinimo" type="number" min="0" />
+                <KmNumero :id="id" v-model="insumo.stockMinimo" :min="0" />
               </KmField>
             </div>
             <template #footer>

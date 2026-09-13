@@ -3,6 +3,7 @@ import KmBadge from '@/components/ui/KmBadge.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
 import { mediosPagoService } from '@/services/comercial.service'
@@ -95,17 +96,19 @@ function validar(m: NuevoMedioPago) {
             ayuda="Lo que cobra el banco o la pasarela."
             :error="errores.comisionPorcentaje"
           >
-            <KmInput
+            <KmNumero
               :id="id"
               v-model="borrador.comisionPorcentaje"
-              type="number"
-              min="0"
-              max="100"
+              :min="0"
+              :max="100"
               :invalido="invalido"
+              sufijo="%"
+              :decimales="2"
+              :step="0.5"
             />
           </KmField>
           <KmField v-slot="{ id, invalido }" label="Orden" :error="errores.orden">
-            <KmInput :id="id" v-model="borrador.orden" type="number" min="1" :invalido="invalido" />
+            <KmNumero :id="id" v-model="borrador.orden" :min="1" :invalido="invalido" />
           </KmField>
         </div>
         <KmSwitch

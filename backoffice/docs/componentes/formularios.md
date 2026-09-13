@@ -3,12 +3,15 @@ import { ref } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
 
 const form = ref({ nombre: 'Ceviche clásico', precio: 38, categoria: 'frios', tiempo: '' })
 const errores = ref({})
 const incluyeIgv = ref(true)
+const recargo = ref(10)
+const costo = ref(4.5)
 
 function validar() {
   errores.value = {}
@@ -28,7 +31,7 @@ function validar() {
       <KmInput :id="id" v-model="form.nombre" :invalido="invalido" />
     </KmField>
     <KmField v-slot="{ id, invalido }" label="Precio (S/)" requerido :error="errores.precio">
-      <KmInput :id="id" v-model="form.precio" type="number" min="0" :invalido="invalido" />
+      <KmNumero :id="id" v-model="form.precio" :min="0" :invalido="invalido" prefijo="S/" :decimales="2" />
     </KmField>
     <KmField v-slot="{ id }" label="Categoría" ayuda="Dónde aparece en la carta.">
       <KmSelect :id="id" v-model="form.categoria" :opciones="[{ valor: 'entradas', etiqueta: 'Entradas' }, { valor: 'frios', etiqueta: 'Fríos' }, { valor: 'fondos', etiqueta: 'Fondos' }]" />
@@ -74,6 +77,45 @@ function validar() {
 | `id`, `placeholder`, `min`, `max`, `autocomplete` |                    | Atributos nativos               |
 | `invalido`                                        | `boolean`          | Borde de error y `aria-invalid` |
 | `disabled`                                        | `boolean`          |                                 |
+
+## KmNumero
+
+Campo numérico propio para cantidades, porcentajes y soles. Sustituye al `<input type="number">` nativo, cuyas flechas y comportamiento cambian según el navegador.
+
+<Demo>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <KmField v-slot="{ id }" label="Recargo al consumo" ayuda="Máximo 13 %.">
+      <KmNumero :id="id" v-model="recargo" :min="0" :max="13" :step="0.5" :decimales="2" sufijo="%" />
+    </KmField>
+    <KmField v-slot="{ id }" label="Costo por kilo">
+      <KmNumero :id="id" v-model="costo" :min="0" :decimales="2" prefijo="S/" />
+    </KmField>
+  </div>
+  <p class="mt-3 text-xs text-tenue">Modelos: <code>{{ recargo }}</code> · <code>{{ costo }}</code></p>
+</Demo>
+
+```vue
+<KmField v-slot="{ id, invalido }" label="Precio" :error="errores.precio">
+  <KmNumero :id="id" v-model="form.precio" :min="0" :decimales="2" prefijo="S/" :invalido="invalido" />
+</KmField>
+```
+
+| Prop                                  | Tipo             | Descripción                                                   |
+| ------------------------------------- | ---------------- | ------------------------------------------------------------- |
+| `v-model`                             | `number \| null` | Siempre un número; `null` si está vacío                       |
+| `min` / `max`                         | `number`         | Límites de los botones y las flechas                          |
+| `step`                                | `number`         | Paso de − / + y de las flechas. Por defecto 1; con Shift, ×10 |
+| `decimales`                           | `number`         | Decimales permitidos y mostrados. Por defecto 0               |
+| `prefijo` / `sufijo`                  | `string`         | «S/», «%», «min», «pers.»                                     |
+| `controles`                           | `boolean`        | Botones − y +. Desactívalos en columnas estrechas             |
+| `invalido`, `disabled`, `placeholder` |                  | Igual que `KmInput`                                           |
+
+Comportamiento:
+
+- Acepta **coma o punto** decimal y descarta letras o decimales de más mientras se escribe.
+- Fuera de foco muestra los decimales fijos (`38.00`).
+- Un valor escrito **fuera de rango no se corrige en silencio**: se conserva para que la validación muestre el error.
+- Rol `spinbutton` con `aria-valuenow`, `aria-valuemin` y `aria-valuemax`.
 
 ## KmSelect
 

@@ -61,6 +61,12 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 - [x] Motivos de anulación, descuento y cortesía
 - [x] Series y correlativos por local
 
-## Fuera de alcance
+## Pendientes de revisión
+
+Decisiones que ya funcionan, pero que deben validarse con datos de operación reales antes de darlas por cerradas.
+
+| Tema                   | Cuándo                                                    | Qué comprobar                                                                                                                                                                                                                                       |
+| ---------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Recargo al consumo** | Al construir F7 · Ventas y caja, y medir en F9 · Reportes | Cuánto recauda por día y por canal; cuántas cuentas lo retiran a pedido del cliente; efecto en el ticket medio y en las propinas; si conviene configurarlo por local u horario además de por canal. Añadir pruebas E2E del cobro con y sin recargo. |
 
 El POS del mesero, la pantalla de cocina (KDS), la carta QR y la app de delivery son sistemas aparte. El back office solo los **configura** y **supervisa**.

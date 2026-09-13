@@ -4,6 +4,7 @@ import KmButton from '@/components/ui/KmButton.vue'
 import KmCampoEstado from '@/components/ui/KmCampoEstado.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmModal from '@/components/ui/KmModal.vue'
 import type { ApiError, NuevoSalon, Salon } from '@/types'
 
@@ -76,7 +77,7 @@ defineExpose({ mostrarError })
         ayuda="Define la posición en el selector de salones."
         requerido
       >
-        <KmInput :id="id" v-model="form.orden" type="number" min="1" :invalido="invalido" />
+        <KmNumero :id="id" v-model="form.orden" :min="1" :invalido="invalido" />
       </KmField>
 
       <KmCampoEstado v-if="salon" v-model="form.activo" :original="salon.activo" />

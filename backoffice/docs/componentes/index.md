@@ -22,6 +22,7 @@ import KmButton from '@/components/ui/KmButton.vue'
 | `KmRangoFechas`                       | Rango con atajos                                 | [Fechas](./fechas)                               |
 | `KmField`                             | Etiqueta, ayuda y error de un campo              | [Formularios](./formularios)                     |
 | `KmInput`                             | Campo de texto y número                          | [Formularios](./formularios)                     |
+| `KmNumero`                            | Cantidades, porcentajes y soles                  | [Formularios](./formularios#kmnumero)            |
 | `KmSelect`                            | Lista desplegable                                | [Formularios](./formularios)                     |
 | `KmSwitch`                            | Interruptor sí/no con etiqueta                   | [Formularios](./formularios#kmswitch)            |
 | `KmCatalogo`                          | Pantalla de mantenimiento completa               | [KmCatalogo](./catalogo)                         |

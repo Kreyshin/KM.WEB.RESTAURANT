@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmModal from '@/components/ui/KmModal.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import type { ApiError, Mesa, NuevaMesa, Salon, Usuario } from '@/types'
@@ -127,13 +128,13 @@ defineExpose({ mostrarError })
       </KmField>
 
       <KmField v-slot="{ id, invalido }" label="Capacidad" :error="errores.capacidad" requerido>
-        <KmInput
+        <KmNumero
           :id="id"
           v-model="form.capacidad"
-          type="number"
-          min="1"
-          max="30"
+          :min="1"
+          :max="30"
           :invalido="invalido"
+          sufijo="pers."
         />
       </KmField>
 

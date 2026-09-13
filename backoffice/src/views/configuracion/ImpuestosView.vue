@@ -4,7 +4,7 @@ import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmEstado from '@/components/ui/KmEstado.vue'
 import KmField from '@/components/ui/KmField.vue'
-import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
 import { canalesService } from '@/services/comercial.service'
 import { impuestosService } from '@/services/empresa.service'
@@ -123,14 +123,15 @@ const ejemplo = computed(() =>
               ayuda="18 % general. Los restaurantes MYPE acogidos a la Ley 31556 aplican una tasa reducida."
               :error="errores.igvPorcentaje"
             >
-              <div class="w-32">
-                <KmInput
+              <div class="w-48">
+                <KmNumero
                   :id="id"
                   v-model="form.igvPorcentaje"
-                  type="number"
-                  min="0"
-                  max="30"
+                  :min="0"
+                  :max="30"
                   :invalido="invalido"
+                  sufijo="%"
+                  :decimales="2"
                 />
               </div>
             </KmField>
@@ -159,14 +160,16 @@ const ejemplo = computed(() =>
                 label="Porcentaje (%)"
                 :error="errores.recargoConsumoPorcentaje"
               >
-                <div class="w-32">
-                  <KmInput
+                <div class="w-48">
+                  <KmNumero
                     :id="id"
                     v-model="form.recargoConsumoPorcentaje"
-                    type="number"
-                    min="0"
-                    max="13"
+                    :min="0"
+                    :max="13"
                     :invalido="invalido"
+                    sufijo="%"
+                    :decimales="2"
+                    :step="0.5"
                   />
                 </div>
               </KmField>
@@ -204,13 +207,15 @@ const ejemplo = computed(() =>
             label="Monto por bolsa (S/)"
             :error="errores.icbperMonto"
           >
-            <div class="w-32">
-              <KmInput
+            <div class="w-48">
+              <KmNumero
                 :id="id"
                 v-model="form.icbperMonto"
-                type="number"
-                min="0"
+                :min="0"
                 :invalido="invalido"
+                prefijo="S/"
+                :decimales="2"
+                :step="0.1"
               />
             </div>
           </KmField>
@@ -225,7 +230,14 @@ const ejemplo = computed(() =>
         <KmCard titulo="Ticket de ejemplo">
           <div v-if="ejemplo" class="flex flex-col gap-4">
             <KmField v-slot="{ id }" label="Consumo de la mesa (S/)">
-              <KmInput :id="id" v-model="consumoEjemplo" type="number" min="0" />
+              <KmNumero
+                :id="id"
+                v-model="consumoEjemplo"
+                :min="0"
+                prefijo="S/"
+                :decimales="2"
+                :step="10"
+              />
             </KmField>
 
             <dl

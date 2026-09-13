@@ -4,6 +4,7 @@ import KmButton from '@/components/ui/KmButton.vue'
 import KmDrawer from '@/components/ui/KmDrawer.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 
 const abierto = ref(false)
@@ -40,7 +41,7 @@ Panel lateral para crear o editar sin perder de vista la lista. Úsalo cuando el
         <KmSelect :id="id" v-model="insumo.unidad" :opciones="[{ valor: 'kg', etiqueta: 'Kilogramo' }, { valor: 'unidad', etiqueta: 'Unidad' }]" />
       </KmField>
       <KmField v-slot="{ id }" label="Stock mínimo" ayuda="Por debajo se marca como bajo.">
-        <KmInput :id="id" v-model="insumo.stockMinimo" type="number" min="0" />
+        <KmNumero :id="id" v-model="insumo.stockMinimo" :min="0" />
       </KmField>
     </div>
     <template #footer>

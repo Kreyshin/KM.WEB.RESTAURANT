@@ -4,6 +4,7 @@ import KmBadge from '@/components/ui/KmBadge.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import { useLocales } from '@/composables/useLocales'
 import { seriesService } from '@/services/produccion.service'
@@ -160,13 +161,7 @@ function filtrar(consulta: Consulta, campo: string, valor: string | number | und
             ayuda="0 si la serie es nueva."
             :error="errores.correlativo"
           >
-            <KmInput
-              :id="id"
-              v-model="borrador.correlativo"
-              type="number"
-              min="0"
-              :invalido="invalido"
-            />
+            <KmNumero :id="id" v-model="borrador.correlativo" :min="0" :invalido="invalido" />
           </KmField>
         </div>
 

@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmModal from '@/components/ui/KmModal.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import type { ApiError, Insumo, NuevoInsumo } from '@/types'
@@ -117,7 +118,7 @@ defineExpose({ mostrarError })
         :error="errores.stock"
         :ayuda="insumo ? 'Para corregirlo, mejor registra un movimiento de ajuste.' : undefined"
       >
-        <KmInput :id="id" v-model="form.stock" type="number" min="0" :invalido="invalido" />
+        <KmNumero :id="id" v-model="form.stock" :min="0" :invalido="invalido" :decimales="3" />
       </KmField>
 
       <KmField
@@ -126,7 +127,13 @@ defineExpose({ mostrarError })
         :error="errores.stockMinimo"
         ayuda="Por debajo de este valor se avisa."
       >
-        <KmInput :id="id" v-model="form.stockMinimo" type="number" min="0" :invalido="invalido" />
+        <KmNumero
+          :id="id"
+          v-model="form.stockMinimo"
+          :min="0"
+          :invalido="invalido"
+          :decimales="3"
+        />
       </KmField>
 
       <KmField
@@ -135,7 +142,14 @@ defineExpose({ mostrarError })
         :error="errores.costoUnitario"
         ayuda="En soles. Se usa para el coste de las recetas."
       >
-        <KmInput :id="id" v-model="form.costoUnitario" type="number" min="0" :invalido="invalido" />
+        <KmNumero
+          :id="id"
+          v-model="form.costoUnitario"
+          :min="0"
+          :invalido="invalido"
+          prefijo="S/"
+          :decimales="2"
+        />
       </KmField>
 
       <div class="flex items-end pb-2">

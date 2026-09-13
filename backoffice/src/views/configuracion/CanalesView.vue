@@ -3,6 +3,7 @@ import KmBadge from '@/components/ui/KmBadge.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import { canalesService } from '@/services/comercial.service'
 import { dependenciasService } from '@/services/dependencias.service'
@@ -87,13 +88,15 @@ function validar(c: NuevoCanalVenta) {
           ayuda="Porcentaje que retiene la plataforma sobre cada venta."
           :error="errores.comisionPorcentaje"
         >
-          <KmInput
+          <KmNumero
             :id="id"
             v-model="borrador.comisionPorcentaje"
-            type="number"
-            min="0"
-            max="100"
+            :min="0"
+            :max="100"
             :invalido="invalido"
+            sufijo="%"
+            :decimales="2"
+            :step="0.5"
           />
         </KmField>
       </template>
