@@ -18,7 +18,11 @@
     "build:demo": "vue-tsc -b && vite build --mode demo",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:reporte": "playwright show-report",
+    "test:e2e:grabar": "playwright codegen http://localhost:5173"
   },
   "dependencies": {
     "@vuepic/vue-datepicker": "^14.0.0",
@@ -28,7 +32,11 @@
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/user-event": "^14.6.7",
+    "@testing-library/vue": "^8.1.0",
     "@types/node": "^24.13.3",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/eslint-config-prettier": "^10.2.0",

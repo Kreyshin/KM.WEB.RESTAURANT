@@ -28,7 +28,7 @@ flowchart LR
 
 ## Stack
 
-Vue 3 + TypeScript · Vite · Pinia · Vue Router · Tailwind CSS v4 · Vitest · VitePress
+Vue 3 + TypeScript · Vite · Pinia · Vue Router · Tailwind CSS v4 · Vitest · Testing Library · Playwright · VitePress
 
 ## Empezar
 
@@ -44,7 +44,8 @@ npm run docs:dev   # documentación en local
 | Script | Qué hace |
 | --- | --- |
 | `npm run dev` | Servidor de desarrollo |
-| `npm run verify` | Formato, lint, tipos y pruebas. **Debe pasar antes de cada commit** |
+| `npm run verify` | Formato, lint, tipos, pruebas unitarias y de componente. **Debe pasar antes de cada commit** |
+| `npm run test:e2e` | Pruebas end-to-end con Playwright (`test:e2e:ui` para verlas paso a paso) |
 | `npm run build` | Build de producción |
 | `npm run build:demo` | Build de la demo para GitHub Pages |
 | `npm run docs:build` | Build de la documentación |
@@ -83,7 +84,7 @@ Detalle en el [roadmap](https://kreyshin.github.io/KM.WEB.RESTAURANT/guia/roadma
 
 1. Sigue la receta de [crear un módulo nuevo](https://kreyshin.github.io/KM.WEB.RESTAURANT/guia/nuevo-modulo): tipo → semilla → servicio → vista → ruta.
 2. Reutiliza los [componentes Km*](https://kreyshin.github.io/KM.WEB.RESTAURANT/componentes/) antes de crear uno nuevo.
-3. Ejecuta `npm run verify`.
+3. Ejecuta `npm run verify` y `npm run test:e2e`. Guía: [Testing y QA](https://kreyshin.github.io/KM.WEB.RESTAURANT/guia/testing).
 4. Cada push a `main` verifica y publica la documentación y la demo.
 
 ## Más información

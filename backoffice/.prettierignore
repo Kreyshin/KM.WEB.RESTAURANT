@@ -8,3 +8,5 @@ src/assets/karma
 dist-demo
 docs/.vitepress/cache
 docs/.vitepress/dist
+test-results
+playwright-report

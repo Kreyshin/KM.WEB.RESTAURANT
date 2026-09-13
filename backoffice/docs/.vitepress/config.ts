@@ -65,6 +65,10 @@ export default defineConfig({
           ],
         },
         {
+          text: 'Calidad',
+          items: [{ text: 'Testing y QA', link: '/guia/testing' }],
+        },
+        {
           text: 'Producto',
           items: [
             { text: 'Entidades del dominio', link: '/guia/entidades' },

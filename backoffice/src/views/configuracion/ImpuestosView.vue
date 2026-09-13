@@ -218,7 +218,10 @@ const ejemplo = computed(() =>
       </div>
 
       <!-- Ticket de ejemplo: muestra el efecto de la configuración antes de guardarla. -->
-      <aside class="flex flex-col gap-4 lg:sticky lg:top-0 lg:self-start">
+      <aside
+        class="flex flex-col gap-4 lg:sticky lg:top-0 lg:self-start"
+        aria-label="Ticket de ejemplo"
+      >
         <KmCard titulo="Ticket de ejemplo">
           <div v-if="ejemplo" class="flex flex-col gap-4">
             <KmField v-slot="{ id }" label="Consumo de la mesa (S/)">

@@ -1,73 +1,58 @@
 {
-  "hash": "53961213",
+  "hash": "14c63dc7",
   "configHash": "b9602e44",
-  "lockfileHash": "31b677b8",
-  "browserHash": "25699fe5",
+  "lockfileHash": "7b5f43bc",
+  "browserHash": "9c53377f",
   "optimized": {
     "vue": {
       "src": "../../../../node_modules/vue/dist/vue.runtime.esm-bundler.js",
       "file": "vue.js",
-      "fileHash": "5514e595",
+      "fileHash": "91af14a8",
       "needsInterop": false
     },
     "vitepress > @vue/devtools-api": {
       "src": "../../../../node_modules/vitepress/node_modules/@vue/devtools-api/dist/index.js",
       "file": "vitepress___@vue_devtools-api.js",
-      "fileHash": "818dc905",
+      "fileHash": "a0ce526f",
       "needsInterop": false
     },
     "vitepress > @vueuse/core": {
       "src": "../../../../node_modules/vitepress/node_modules/@vueuse/core/index.mjs",
       "file": "vitepress___@vueuse_core.js",
-      "fileHash": "a29691a9",
+      "fileHash": "4380df5f",
       "needsInterop": false
     },
     "vitepress > @vueuse/integrations/useFocusTrap": {
       "src": "../../../../node_modules/@vueuse/integrations/useFocusTrap.mjs",
       "file": "vitepress___@vueuse_integrations_useFocusTrap.js",
-      "fileHash": "659a8d39",
+      "fileHash": "136ce485",
       "needsInterop": false
     },
     "vitepress > mark.js/src/vanilla.js": {
       "src": "../../../../node_modules/mark.js/src/vanilla.js",
       "file": "vitepress___mark__js_src_vanilla__js.js",
-      "fileHash": "36348636",
+      "fileHash": "cb65ffb8",
       "needsInterop": false
     },
     "vitepress > minisearch": {
       "src": "../../../../node_modules/minisearch/dist/es/index.js",
       "file": "vitepress___minisearch.js",
-      "fileHash": "0d019b6e",
+      "fileHash": "30a47289",
       "needsInterop": false
     },
     "pinia": {
       "src": "../../../../node_modules/pinia/dist/pinia.js",
       "file": "pinia.js",
-      "fileHash": "2277c72b",
-      "needsInterop": false
-    },
-    "@vuepic/vue-datepicker": {
-      "src": "../../../../node_modules/@vuepic/vue-datepicker/dist/vue-datepicker.js",
-      "file": "@vuepic_vue-datepicker.js",
-      "fileHash": "03700531",
-      "needsInterop": false
-    },
-    "date-fns/locale": {
-      "src": "../../../../node_modules/date-fns/locale.js",
-      "file": "date-fns_locale.js",
-      "fileHash": "a9fbf2fd",
+      "fileHash": "cc726b76",
       "needsInterop": false
     }
   },
   "chunks": {
-    "chunk-D4EP3UL2": {
-      "file": "chunk-D4EP3UL2.js"
+    "chunk-IIQZHHRC": {
+      "file": "chunk-IIQZHHRC.js"
     },
     "chunk-UEFGQ2CT": {
       "file": "chunk-UEFGQ2CT.js"
-    },
-    "chunk-IIQZHHRC": {
-      "file": "chunk-IIQZHHRC.js"
     },
     "chunk-V6TY7KAL": {
       "file": "chunk-V6TY7KAL.js"

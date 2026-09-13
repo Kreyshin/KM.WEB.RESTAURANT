@@ -17,6 +17,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     include: ['src/**/*.test.ts'],
+    // Matchers de DOM (toBeInTheDocument…) y red mock sin latencia en cada archivo.
+    setupFiles: ['src/test/setup.ts'],
     restoreMocks: true,
   },
 })
