@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KmHora from '@/components/ui/KmHora.vue'
 import { copiar } from '@/utils/copiar'
 import { computed, ref, watch } from 'vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
@@ -114,19 +115,9 @@ defineExpose({ mostrarError })
             </button>
           </div>
           <div class="flex items-center gap-2 text-sm">
-            <input
-              v-model="form.disponibilidad.desde"
-              type="time"
-              aria-label="Desde"
-              class="rs-campo h-9 rounded-control border border-linea bg-panel px-2 text-tinta"
-            />
+            <KmHora v-model="form.disponibilidad.desde" etiqueta="Desde" />
             <span class="text-tenue">a</span>
-            <input
-              v-model="form.disponibilidad.hasta"
-              type="time"
-              aria-label="Hasta"
-              class="rs-campo h-9 rounded-control border border-linea bg-panel px-2 text-tinta"
-            />
+            <KmHora v-model="form.disponibilidad.hasta" etiqueta="Hasta" />
           </div>
         </template>
         <p v-if="errores.disponibilidad" class="text-xs font-medium text-vino">

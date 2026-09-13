@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KmCheckbox from '@/components/ui/KmCheckbox.vue'
 import { computed, ref } from 'vue'
 import GuiaEjemplo from './GuiaEjemplo.vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
@@ -186,24 +187,12 @@ const props = [
   >
     <div class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-tenue">
-        <label class="flex items-center gap-2">
-          <input
-            v-model="forzarError"
-            type="checkbox"
-            class="accent-[var(--rs-verde-600)]"
-            @change="recargar"
-          />
-          Forzar error
-        </label>
-        <label class="flex items-center gap-2">
-          <input
-            v-model="forzarVacio"
-            type="checkbox"
-            class="accent-[var(--rs-verde-600)]"
-            @change="recargar"
-          />
-          Sin datos
-        </label>
+        <KmCheckbox v-model="forzarError" tamano="sm" @update:model-value="recargar"
+          >Forzar error</KmCheckbox
+        >
+        <KmCheckbox v-model="forzarVacio" tamano="sm" @update:model-value="recargar"
+          >Sin datos</KmCheckbox
+        >
         <label class="flex items-center gap-2">
           Latencia
           <input

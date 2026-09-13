@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KmCheckbox from '@/components/ui/KmCheckbox.vue'
 import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
@@ -301,15 +302,12 @@ defineExpose({ mostrarError })
           <KmNumero :id="id" v-model="form.tiempoPreparacionMin" :min="0" sufijo="min" />
         </KmField>
 
-        <div class="flex items-end pb-2">
-          <label class="flex items-center gap-2.5">
-            <input
-              v-model="form.disponible"
-              type="checkbox"
-              class="size-4 rounded border-linea accent-[var(--rs-accion)]"
-            />
-            <span class="text-sm text-tinta">Disponible hoy</span>
-          </label>
+        <div class="flex items-end">
+          <div
+            class="flex h-9 w-full items-center rounded-control border border-linea bg-panel px-3"
+          >
+            <KmCheckbox v-model="form.disponible">Disponible hoy</KmCheckbox>
+          </div>
         </div>
       </div>
 
@@ -430,14 +428,7 @@ defineExpose({ mostrarError })
               :decimales="2"
               :controles="false"
             />
-            <label class="flex items-center gap-1.5 px-1 text-xs text-tenue">
-              <input
-                v-model="v.activa"
-                type="checkbox"
-                class="size-3.5 rounded border-linea accent-[var(--rs-accion)]"
-              />
-              Activa
-            </label>
+            <KmCheckbox v-model="v.activa" tamano="sm" class="px-1">Activa</KmCheckbox>
             <KmButton variante="fantasma" tamano="sm" @click="quitarVariante(i)">
               <span class="text-vino">Quitar</span>
             </KmButton>
@@ -509,14 +500,7 @@ defineExpose({ mostrarError })
                   :decimales="2"
                   :controles="false"
                 />
-                <label class="flex items-center gap-1.5 px-1 text-xs text-tenue">
-                  <input
-                    v-model="m.activo"
-                    type="checkbox"
-                    class="size-3.5 rounded border-linea accent-[var(--rs-accion)]"
-                  />
-                  Activa
-                </label>
+                <KmCheckbox v-model="m.activo" tamano="sm" class="px-1">Activa</KmCheckbox>
                 <KmButton variante="fantasma" tamano="sm" @click="quitarModificador(ig, im)">
                   <span class="text-vino">Quitar</span>
                 </KmButton>

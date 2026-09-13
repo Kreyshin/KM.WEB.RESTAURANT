@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import KmButton from '@/components/ui/KmButton.vue'
+import KmHora from '@/components/ui/KmHora.vue'
 import { computed } from 'vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
 import type { HorarioDia } from '@/types'
@@ -24,9 +26,6 @@ function horas(d: HorarioDia) {
   const texto = `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`
   return d.cierre < d.apertura ? `${texto} · cierra al día siguiente` : texto
 }
-
-const campo =
-  'h-9 w-28 rounded-control border border-linea bg-panel px-2 text-sm text-tinta tabular-nums focus:border-verde disabled:opacity-40'
 </script>
 
 <template>
@@ -43,27 +42,12 @@ const campo =
 
       <div class="flex flex-wrap items-center gap-2">
         <template v-if="d.abierto">
-          <input
-            v-model="d.apertura"
-            type="time"
-            :class="campo"
-            :aria-label="`Apertura del ${etiquetaDia[d.dia]}`"
-          />
+          <KmHora v-model="d.apertura" :etiqueta="`Apertura del ${etiquetaDia[d.dia]}`" />
           <span class="text-tenue">a</span>
-          <input
-            v-model="d.cierre"
-            type="time"
-            :class="campo"
-            :aria-label="`Cierre del ${etiquetaDia[d.dia]}`"
-          />
-          <button
-            v-if="d.dia === 0"
-            type="button"
-            class="text-xs font-semibold text-verde hover:underline"
-            @click="copiarATodos(d)"
-          >
+          <KmHora v-model="d.cierre" :etiqueta="`Cierre del ${etiquetaDia[d.dia]}`" />
+          <KmButton v-if="d.dia === 0" variante="secundario" tamano="sm" @click="copiarATodos(d)">
             Copiar a todos
-          </button>
+          </KmButton>
         </template>
         <span v-else class="text-sm text-tenue">Cerrado</span>
       </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KmCheckbox from '@/components/ui/KmCheckbox.vue'
 import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
@@ -257,10 +258,7 @@ async function anular() {
           </div>
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-tenue">
-          <input v-model="soloDiferencias" type="checkbox" class="accent-[var(--rs-accion)]" />
-          Ver solo diferencias
-        </label>
+        <KmCheckbox v-model="soloDiferencias">Ver solo diferencias</KmCheckbox>
 
         <div class="overflow-x-auto rounded-card border border-linea">
           <table class="w-full min-w-[34rem] text-sm">

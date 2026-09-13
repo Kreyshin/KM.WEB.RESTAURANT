@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KmButton from './KmButton.vue'
 import { ref } from 'vue'
 
 const props = withDefaults(
@@ -112,22 +113,46 @@ function alSoltar(evento: DragEvent) {
 
     <div class="flex flex-col gap-1.5 text-xs text-tenue">
       <p>JPG, PNG o WebP. Se reduce a {{ ladoMaximo }} px automáticamente.</p>
-      <div class="flex gap-3">
-        <button
-          type="button"
-          class="font-semibold text-verde hover:underline"
+      <div class="flex flex-wrap gap-2">
+        <KmButton
+          variante="secundario"
+          tamano="sm"
+          :disabled="procesando"
           @click="entrada?.click()"
         >
-          {{ imagen ? 'Cambiar' : 'Elegir archivo' }}
-        </button>
-        <button
-          v-if="imagen"
-          type="button"
-          class="font-semibold text-vino hover:underline"
-          @click="imagen = undefined"
-        >
+          <svg
+            viewBox="0 0 24 24"
+            class="size-3.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          {{ imagen ? 'Cambiar foto' : 'Subir foto' }}
+        </KmButton>
+        <KmButton v-if="imagen" variante="peligro" tamano="sm" @click="imagen = undefined">
+          <svg
+            viewBox="0 0 24 24"
+            class="size-3.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
           Quitar
-        </button>
+        </KmButton>
       </div>
     </div>
 
