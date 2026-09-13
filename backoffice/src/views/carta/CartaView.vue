@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmButton from '@/components/ui/KmButton.vue'
+import KmCambioVista from '@/components/ui/KmCambioVista.vue'
+import KmTarjetaPlato from '@/components/ui/KmTarjetaPlato.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmConfirm from '@/components/ui/KmConfirm.vue'
 import KmConfirmarEstado from '@/components/ui/KmConfirmarEstado.vue'
@@ -29,6 +31,7 @@ const vista = ref<'productos' | 'categorias'>('productos')
 /** '' significa «todas las categorías». */
 const filtroCategoria = ref<string>('')
 const busqueda = ref('')
+const vistaProductos = ref<'tabla' | 'tarjetas'>('tabla')
 
 const modalProducto = ref(false)
 const productoEnEdicion = ref<Producto | null>(null)
@@ -276,10 +279,38 @@ async function eliminar() {
 
       <KmCard titulo="Productos" sin-padding>
         <template #acciones>
+          <KmCambioVista v-model="vistaProductos" clave="producto" />
           <KmInput v-model="busqueda" placeholder="Buscar producto…" class="!w-48" />
         </template>
 
+        <div v-if="vistaProductos === 'tarjetas'" class="p-4">
+          <div v-if="cargando" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div v-for="i in 8" :key="i" class="h-56 animate-pulse rounded-card bg-seleccion"></div>
+          </div>
+          <p
+            v-else-if="productosFiltrados.length === 0"
+            class="py-10 text-center text-sm text-tenue"
+          >
+            No hay productos que coincidan.
+          </p>
+          <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <KmTarjetaPlato
+              v-for="p in productosFiltrados"
+              :key="p.id"
+              :nombre="p.nombre"
+              :imagen="p.imagen"
+              :precio="precioMostrado(p)"
+              :marca="p.tiempoPreparacionMin ? `${p.tiempoPreparacionMin} min` : undefined"
+              :detalle="nombreCategoria(p.categoriaId)"
+              :cinta="p.disponible ? undefined : 'Agotado'"
+              @editar="editarProducto(p)"
+              @eliminar="pedirEliminar('producto', p.id, p.nombre)"
+            />
+          </div>
+        </div>
+
         <KmTable
+          v-else
           :columnas="columnasProducto"
           :filas="productosFiltrados"
           :cargando="cargando"

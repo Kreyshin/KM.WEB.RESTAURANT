@@ -1,9 +1,10 @@
 <script setup lang="ts" generic="T extends { id: string; activo: boolean }">
 import { copiar } from '@/utils/copiar'
-import { computed, ref, shallowRef, type Ref } from 'vue'
+import { computed, ref, shallowRef, useSlots, type Ref } from 'vue'
 import KmBadge from './KmBadge.vue'
 import KmBotonIcono from './KmBotonIcono.vue'
 import KmBusqueda from './KmBusqueda.vue'
+import KmCambioVista from './KmCambioVista.vue'
 import KmButton from './KmButton.vue'
 import KmCard from './KmCard.vue'
 import KmConfirm from './KmConfirm.vue'
@@ -77,7 +78,12 @@ defineSlots<{
   filtros?(props: { consulta: Consulta }): unknown
   acciones?(): unknown
   'acciones-fila'?(props: { fila: T }): unknown
+  /** Con este slot aparece el interruptor Tabla / Tarjetas. */
+  tarjeta?(props: { fila: T; editar: () => void; eliminar?: () => void }): unknown
 }>()
+
+const slots = useSlots()
+const vista = ref<'tabla' | 'tarjetas'>('tabla')
 
 const ui = useUiStore()
 
@@ -284,6 +290,7 @@ defineExpose({ recargar, abrirNuevo })
       <div class="w-full sm:w-44">
         <KmSelect v-model="filtroEstado" :opciones="opcionesEstado" etiqueta="Filtrar por estado" />
       </div>
+      <KmCambioVista v-if="slots.tarjeta" v-model="vista" :clave="entidad" class="ml-auto" />
       <template v-if="sinTarjeta">
         <div class="flex-1" />
         <KmExportar v-if="exportacion" :disabled="total === 0" @exportar="exportar" />
@@ -291,7 +298,31 @@ defineExpose({ recargar, abrirNuevo })
       </template>
     </div>
 
+    <div v-if="slots.tarjeta && vista === 'tarjetas'" class="p-4">
+      <div v-if="cargando" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div v-for="i in 8" :key="i" class="h-56 animate-pulse rounded-card bg-seleccion"></div>
+      </div>
+      <p v-else-if="items.length === 0" class="py-10 text-center text-sm text-tenue">
+        {{
+          hayCriterios
+            ? 'Ningún registro coincide con la búsqueda o el filtro.'
+            : 'Aún no hay registros.'
+        }}
+      </p>
+      <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <template v-for="fila in items" :key="fila.id">
+          <slot
+            name="tarjeta"
+            :fila="fila"
+            :editar="() => abrirEdicion(fila)"
+            :eliminar="servicio.eliminar ? () => pedirEliminar(fila) : undefined"
+          />
+        </template>
+      </div>
+    </div>
+
     <KmTable
+      v-else
       v-model:orden="consulta.orden"
       :columnas="columnasTabla"
       :filas="items"

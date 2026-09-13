@@ -4,6 +4,7 @@ import KmBadge from '@/components/ui/KmBadge.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
+import KmTarjetaPlato from '@/components/ui/KmTarjetaPlato.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
@@ -132,6 +133,25 @@ function validar(c: NuevoCombo): Record<string, string> {
         <p v-if="sueltos(fila.grupos) > fila.precio" class="text-xs text-verde tabular-nums">
           Ahorra {{ formatearSoles(sueltos(fila.grupos) - fila.precio) }}
         </p>
+      </template>
+
+      <template #tarjeta="{ fila, editar, eliminar }">
+        <KmTarjetaPlato
+          ancha
+          :nombre="fila.nombre"
+          :imagen="fila.imagen"
+          :precio="formatearSoles(fila.precio)"
+          :marca="`${etiquetaTipoCombo[fila.tipo]} · ${textoDias(fila.dias)}`"
+          :detalle="
+            fila.grupos
+              .map((g) => g.opciones.map((id) => producto(id)?.nombre ?? '—').join(' o '))
+              .join(' + ')
+          "
+          :cinta="fila.activo ? undefined : 'Inactivo'"
+          :eliminable="!!eliminar"
+          @editar="editar"
+          @eliminar="eliminar?.()"
+        />
       </template>
 
       <template #formulario="{ borrador, errores }">

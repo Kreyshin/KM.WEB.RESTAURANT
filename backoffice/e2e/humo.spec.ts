@@ -116,20 +116,32 @@ test.describe('Humo: botones de cada pantalla', () => {
     expect(errores).toEqual([])
   })
 
-  test('vista POS: tarjetas de carta, menú del día y combos', async ({ page, entrar }) => {
+  test('carta y combos cambian entre tabla y tarjetas', async ({ page, entrar }) => {
     const errores = vigilarErrores(page)
     await entrar()
-    await page.goto('/carta/vista-pos')
-    await expect(page.getByRole('button', { name: /^Ají de gallina, S\// })).toBeVisible()
-    await page.getByRole('button', { name: 'Postres', exact: true }).click()
-    await expect(page.getByRole('button', { name: /^Lomo saltado/ })).toHaveCount(0)
-    await page.getByRole('button', { name: /^Picarones/ }).click()
-    await expect(page.getByRole('dialog', { name: 'Picarones' })).toBeVisible()
-    await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).click()
-    await page.getByRole('tab', { name: /Menú del día/ }).click()
-    await expect(page.getByRole('button', { name: /^Menú ejecutivo/ })).toBeVisible()
-    await page.getByRole('tab', { name: /Combos/ }).click()
-    await expect(page.getByRole('button', { name: /^Combo marino/ })).toBeVisible()
+    await page.goto('/carta')
+    await page.getByRole('radio', { name: 'Tarjetas' }).click()
+    await expect(page.locator('main tbody')).toHaveCount(0)
+    const tarjeta = page.locator('article').filter({ hasText: 'Picarones' })
+    await expect(tarjeta.locator('img')).toBeVisible()
+    await tarjeta.getByRole('button', { name: 'Editar Picarones' }).last().click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.getByRole('button', { name: 'Guardar cambios' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    // La elección se recuerda al volver.
+    await page.reload()
+    await expect(page.getByRole('radio', { name: 'Tarjetas' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    await page.getByRole('radio', { name: 'Tabla' }).click()
+    await expect(page.locator('main tbody tr').first()).toBeVisible()
+
+    await page.goto('/combos')
+    await page.getByRole('radio', { name: 'Tarjetas' }).click()
+    await expect(page.locator('article').filter({ hasText: 'Combo marino' })).toBeVisible()
+    await page.getByRole('button', { name: 'Editar Menú ejecutivo' }).last().click()
+    await expect(page.getByRole('dialog').last()).toContainText('Editar combo')
     expect(errores).toEqual([])
   })
 
