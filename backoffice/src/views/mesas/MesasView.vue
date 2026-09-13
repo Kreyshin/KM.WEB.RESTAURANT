@@ -17,7 +17,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useUiStore } from '@/stores/ui.store'
 import type { ApiError, EstadoMesa, Mesa, NuevaMesa, Salon, Usuario } from '@/types'
 import type { ColumnaTabla, OpcionSelect } from '@/types/ui'
-import { estadosMesa, etiquetaEstado, etiquetaForma, tonoEstado } from '@/utils/mesas'
+import { estadosMesa, etiquetaEstado, etiquetaForma, glifoEstado, tonoEstado } from '@/utils/mesas'
 
 const auth = useAuthStore()
 const ui = useUiStore()
@@ -158,23 +158,31 @@ async function cambiarEstado(mesa: Mesa, estado: EstadoMesa) {
 const uniendo = ref(false)
 const seleccion = ref<string[]>([])
 
-function alternarModoUnir() {
-  uniendo.value = !uniendo.value
+/** Empieza a juntar mesas; si viene del menú de una mesa, ya queda marcada. */
+function empezarAJuntar(mesa?: Mesa) {
+  uniendo.value = true
+  seleccion.value = mesa ? [mesa.id] : []
+}
+
+function cancelarJuntar() {
+  uniendo.value = false
   seleccion.value = []
 }
 
-function alSeleccionarEnPlano(mesa: Mesa) {
-  if (uniendo.value) {
-    if (mesa.grupoId) {
-      ui.notificar(`${mesa.codigo} ya está unida. Sepárala antes de unirla de nuevo.`)
-      return
-    }
-    seleccion.value = seleccion.value.includes(mesa.id)
-      ? seleccion.value.filter((id) => id !== mesa.id)
-      : [...seleccion.value, mesa.id]
+function marcarMesa(mesa: Mesa) {
+  if (mesa.grupoId) {
+    ui.notificar(`${mesa.codigo} ya está junta con otras. Sepáralas antes.`)
     return
   }
+  seleccion.value = seleccion.value.includes(mesa.id)
+    ? seleccion.value.filter((id) => id !== mesa.id)
+    : [...seleccion.value, mesa.id]
+}
+
+/** Clic en una mesa: el administrador la edita; el resto ve y cambia su estado con clic derecho. */
+function abrirMesa(mesa: Mesa) {
   if (puedeConfigurar.value) abrirEdicion(mesa)
+  else ui.notificar('Usa clic derecho sobre la mesa para cambiar su estado.')
 }
 
 const capacidadSeleccion = computed(() =>
@@ -199,7 +207,7 @@ const uniones = computed(() => {
 async function unirSeleccion() {
   try {
     await mesasService.unir(seleccion.value)
-    ui.exito(`Mesas unidas: ${capacidadSeleccion.value} personas.`)
+    ui.exito(`Mesas juntadas para ${capacidadSeleccion.value} personas.`)
     uniendo.value = false
     seleccion.value = []
     await cargar()
@@ -211,7 +219,7 @@ async function unirSeleccion() {
 async function separar(grupoId: string) {
   try {
     await mesasService.separar(grupoId)
-    ui.exito('Mesas separadas.')
+    ui.exito('Mesas separadas: vuelven a atenderse por separado.')
     await cargar()
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudieron separar las mesas.')
@@ -311,8 +319,8 @@ async function eliminar() {
       :titulo="`Plano · ${nombreSalon(salonActivo)}`"
       :subtitulo="
         puedeConfigurar
-          ? 'Arrastra una mesa para reubicarla. Haz clic para editarla.'
-          : 'Haz clic en una mesa para ver su detalle.'
+          ? 'Arrastra para reubicar · clic para editar · clic derecho para estado y más opciones'
+          : 'Clic derecho sobre una mesa para cambiar su estado.'
       "
     >
       <template #acciones>
@@ -320,28 +328,48 @@ async function eliminar() {
           <span class="text-sm text-tenue tabular-nums">
             {{ seleccion.length }} mesas · {{ capacidadSeleccion }} personas
           </span>
-          <KmButton variante="secundario" tamano="sm" @click="alternarModoUnir">Cancelar</KmButton>
+          <KmButton variante="secundario" tamano="sm" @click="cancelarJuntar">Cancelar</KmButton>
           <KmButton tamano="sm" :disabled="seleccion.length < 2" @click="unirSeleccion">
-            Unir mesas
+            Juntar seleccionadas
           </KmButton>
         </template>
-        <KmButton v-else variante="secundario" tamano="sm" @click="alternarModoUnir">
-          Unir mesas
+        <KmButton
+          v-else-if="puedeConfigurar"
+          variante="secundario"
+          tamano="sm"
+          title="Para grupos grandes: varias mesas se atienden como una sola, con una cuenta"
+          @click="empezarAJuntar()"
+        >
+          Juntar mesas para un grupo
         </KmButton>
       </template>
 
       <p v-if="uniendo" class="rs-tono rs-tono-laton mb-3 rounded-control border px-3 py-2 text-sm">
-        Toca las mesas que quieres juntar para un grupo. Deben ser del mismo salón.
+        <strong>Juntar mesas para un grupo grande.</strong> Marca las mesas del salón que se van a
+        juntar: se atenderán como una sola, con una cuenta, hasta que las separes.
       </p>
 
       <PlanoSalon
         :mesas="mesasDelSalon"
-        :editable="puedeConfigurar && !uniendo"
+        :editable="puedeConfigurar"
         :seleccionando="uniendo"
         :seleccionadas="seleccion"
         @mover="moverMesa"
-        @seleccionar="alSeleccionarEnPlano"
+        @abrir="abrirMesa"
+        @marcar="marcarMesa"
+        @estado="cambiarEstado"
+        @juntar="empezarAJuntar"
+        @separar="separar"
+        @eliminar="pedirEliminar"
       />
+
+      <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-tenue">
+        <span v-for="e in estadosMesa" :key="e">{{ glifoEstado[e] }} {{ etiquetaEstado[e] }}</span>
+        <span
+          ><span class="inline-block w-5 border-t-2 border-dashed border-laton align-middle" />
+          Mesas juntadas</span
+        >
+      </div>
 
       <ul v-if="uniones.length" class="mt-4 flex flex-wrap gap-2">
         <li
@@ -353,7 +381,7 @@ async function eliminar() {
           <span class="text-xs text-tenue tabular-nums">{{ u.capacidad }} p.</span>
           <KmBotonIcono
             icono="separar"
-            etiqueta="Separar"
+            etiqueta="Separar mesas"
             :contexto="u.mesas.map((m) => m.codigo).join(' y ')"
             @click="separar(u.grupoId)"
           />

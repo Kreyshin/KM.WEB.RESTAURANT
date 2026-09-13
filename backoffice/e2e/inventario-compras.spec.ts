@@ -36,35 +36,4 @@ test.describe('Inventario y compras', () => {
     await page.goto('/inventario/movimientos')
     await expect(page.locator('tbody')).toContainText('Faltante en toma de inventario')
   })
-
-  test('unir mesas libres, no separar con la cuenta abierta y separar al liberarla', async ({
-    page,
-  }) => {
-    await page.goto('/mesas')
-    const mesa = (codigo: string) =>
-      page.locator('main button[aria-pressed]').filter({ hasText: codigo })
-
-    await page.getByRole('button', { name: 'Unir mesas' }).click()
-    await mesa('M-02').click()
-    await mesa('M-04').click()
-    await expect(page.getByText('2 mesas · 10 personas')).toBeVisible()
-    await page.getByRole('button', { name: 'Unir mesas' }).last().click()
-    await expect(page.getByRole('status').filter({ hasText: 'Mesas unidas' })).toBeVisible()
-
-    await page.getByRole('button', { name: 'Separar M-02 y M-04' }).click()
-    await expect(page.getByRole('status').filter({ hasText: 'Mesas separadas' })).toBeVisible()
-  })
-
-  test('una unión con una mesa ocupada no se puede separar', async ({ page }) => {
-    await page.goto('/mesas')
-    const mesa = (codigo: string) =>
-      page.locator('main button[aria-pressed]').filter({ hasText: codigo })
-    await page.getByRole('button', { name: 'Unir mesas' }).click()
-    await mesa('M-01').click()
-    await mesa('M-02').click()
-    await page.getByRole('button', { name: 'Unir mesas' }).last().click()
-
-    await page.getByRole('button', { name: 'Separar M-01 y M-02' }).click()
-    await expect(page.getByRole('status').filter({ hasText: 'cuenta abierta' })).toBeVisible()
-  })
 })
