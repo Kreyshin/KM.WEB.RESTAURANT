@@ -40,3 +40,23 @@ Reglas de trabajo:
 - La comisión solo existe en apps de delivery.
 - El recargo al consumo se decide en cada canal; Impuestos solo define el porcentaje.
 - Revisar al construir Ventas (F7): si aparece una forma de atención que no encaja en las cuatro, se evalúa con esta misma tabla antes de añadirla.
+
+## D-002 · Inventario: qué opera el restaurante y qué queda en el ERP
+
+**Contexto.** El back office tenía un modal para registrar cualquier movimiento insumo por insumo (entrada, salida, merma, ajuste, traslado). Con un ERP que hace de núcleo, ese registro manual duplica funciones; y pedir mercadería entre almacenes es un documento con varias líneas, no un movimiento suelto.
+
+**Alternativas evaluadas.**
+
+| Opción                                                    | Usuario                                       | Negocio                                       | Desarrollo                                  |
+| --------------------------------------------------------- | --------------------------------------------- | --------------------------------------------- | ------------------------------------------- |
+| Todo el inventario en el back office                      | Una sola herramienta, pero compite con el ERP | Dos fuentes de verdad para stock y costo      | Duplica kardex, costos y ajustes            |
+| Nada de inventario (todo al ERP)                          | Cocina y barra dependen de otra herramienta   | Se pierde lo propio: recetas, mermas, pedidos | El ERP tendría que conocer recetas y turnos |
+| **Operación de la vertical aquí, núcleo contable en ERP** | Cada rol hace lo suyo donde trabaja           | Stock valorizado en un solo sitio (ERP)       | Integración por movimientos con referencia  |
+
+**Decisión.**
+
+- **Aquí (restaurante):** pedidos internos entre almacenes (pedir → despachar → recibir), mermas operativas, producción de preparaciones y descuento por receta. Movimientos y kardex son de consulta.
+- **ERP (núcleo):** entradas y salidas manuales, ajustes valorizados, costo oficial y toma de inventario especializada.
+- Los pedidos mueven stock en dos pasos: **sale al despachar**, **entra al recibir**. Lo despachado que no llega se registra como merma «Faltante en traslado».
+
+**Pendiente de evaluar (vertical).** Condición de conservación del insumo (ambiente, refrigerado, congelado) y qué admite cada almacén; vida útil y vencimientos; unidad de compra frente a unidad de uso. Afectan a qué se puede pedir o trasladar y a las alertas.

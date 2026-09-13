@@ -30,6 +30,7 @@ import type {
   Receta,
   Salon,
   Usuario,
+  PedidoInterno,
 } from '@/types'
 import { ilustracionCombo, imagenPlato } from './ilustraciones'
 import { simularRed } from './red'
@@ -38,13 +39,14 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v11'
+const CLAVE = 'km.restaurante.mock.v12'
 
 export interface Esquema {
   combos: Combo[]
   almacenes: Almacen[]
   proveedores: Proveedor[]
   ordenesCompra: OrdenCompra[]
+  pedidosInternos: PedidoInterno[]
   tomas: TomaInventario[]
   empresa: Empresa
   impuestos: ConfigImpuestos
@@ -1341,9 +1343,40 @@ function semilla(): Esquema {
     },
   ]
 
+  const pedidosInternos: PedidoInterno[] = [
+    {
+      id: 'pi1',
+      numero: 'PI-000001',
+      destinoId: 'al4',
+      origenId: 'al1',
+      estado: 'enviado',
+      fecha: hoyIso,
+      fechaRequerida: hoyIso,
+      lineas: [
+        { insumoId: 'i3', solicitado: 3, despachado: 0, recibido: 0 },
+        { insumoId: 'i6', solicitado: 2, despachado: 0, recibido: 0 },
+        { insumoId: 'i8', solicitado: 5, despachado: 0, recibido: 0 },
+      ],
+      notas: 'Para el turno de la noche',
+      usuarioId: 'u1',
+    },
+    {
+      id: 'pi2',
+      numero: 'PI-000002',
+      destinoId: 'al3',
+      origenId: 'al1',
+      estado: 'borrador',
+      fecha: hoyIso,
+      lineas: [{ insumoId: 'i6', solicitado: 1.5, despachado: 0, recibido: 0 }],
+      notas: 'Limones para la barra',
+      usuarioId: 'u1',
+    },
+  ]
+
   return {
     combos,
     almacenes,
+    pedidosInternos,
     proveedores,
     ordenesCompra,
     tomas,

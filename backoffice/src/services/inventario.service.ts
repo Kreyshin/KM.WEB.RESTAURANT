@@ -616,7 +616,7 @@ export const inventarioService = {
     return latencia(toma)
   },
 
-  /** Uso interno de compras: aplica varias entradas de una recepción como transacción. */
+  /** Uso interno de compras y pedidos: aplica varios movimientos como una transacción. */
   _aplicarEntradas(entradas: MovimientoCompleto[]) {
     return transaccion(() => entradas.map(aplicar))
   },

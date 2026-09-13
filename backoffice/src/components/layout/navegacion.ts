@@ -105,6 +105,12 @@ export const modulos: ModuloNav[] = [
         roles: ['admin'],
       },
       {
+        nombreRuta: 'inv-pedidos',
+        etiqueta: 'Pedidos internos',
+        descripcion: 'Pedir, despachar y recibir mercadería entre almacenes',
+        roles: ['admin'],
+      },
+      {
         nombreRuta: 'inv-almacenes',
         etiqueta: 'Almacenes',
         descripcion: 'Dónde se guarda por local',

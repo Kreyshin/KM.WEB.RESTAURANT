@@ -81,6 +81,12 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Toma de inventario', roles: ['admin'] },
       },
       {
+        path: 'inventario/pedidos',
+        name: 'inv-pedidos',
+        component: () => import('@/views/inventario/PedidosView.vue'),
+        meta: { titulo: 'Pedidos internos', roles: ['admin'] },
+      },
+      {
         path: 'inventario/almacenes',
         name: 'inv-almacenes',
         component: () => import('@/views/inventario/AlmacenesView.vue'),

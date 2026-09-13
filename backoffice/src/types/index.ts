@@ -334,6 +334,40 @@ export type NuevoCombo = Omit<Combo, 'id'>
 export type NuevoAlmacen = Omit<Almacen, 'id'>
 export type NuevoProveedor = Omit<Proveedor, 'id'>
 export type NuevaOrdenCompra = Omit<OrdenCompra, 'id' | 'numero' | 'estado'>
+
+export type EstadoPedidoInterno = 'borrador' | 'enviado' | 'despachado' | 'recibido' | 'anulado'
+
+export interface LineaPedidoInterno {
+  insumoId: string
+  solicitado: number
+  despachado: number
+  recibido: number
+}
+
+/** Pedido de mercadería de un almacén a otro (cocina o sucursal al almacén central). */
+export interface PedidoInterno {
+  id: string
+  numero: string
+  /** Almacén que pide y recibe. */
+  destinoId: string
+  /** Almacén que despacha. */
+  origenId: string
+  estado: EstadoPedidoInterno
+  /** `YYYY-MM-DD`. */
+  fecha: string
+  /** Para cuándo se necesita, `YYYY-MM-DD`. */
+  fechaRequerida?: string
+  lineas: LineaPedidoInterno[]
+  notas?: string
+  usuarioId: string
+  despachadoEn?: string
+  recibidoEn?: string
+}
+
+export type NuevoPedidoInterno = Omit<
+  PedidoInterno,
+  'id' | 'numero' | 'estado' | 'despachadoEn' | 'recibidoEn'
+>
 export type NuevaCategoria = Omit<Categoria, 'id'>
 export type NuevoProducto = Omit<Producto, 'id'>
 /** Stock y existencias no se editan desde la ficha: cambian con movimientos. */

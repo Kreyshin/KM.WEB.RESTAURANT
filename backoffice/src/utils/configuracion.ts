@@ -1,6 +1,7 @@
 import type {
   DiaSemana,
   EstadoOrdenCompra,
+  EstadoPedidoInterno,
   EstadoToma,
   TipoCombo,
   TipoCanal,
@@ -91,6 +92,22 @@ export const tonoEstadoOrden: Record<EstadoOrdenCompra, TonoMesa> = {
   parcial: 'laton',
   recibida: 'verde',
   anulada: 'vino',
+}
+
+export const etiquetaEstadoPedido: Record<EstadoPedidoInterno, string> = {
+  borrador: 'Borrador',
+  enviado: 'Por despachar',
+  despachado: 'En camino',
+  recibido: 'Recibido',
+  anulado: 'Anulado',
+}
+
+export const tonoEstadoPedido: Record<EstadoPedidoInterno, TonoMesa> = {
+  borrador: 'neutro',
+  enviado: 'laton',
+  despachado: 'pizarra',
+  recibido: 'verde',
+  anulado: 'vino',
 }
 
 export const etiquetaEstadoToma: Record<EstadoToma, string> = {
