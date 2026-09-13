@@ -5,15 +5,27 @@
  * de importar este módulo y esta carpeta se borra.
  */
 
-import type { Categoria, Insumo, Mesa, Movimiento, Producto, Receta, Salon, Usuario } from '@/types'
+import type {
+  Categoria,
+  Insumo,
+  Local,
+  Mesa,
+  Movimiento,
+  Producto,
+  Receta,
+  Salon,
+  Usuario,
+} from '@/types'
+import { simularRed } from './red'
 
 /**
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v2'
+const CLAVE = 'km.restaurante.mock.v3'
 
-interface Esquema {
+export interface Esquema {
+  locales: Local[]
   salones: Salon[]
   mesas: Mesa[]
   usuarios: Usuario[]
@@ -25,6 +37,32 @@ interface Esquema {
 }
 
 function semilla(): Esquema {
+  const locales: Local[] = [
+    {
+      id: 'l1',
+      nombre: 'Miraflores',
+      direccion: 'Av. José Larco 812',
+      distrito: 'Miraflores',
+      telefono: '01 445 2210',
+      activo: true,
+    },
+    {
+      id: 'l2',
+      nombre: 'San Isidro',
+      direccion: 'Calle Las Begonias 475',
+      distrito: 'San Isidro',
+      telefono: '01 422 8930',
+      activo: true,
+    },
+    {
+      id: 'l3',
+      nombre: 'Barranco',
+      direccion: 'Jr. Pedro de Osma 135',
+      distrito: 'Barranco',
+      activo: false,
+    },
+  ]
+
   const usuarios: Usuario[] = [
     {
       id: 'u1',
@@ -724,7 +762,7 @@ function semilla(): Esquema {
     },
   ]
 
-  return { salones, mesas, usuarios, categorias, productos, insumos, movimientos, recetas }
+  return { locales, salones, mesas, usuarios, categorias, productos, insumos, movimientos, recetas }
 }
 
 function cargar(): Esquema {
@@ -759,9 +797,9 @@ export function reiniciarMock() {
   guardar(db)
 }
 
-/** Simula latencia de red para que los estados de carga sean visibles. */
-export function latencia<T>(valor: T, ms = 220): Promise<T> {
-  return new Promise((resolve) => setTimeout(() => resolve(structuredClone(valor)), ms))
+/** Simula la red (latencia y fallos configurables) para que los estados de carga y error sean visibles. */
+export function latencia<T>(valor: T, ms?: number): Promise<T> {
+  return simularRed(valor, ms)
 }
 
 export function nuevoId(prefijo: string) {

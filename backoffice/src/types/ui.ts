@@ -13,9 +13,24 @@ export interface ColumnaTabla {
   etiqueta: string
   /** Clases Tailwind extra para la celda (ancho, alineación...). */
   clase?: string
+  /** Muestra el control de orden en la cabecera; ordena por `clave`. */
+  ordenable?: boolean
 }
 
 export interface OpcionSelect {
   valor: string | number
   etiqueta: string
+}
+
+export interface Pestana {
+  valor: string
+  etiqueta: string
+  /** Cifra opcional junto a la etiqueta (p. ej. registros pendientes). */
+  contador?: number
+}
+
+/** Rango de fechas en formato `YYYY-MM-DD`, extremos incluidos. */
+export interface RangoFechas {
+  desde: string
+  hasta: string
 }

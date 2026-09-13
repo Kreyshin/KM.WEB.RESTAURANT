@@ -12,6 +12,8 @@ export default defineConfigWithVueTs(
     name: 'km/ignorados',
     ignores: [
       '**/dist/**',
+      '**/dist-demo/**',
+      'docs/.vitepress/cache/**',
       '**/coverage/**',
       '**/node_modules/**',
       // Identidad de plataforma preservada: no se edita, no se audita.

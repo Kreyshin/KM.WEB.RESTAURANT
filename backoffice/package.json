@@ -14,9 +14,15 @@
     "formato:fix": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run formato && npm run lint && npm run tipos && npm run test"
+    "verify": "npm run formato && npm run lint && npm run tipos && npm run test",
+    "build:demo": "vue-tsc -b && vite build --mode demo",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
+    "@vuepic/vue-datepicker": "^14.0.0",
+    "date-fns": "^4.4.0",
     "pinia": "^4.0.3",
     "vue": "^3.5.41",
     "vue-router": "^5.3.1"
@@ -36,6 +42,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
+    "vitepress": "^1.6.4",
     "vitest": "^5.0.0",
     "vue-tsc": "^3.3.11"
   }

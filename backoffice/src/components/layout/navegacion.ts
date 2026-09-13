@@ -30,6 +30,12 @@ export const modulos: ModuloNav[] = [
     icono: 'M3 12l9-9 9 9M5 10v10h14V10',
     secciones: [
       { nombreRuta: 'dashboard', etiqueta: 'Dashboard', descripcion: 'Estado de la sala en vivo' },
+      {
+        nombreRuta: 'componentes',
+        etiqueta: 'Guía de componentes',
+        descripcion: 'Piezas base de la interfaz',
+        roles: ['admin'],
+      },
     ],
   },
   {

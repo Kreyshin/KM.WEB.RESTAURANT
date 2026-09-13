@@ -29,6 +29,10 @@ export const useUiStore = defineStore('ui', () => {
    */
   const menuAbierto = ref(window.innerWidth >= 1024)
   const tema = ref<Tema>(temaInicial())
+  /** Paleta de búsqueda global (Ctrl+K). */
+  const buscadorAbierto = ref(false)
+  /** Panel para ajustar y reiniciar los datos de ejemplo. */
+  const panelDatosAbierto = ref(false)
 
   // La guía exige persistir la preferencia de tema entre sesiones.
   watch(
@@ -65,6 +69,8 @@ export const useUiStore = defineStore('ui', () => {
     toasts,
     menuAbierto,
     tema,
+    buscadorAbierto,
+    panelDatosAbierto,
     notificar,
     exito,
     error,

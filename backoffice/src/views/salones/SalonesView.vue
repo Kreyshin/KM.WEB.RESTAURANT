@@ -1,22 +1,31 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
+import KmBusqueda from '@/components/ui/KmBusqueda.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmConfirm from '@/components/ui/KmConfirm.vue'
+import KmExportar from '@/components/ui/KmExportar.vue'
+import KmPaginacion from '@/components/ui/KmPaginacion.vue'
+import KmSelect from '@/components/ui/KmSelect.vue'
 import KmTable from '@/components/ui/KmTable.vue'
 import SalonFormModal from './SalonFormModal.vue'
+import { useListado } from '@/composables/useListado'
 import { mesasService } from '@/services/mesas.service'
 import { salonesService } from '@/services/salones.service'
 import { useUiStore } from '@/stores/ui.store'
 import type { ApiError, Mesa, NuevoSalon, Salon } from '@/types'
-import type { ColumnaTabla } from '@/types/ui'
+import type { ColumnaTabla, OpcionSelect } from '@/types/ui'
+import { exportarCsv, exportarExcel, type ColumnaExportable } from '@/utils/exportar'
 
 const ui = useUiStore()
 
-const salones = ref<Salon[]>([])
+const listado = useListado((consulta) => salonesService.consultar(consulta))
+const { consulta, items, total, cargando, error } = listado
+
+/** Catálogo completo: alimenta el recuento de mesas y el orden sugerido. */
+const todos = ref<Salon[]>([])
 const mesas = ref<Mesa[]>([])
-const cargando = ref(true)
 
 const modalAbierto = ref(false)
 const salonEnEdicion = ref<Salon | null>(null)
@@ -27,34 +36,77 @@ const salonAEliminar = ref<Salon | null>(null)
 const eliminando = ref(false)
 
 const columnas: ColumnaTabla[] = [
-  { clave: 'orden', etiqueta: '#', clase: 'w-16' },
-  { clave: 'nombre', etiqueta: 'Salón' },
+  { clave: 'orden', etiqueta: '#', clase: 'w-16', ordenable: true },
+  { clave: 'nombre', etiqueta: 'Salón', ordenable: true },
   { clave: 'mesas', etiqueta: 'Mesas', clase: 'w-28' },
-  { clave: 'estado', etiqueta: 'Estado', clase: 'w-32' },
+  { clave: 'activo', etiqueta: 'Estado', clase: 'w-32', ordenable: true },
   { clave: 'acciones', etiqueta: '', clase: 'w-32 text-right' },
 ]
 
-const ordenSugerido = computed(() => Math.max(0, ...salones.value.map((s) => s.orden)) + 1)
+const opcionesEstado: OpcionSelect[] = [
+  { valor: '', etiqueta: 'Todos los estados' },
+  { valor: 'activo', etiqueta: 'Activos' },
+  { valor: 'inactivo', etiqueta: 'Inactivos' },
+]
+
+/** El select trabaja con texto; el filtro del servicio espera booleano. */
+const filtroEstado = computed({
+  get: () => {
+    const activo = consulta.filtros?.activo
+    return activo === undefined ? '' : activo ? 'activo' : 'inactivo'
+  },
+  set: (valor: string | number | undefined) => {
+    consulta.filtros = {
+      ...consulta.filtros,
+      activo: valor === '' || valor === undefined ? undefined : valor === 'activo',
+    }
+  },
+})
+
+const hayCriterios = computed(() => !!consulta.buscar || consulta.filtros?.activo !== undefined)
+
+const ordenSugerido = computed(() => Math.max(0, ...todos.value.map((s) => s.orden)) + 1)
 
 function mesasDe(salonId: string) {
   return mesas.value.filter((m) => m.salonId === salonId).length
 }
 
-async function cargar() {
-  cargando.value = true
+async function cargarCatalogo() {
   try {
-    ;[salones.value, mesas.value] = await Promise.all([
+    ;[todos.value, mesas.value] = await Promise.all([
       salonesService.listar(),
       mesasService.listar(),
     ])
   } catch (e) {
-    ui.error((e as ApiError).mensaje ?? 'No se pudieron cargar los salones.')
-  } finally {
-    cargando.value = false
+    ui.error((e as ApiError).mensaje ?? 'No se pudieron cargar las mesas.')
   }
 }
 
-onMounted(cargar)
+async function recargar() {
+  await Promise.all([listado.recargar(), cargarCatalogo()])
+}
+
+onMounted(cargarCatalogo)
+
+const columnasExport: ColumnaExportable<Salon>[] = [
+  { etiqueta: 'Orden', valor: (s) => s.orden },
+  { etiqueta: 'Salón', valor: (s) => s.nombre },
+  { etiqueta: 'Descripción', valor: (s) => s.descripcion },
+  { etiqueta: 'Mesas', valor: (s) => mesasDe(s.id) },
+  { etiqueta: 'Activo', valor: (s) => s.activo },
+]
+
+/** Exporta todo lo que coincide con búsqueda y filtros, no solo la página visible. */
+async function exportar(formato: 'csv' | 'excel') {
+  try {
+    const r = await salonesService.consultar({ ...consulta, pagina: 1, porPagina: 10_000 })
+    if (formato === 'csv') exportarCsv('salones', r.items, columnasExport)
+    else exportarExcel('salones', r.items, columnasExport)
+    ui.exito(`Exportados ${r.items.length} salones.`)
+  } catch (e) {
+    ui.error((e as ApiError).mensaje ?? 'No se pudo exportar.')
+  }
+}
 
 function abrirNuevo() {
   salonEnEdicion.value = null
@@ -76,7 +128,7 @@ async function guardar(datos: NuevoSalon, id?: string) {
       ui.exito('Salón creado.')
     }
     modalAbierto.value = false
-    await cargar()
+    await recargar()
   } catch (e) {
     const err = e as ApiError
     ui.error(err.mensaje ?? 'No se pudo guardar el salón.')
@@ -96,7 +148,7 @@ async function eliminar() {
     await salonesService.eliminar(salonAEliminar.value.id)
     ui.exito('Salón eliminado.')
     confirmAbierto.value = false
-    await cargar()
+    await recargar()
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudo eliminar el salón.')
   } finally {
@@ -107,7 +159,7 @@ async function eliminar() {
 async function alternarActivo(salon: Salon) {
   try {
     await salonesService.actualizar(salon.id, { activo: !salon.activo })
-    await cargar()
+    await listado.recargar()
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudo cambiar el estado.')
   }
@@ -122,14 +174,33 @@ async function alternarActivo(salon: Salon) {
       sin-padding
     >
       <template #acciones>
+        <KmExportar :disabled="total === 0" @exportar="exportar" />
         <KmButton tamano="sm" @click="abrirNuevo">Nuevo salón</KmButton>
       </template>
 
+      <div class="flex flex-wrap items-center gap-3 border-b border-linea px-6 py-3">
+        <KmBusqueda v-model="consulta.buscar" placeholder="Buscar salón" />
+        <div class="w-full sm:w-48">
+          <KmSelect
+            v-model="filtroEstado"
+            :opciones="opcionesEstado"
+            etiqueta="Filtrar por estado"
+          />
+        </div>
+      </div>
+
       <KmTable
+        v-model:orden="consulta.orden"
         :columnas="columnas"
-        :filas="salones"
+        :filas="items"
         :cargando="cargando"
-        mensaje-vacio="Aún no hay salones. Crea el primero para empezar a configurar mesas."
+        :error="error"
+        :mensaje-vacio="
+          hayCriterios
+            ? 'Ningún salón coincide con la búsqueda o el filtro.'
+            : 'Aún no hay salones. Crea el primero para empezar a configurar mesas.'
+        "
+        @reintentar="recargar"
       >
         <template #col-orden="{ fila }">
           <span class="text-tenue tabular-nums">{{ fila.orden }}</span>
@@ -144,7 +215,7 @@ async function alternarActivo(salon: Salon) {
           <span class="tabular-nums">{{ mesasDe(fila.id) }}</span>
         </template>
 
-        <template #col-estado="{ fila }">
+        <template #col-activo="{ fila }">
           <button type="button" title="Cambiar estado" @click="alternarActivo(fila)">
             <KmBadge :tono="fila.activo ? 'verde' : 'neutro'" punto>
               {{ fila.activo ? 'Activo' : 'Inactivo' }}
@@ -161,6 +232,13 @@ async function alternarActivo(salon: Salon) {
           </div>
         </template>
       </KmTable>
+
+      <KmPaginacion
+        v-if="!error"
+        v-model:pagina="consulta.pagina"
+        v-model:por-pagina="consulta.porPagina"
+        :total="total"
+      />
     </KmCard>
 
     <SalonFormModal

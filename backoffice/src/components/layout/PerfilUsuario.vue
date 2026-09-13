@@ -29,6 +29,11 @@ function alClicFuera(evento: MouseEvent) {
 onMounted(() => document.addEventListener('click', alClicFuera))
 onBeforeUnmount(() => document.removeEventListener('click', alClicFuera))
 
+function abrirDatosEjemplo() {
+  abierto.value = false
+  ui.panelDatosAbierto = true
+}
+
 async function cerrarSesion() {
   abierto.value = false
   await auth.logout()
@@ -78,6 +83,15 @@ async function cerrarSesion() {
             :class="ui.tema === 'oscuro' ? 'left-4.5' : 'left-0.5'"
           />
         </span>
+      </button>
+
+      <button
+        type="button"
+        class="flex w-full items-center justify-between border-t border-linea px-4 py-3 text-sm text-tinta transition-colors hover:bg-seleccion"
+        @click="abrirDatosEjemplo"
+      >
+        <span>Datos de ejemplo</span>
+        <span class="rs-etiqueta text-laton-texto">Mock</span>
       </button>
 
       <button

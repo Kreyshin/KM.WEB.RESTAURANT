@@ -179,6 +179,38 @@ export interface Paginado<T> {
   porPagina: number
 }
 
+export type DireccionOrden = 'asc' | 'desc'
+
+export interface Orden {
+  campo: string
+  direccion: DireccionOrden
+}
+
+/**
+ * Parámetros de listado que entiende cualquier servicio paginado.
+ * Se traducen 1:1 a query string cuando el servicio pase a HTTP:
+ * `?buscar=&orden=nombre:asc&pagina=1&porPagina=20&estado=activo`.
+ */
+export interface Consulta {
+  buscar?: string
+  orden?: Orden
+  pagina?: number
+  porPagina?: number
+  /** Igualdad exacta por campo; `undefined` o `''` no filtra. */
+  filtros?: Record<string, string | number | boolean | undefined>
+}
+
+// ── Empresa y locales ────────────────────────────────────────────────────────
+
+export interface Local {
+  id: string
+  nombre: string
+  direccion: string
+  distrito: string
+  telefono?: string
+  activo: boolean
+}
+
 export interface ApiError {
   mensaje: string
   campos?: Record<string, string>

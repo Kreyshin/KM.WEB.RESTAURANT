@@ -2,6 +2,8 @@
 import BarraPrincipal from '@/components/layout/BarraPrincipal.vue'
 import CabeceraTrabajo from '@/components/layout/CabeceraTrabajo.vue'
 import MenuContextual from '@/components/layout/MenuContextual.vue'
+import BuscadorGlobal from '@/components/layout/BuscadorGlobal.vue'
+import PanelDatosEjemplo from '@/components/layout/PanelDatosEjemplo.vue'
 </script>
 
 <template>
@@ -21,5 +23,8 @@ import MenuContextual from '@/components/layout/MenuContextual.vue'
         </RouterView>
       </main>
     </div>
+
+    <BuscadorGlobal />
+    <PanelDatosEjemplo />
   </div>
 </template>

@@ -1,7 +1,14 @@
-import type { NuevoSalon, Salon } from '@/types'
+import type { Consulta, NuevoSalon, Paginado, Salon } from '@/types'
+import { aplicarConsulta } from './mock/consulta'
 import { db, latencia, nuevoId, persistir } from './mock/db'
 
 export const salonesService = {
+  /** Listado paginado para tablas. Sin orden explícito, respeta `orden`. */
+  async consultar(consulta: Consulta = {}): Promise<Paginado<Salon>> {
+    const base = [...db.salones].sort((a, b) => a.orden - b.orden)
+    return latencia(aplicarConsulta(base, consulta, ['nombre', 'descripcion']))
+  },
+
   async listar(): Promise<Salon[]> {
     const ordenados = [...db.salones].sort((a, b) => a.orden - b.orden)
     return latencia(ordenados)

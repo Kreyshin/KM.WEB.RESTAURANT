@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* Fuentes explícitas: la documentación (VitePress) compila desde docs/ y no vería src/. */
+@source '../';
+@source '../../docs';
+
 /* =============================================================================
  * Restaurante — sistema de diseño propio
  *
@@ -363,4 +367,106 @@ body {
 
 .rs-entrada {
   animation: rs-entrada 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Selector de fechas (@vuepic/vue-datepicker) ──────────────────────────── */
+
+/*
+ * La librería trae su propio azul; aquí se le reasignan los tokens Mesa. Como
+ * los `--rs-*` ya cambian con `data-theme`, basta un bloque para ambos temas.
+ */
+:root {
+  --dp-font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --dp-font-size: 0.875rem;
+  --dp-preview-font-size: 0.75rem;
+  --dp-border-radius: var(--rs-radio-control);
+  --dp-cell-border-radius: var(--rs-radio-control);
+  --dp-cell-size: 36px;
+  --dp-button-height: 34px;
+  --dp-month-year-row-height: 40px;
+  --dp-menu-min-width: 280px;
+  --dp-menu-padding: 8px 10px;
+  --dp-input-padding: 8px 32px 8px 12px;
+  --dp-input-icon-padding: 36px;
+  --dp-action-row-padding: 10px 12px;
+}
+
+.dp--theme-light,
+.dp--theme-dark {
+  --dp-background-color: var(--rs-surface);
+  --dp-text-color: var(--rs-text);
+  --dp-hover-color: var(--rs-selection);
+  --dp-hover-text-color: var(--rs-text);
+  --dp-hover-icon-color: var(--rs-text);
+  --dp-primary-color: var(--rs-accion);
+  --dp-primary-disabled-color: color-mix(in srgb, var(--rs-accion) 45%, var(--rs-surface));
+  --dp-primary-text-color: #fff;
+  --dp-secondary-color: color-mix(in srgb, var(--rs-muted) 55%, var(--rs-surface));
+  --dp-border-color: var(--rs-border);
+  --dp-menu-border-color: var(--rs-border);
+  --dp-border-color-hover: var(--rs-primary);
+  --dp-border-color-focus: var(--rs-primary);
+  --dp-disabled-color: var(--rs-surface-2);
+  --dp-disabled-color-text: var(--rs-muted);
+  --dp-icon-color: var(--rs-muted);
+  --dp-danger-color: var(--rs-vino);
+  --dp-marker-color: var(--rs-laton-500);
+  --dp-highlight-color: color-mix(in srgb, var(--rs-laton-500) 18%, transparent);
+  --dp-scroll-bar-background: transparent;
+  --dp-scroll-bar-color: var(--rs-border);
+  --dp-range-between-dates-background-color: color-mix(
+    in srgb,
+    var(--rs-primary) 14%,
+    var(--rs-surface)
+  );
+  --dp-range-between-dates-text-color: var(--rs-text);
+  --dp-range-between-border-color: transparent;
+}
+
+.dp--input {
+  min-height: 2.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dp--input:focus-visible {
+  box-shadow: none;
+}
+
+.dp--menu {
+  border-radius: var(--rs-radio-card);
+  box-shadow: var(--rs-sombra-flotante);
+  overflow: hidden;
+}
+
+/* Hoy: anillo de latón, para no confundirlo con el día seleccionado (verde). */
+.dp--today {
+  border-color: var(--rs-laton-500);
+}
+
+.dp--calendar-header-item {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rs-muted);
+}
+
+/* Mes y año en la cabecera: serif «de carta», y se ven clicables. */
+.dp--month-year-select {
+  font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.dp--overlay-cell {
+  text-transform: capitalize;
+}
+
+.dp--action-row {
+  border-top: 1px solid var(--rs-border);
+}
+
+/* Campo sin anillo de foco global: el propio control ya marca el foco. */
+.rs-sin-anillo:focus-visible {
+  box-shadow: none;
 }

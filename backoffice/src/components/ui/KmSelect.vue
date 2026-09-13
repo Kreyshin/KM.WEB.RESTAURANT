@@ -6,6 +6,8 @@ withDefaults(
     id?: string
     opciones: OpcionSelect[]
     placeholder?: string
+    /** Nombre accesible cuando el select no tiene label visible. */
+    etiqueta?: string
     invalido?: boolean
     disabled?: boolean
   }>(),
@@ -21,6 +23,7 @@ const modelo = defineModel<string | number | undefined>()
       :id="id"
       v-model="modelo"
       :disabled="disabled"
+      :aria-label="etiqueta"
       :aria-invalid="invalido || undefined"
       class="min-h-10 w-full appearance-none rounded-control border bg-panel py-2 pr-9 pl-3 text-sm text-tinta transition-colors duration-200 disabled:bg-panel-2 disabled:text-tenue"
       :class="invalido ? 'border-vino' : 'border-linea focus:border-verde'"

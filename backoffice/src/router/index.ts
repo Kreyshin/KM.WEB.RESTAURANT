@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import type { Rol } from '@/types'
 import { useAuthStore } from '@/stores/auth.store'
@@ -79,6 +79,18 @@ const rutas: RouteRecordRaw[] = [
     ],
   },
   {
+    path: '/componentes',
+    component: () => import('@/layouts/AppLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'componentes',
+        component: () => import('@/views/guia/GuiaComponentesView.vue'),
+        meta: { titulo: 'Guía de componentes', roles: ['admin'] },
+      },
+    ],
+  },
+  {
     path: '/sin-permiso',
     name: 'sin-permiso',
     component: () => import('@/views/SinPermisoView.vue'),
@@ -93,7 +105,11 @@ const rutas: RouteRecordRaw[] = [
 ]
 
 export const router = createRouter({
-  history: createWebHistory(),
+  // La demo de GitHub Pages usa hash (#/salones): Pages no reescribe subrutas al index.html.
+  history:
+    import.meta.env.MODE === 'demo'
+      ? createWebHashHistory(import.meta.env.BASE_URL)
+      : createWebHistory(import.meta.env.BASE_URL),
   routes: rutas,
   scrollBehavior: () => ({ top: 0 }),
 })
