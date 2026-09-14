@@ -149,12 +149,6 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Motivos', roles: ['admin'] },
       },
       {
-        path: 'configuracion/series',
-        name: 'config-series',
-        component: () => import('@/views/configuracion/SeriesView.vue'),
-        meta: { titulo: 'Series de comprobantes', roles: ['admin'] },
-      },
-      {
         path: 'reportes',
         name: 'reportes',
         component: () => import('@/views/EnConstruccionView.vue'),

@@ -211,12 +211,6 @@ export const modulos: ModuloNav[] = [
         descripcion: 'Anulación, descuento y cortesía',
         roles: ['admin'],
       },
-      {
-        nombreRuta: 'config-series',
-        etiqueta: 'Series de comprobantes',
-        descripcion: 'Numeración de comprobantes',
-        roles: ['admin'],
-      },
     ],
   },
 ]

@@ -163,7 +163,7 @@ Permitido según configuración, para compras de emergencia o de mercado. Contro
 
 **Decisión.**
 
-- Se **quitan** del back office las pantallas de empresa, locales, impuestos y medios de pago. Sus datos se siguen usando internamente (selector de local, cálculo de tickets).
+- Se **quitan** del back office las pantallas de empresa, locales, impuestos, medios de pago y series de comprobantes. Sus datos se siguen usando internamente (selector de local, cálculo de tickets).
 - Se crea la sección **Configuración** con cuatro partes:
 
 | Parte                            | Alcance                                     | Quién la ve                                                                                                                |
@@ -175,4 +175,5 @@ Permitido según configuración, para compras de emergencia o de mercado. Contro
 
 - **Herencia:** un local sin valor propio usa el de la vertical (base de la cadena Cadena → Local → Almacén → Categoría → Insumo de D-004).
 - Los catálogos de **parámetros** y **permisos** empiezan vacíos. Cada fase añade sus definiciones en `parametros.service.ts` y las pantallas las muestran sin cambios.
-- Series de comprobantes, canales de venta, estaciones e impresoras y motivos siguen en Configuración.
+- También se quitan las **series de comprobantes**: la numeración la gestiona el ERP.
+- Canales de venta, estaciones e impresoras y motivos siguen en Configuración.

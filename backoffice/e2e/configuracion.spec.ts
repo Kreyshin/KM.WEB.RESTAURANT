@@ -5,27 +5,17 @@ test.describe('Configuración del negocio', () => {
     await entrar()
   })
 
-  test('las series del ERP se consultan pero no se crean, editan ni eliminan', async ({ page }) => {
-    await page.goto('/configuracion/series')
-    await expect(fila(page, 'B001')).toBeVisible()
-    await expect(page.getByText('Sincronizado desde ERP').first()).toBeVisible()
-    await expect(page.getByRole('button', { name: /^(Nuevo|Nueva) / })).toHaveCount(0)
-    await expect(page.locator('main tbody').getByRole('button', { name: /^Editar / })).toHaveCount(
-      0,
-    )
-
-    await fila(page, 'B001').getByRole('button', { name: /^Ver / }).click()
-    const d = drawer(page)
-    await expect(d).toContainText('Sincronizado desde el ERP')
-    await expect(d.locator('input, select, textarea').first()).toBeDisabled()
-    await expect(d.getByRole('button', { name: /Guardar|Crear/ })).toHaveCount(0)
-  })
-
-  test('empresa, locales, impuestos y medios de pago ya no están en el menú', async ({ page }) => {
+  test('lo que gestiona el ERP ya no está en el menú', async ({ page }) => {
     await page.goto('/configuracion')
     await expect(page).toHaveURL(/configuracion\/vertical/)
     const menu = page.getByRole('navigation').filter({ hasText: 'Configuración de la vertical' })
-    for (const nombre of ['Empresa', 'Locales', 'Impuestos y cargos', 'Medios de pago']) {
+    for (const nombre of [
+      'Empresa',
+      'Locales',
+      'Impuestos y cargos',
+      'Medios de pago',
+      'Series de comprobantes',
+    ]) {
       await expect(menu.getByRole('link', { name: new RegExp(`^${nombre}`) })).toHaveCount(0)
     }
   })

@@ -1,4 +1,4 @@
-import { cuentas, expect, test } from './fixtures'
+﻿import { cuentas, expect, test } from './fixtures'
 
 test.describe('Acceso y permisos', () => {
   test('una ruta protegida sin sesión lleva al login y vuelve tras entrar', async ({ page }) => {
@@ -28,7 +28,7 @@ test.describe('Acceso y permisos', () => {
 
     await expect(page.getByRole('button', { name: /Config/ })).toHaveCount(0)
 
-    await page.goto('/configuracion/series')
+    await page.goto('/configuracion/motivos')
     await expect(page).toHaveURL(/\/sin-permiso$/)
   })
 
@@ -36,9 +36,9 @@ test.describe('Acceso y permisos', () => {
     await entrar()
 
     await page.keyboard.press('Control+K')
-    await page.getByRole('combobox').fill('series')
+    await page.getByRole('combobox').fill('motivos')
     await page.keyboard.press('Enter')
 
-    await expect(page).toHaveURL(/\/configuracion\/series$/)
+    await expect(page).toHaveURL(/\/configuracion\/motivos$/)
   })
 })

@@ -31,9 +31,8 @@ La estructura vive en `src/components/layout/navegacion.ts`. Una sección solo a
 | Config.    | Canales de venta             | `/configuracion/canales`     | admin         | ✅       |
 | Config.    | Estaciones e impresoras      | `/configuracion/produccion`  | admin         | ✅       |
 | Config.    | Motivos                      | `/configuracion/motivos`     | admin         | ✅       |
-| Config.    | Series de comprobantes       | `/configuracion/series`      | admin         | ✅ ERP   |
 
-«Vacía» indica que la pantalla existe y muestra su alcance, pero aún no tiene parámetros o permisos: cada fase los añade en `parametros.service.ts`. Empresa, locales, impuestos y medios de pago se gestionan en el ERP y no se muestran (D-006).
+«Vacía» indica que la pantalla existe y muestra su alcance, pero aún no tiene parámetros o permisos: cada fase los añade en `parametros.service.ts`. Empresa, locales, impuestos, medios de pago y series de comprobantes se gestionan en el ERP y no se muestran (D-006).
 
 ## Navegación final prevista
 

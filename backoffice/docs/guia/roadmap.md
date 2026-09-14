@@ -65,8 +65,7 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 
 **Ajuste por D-005 y D-006**
 
-- [x] Series de comprobantes en solo lectura con «Sincronizado desde ERP»
-- [x] Quitar empresa, locales, impuestos y medios de pago (se gestionan en el ERP)
+- [x] Quitar empresa, locales, impuestos, medios de pago y series de comprobantes (se gestionan en el ERP)
 - [x] Configuración de la vertical (alcance global, sin parámetros aún)
 - [x] Configuración por local según los locales a los que accede el usuario (sin parámetros aún)
 - [x] Permisos por rol del ERP (sin permisos aún)
@@ -107,7 +106,7 @@ Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede ava
 
 **Pasar a solo lectura** _(con indicador «Sincronizado desde ERP»)_
 
-- [x] Hecho en F2: series en solo lectura; empresa, locales, impuestos y medios de pago retirados (D-006)
+- [x] Hecho en F2: empresa, locales, impuestos, medios de pago y series retirados (D-006)
 - [ ] Almacenes
 
 **Nuevo: consultas del ERP**
