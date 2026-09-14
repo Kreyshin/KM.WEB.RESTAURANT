@@ -60,9 +60,17 @@ onMounted(cargar)
 
 const nombreInsumo = (id?: string) => (id ? (insumo(id)?.nombre ?? '—') : 'Merma')
 
-function cantidadDe(insumoId: string | undefined, cantidad: number) {
+function cantidadDe(insumoId: string | undefined, cantidad: number, unidadPorDefecto?: string) {
   const i = insumoId ? insumo(insumoId) : undefined
-  return i ? formatearCantidad(cantidad, i.unidad) : `${cantidad}`
+  if (i) return formatearCantidad(cantidad, i.unidad)
+  // La merma no tiene insumo: se mide en la unidad de lo que entra.
+  return unidadPorDefecto ? `${cantidad} ${unidadPorDefecto}` : `${cantidad}`
+}
+
+/** Unidad de la primera entrada: es en lo que se pierde la merma. */
+function unidadEntrada(t: Transformacion) {
+  const primera = t.entradas[0]
+  return primera ? etiquetaUnidad[insumo(primera.insumoId)?.unidad ?? 'unidad'] : undefined
 }
 
 /** Costo de las entradas de una tanda, para ver de dónde sale cada salida. */
@@ -300,7 +308,7 @@ async function confirmarProcesar() {
                   :key="s.id"
                   :class="s.tipo === 'merma' ? 'text-tenue' : 'text-tinta'"
                 >
-                  {{ cantidadDe(s.insumoId, s.cantidad) }}
+                  {{ cantidadDe(s.insumoId, s.cantidad, unidadEntrada(t)) }}
                   {{
                     s.tipo === 'merma'
                       ? `de merma${s.descripcion ? ` · ${s.descripcion}` : ''}`
