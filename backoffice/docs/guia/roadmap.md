@@ -2,22 +2,21 @@
 
 Fases de **front-end** sobre datos de ejemplo. Una fase no empieza sin los maestros que necesita.
 
-> **Reencuadre (D-004, D-005).** El restaurante es una **vertical sobre un ERP**: los maestros del ERP se muestran de solo lectura y la vertical se centra en su operación. F4 se rehace como **F4R · Abastecimiento**.
+> **Reencuadre (D-004, D-005).** El restaurante es una **vertical sobre un ERP**: los maestros del ERP se muestran de solo lectura y la vertical se centra en su operación. **F4 se rehace** con ese criterio.
 
-| Fase                              | Grupo     | Objetivo                                                     | Estado     |
-| --------------------------------- | --------- | ------------------------------------------------------------ | ---------- |
-| F0 · Higiene                      | Base      | Git, lint, formato, tipos y pruebas                          | ✅ Hecha   |
-| F1 · Cimientos de interfaz y mock | Base      | Componentes y capa de datos reutilizables                    | ✅ Hecha*  |
-| F2 · Configuración del negocio    | Base      | Empresa, locales, impuestos, medios de pago, canales, series | ✅ Hecha   |
-| F3 · Sala y carta                 | Maestros  | Cierre de sala y carta: imagen, combos, precio por canal     | ✅ Hecha   |
-| F4 · Inventario y compras         | Maestros  | Stock, kardex, recetas, proveedores, órdenes de compra       | ♻️ Rehacer |
-| F4R · Abastecimiento              | Maestros  | Límite ERP, áreas, insumos, requerimientos y recepción       | En curso   |
-| F5 · Personal y permisos          | Maestros  | Permisos por rol del ERP y por usuario, turnos, auditoría    | Pendiente  |
-| F6 · Clientes y promociones       | Maestros  | Clientes, puntos, cupones, reservas, zonas de delivery       | Pendiente  |
-| F7 · Ventas y caja                | Operación | Cajas, arqueos, listado de ventas, anulaciones               | Pendiente  |
-| F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados   | Pendiente  |
-| F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, stock valorizado             | Pendiente  |
-| F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades        | Pendiente  |
+| Fase                              | Grupo     | Objetivo                                                     | Estado             |
+| --------------------------------- | --------- | ------------------------------------------------------------ | ------------------ |
+| F0 · Higiene                      | Base      | Git, lint, formato, tipos y pruebas                          | ✅ Hecha           |
+| F1 · Cimientos de interfaz y mock | Base      | Componentes y capa de datos reutilizables                    | ✅ Hecha\*         |
+| F2 · Configuración del negocio    | Base      | Empresa, locales, impuestos, medios de pago, canales, series | ✅ Hecha · ajustar |
+| F3 · Sala y carta                 | Maestros  | Cierre de sala y carta: imagen, combos, precio por canal     | ✅ Hecha           |
+| F4 · Abastecimiento               | Maestros  | Límite ERP, áreas, insumos, requerimientos, recepción        | ♻️ Rehacer         |
+| F5 · Personal y permisos          | Maestros  | Permisos por rol del ERP y por usuario, turnos, auditoría    | Pendiente          |
+| F6 · Clientes y promociones       | Maestros  | Clientes, puntos, cupones, reservas, zonas de delivery       | Pendiente          |
+| F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir        | ⚠️ Por decidir     |
+| F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados   | Pendiente          |
+| F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas             | Pendiente          |
+| F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades        | Pendiente          |
 
 \* La semilla realista se amplía en cada fase, cuando existan sus entidades.
 
@@ -64,6 +63,8 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 - [x] Motivos de anulación, descuento y cortesía
 - [x] Series y correlativos por local
 
+> **Ajuste por D-005 (se hace en F4.1).** Empresa, locales, impuestos, medios de pago y series pasan a **solo lectura** (vienen del ERP). Canales de venta y motivos siguen siendo de la vertical. Estaciones de producción se convierten en **Áreas** (F4.2).
+
 ## F3 · Sala y carta
 
 - [x] Unir y separar mesas en el plano (no se separa una unión con la cuenta abierta)
@@ -71,57 +72,88 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 - [x] Combos y menú del día, con precio suelto y ahorro
 - [x] Precio por canal de venta
 - [x] Horario de disponibilidad por categoría
-- [x] Estación de producción por producto
+- [x] Estación de producción por producto _(pasa a área en F4.2)_
 
-## F4R · Abastecimiento (reencuadre)
+## F4 · Abastecimiento
 
-Ver [D-004](./decisiones.md#d-004-·-abastecimiento-articulos-insumos-compras-y-recepcion) y [D-005](./decisiones.md#d-005-·-limite-erp-↔-vertical-y-permisos).
+Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede avanzar por partes: cada subfase deja la aplicación funcionando y con sus pruebas.
 
-**1 · Límite con el ERP**
+| Subfase                                       | Qué entrega                                                                                           | Depende de | Estado    |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| **F4.1 · Límite con el ERP**                  | Retiros, maestros del ERP en solo lectura, artículos y proveedores de consulta                        | —          | Pendiente |
+| **F4.2 · Áreas**                              | Maestro de áreas y a qué área se comanda cada producto                                                | F4.1       | Pendiente |
+| **F4.3 · Insumos y reglas de abastecimiento** | Insumo de la vertical, conversión directa y transformación, parámetros, ubicaciones y stock detallado | F4.1       | Pendiente |
+| **F4.4 · Solicitudes y requerimientos**       | Solicitud por área, requerimiento por local y su seguimiento                                          | F4.2, F4.3 | Pendiente |
+| **F4.5 · Recepción y transformación**         | Recepción con y sin OC, lotes, ubicación y artículos por procesar                                     | F4.3, F4.4 | Pendiente |
 
-- [ ] Retirar pedidos internos, toma de inventario y mantenimiento de proveedores y órdenes de compra
-- [ ] Solo lectura con «Sincronizado desde ERP»: empresa, series, impuestos, locales, almacenes, medios de pago
-- [ ] Maestros ERP de consulta: artículos (unidad de compra, marca), proveedores, marcas
+### F4.1 · Límite con el ERP
 
-**2 · Áreas**
+**Retirar**
 
-- [ ] Maestro de áreas por local (reemplaza estaciones de producción)
-- [ ] Comanda: todos los productos o seleccionados por categoría o producto; aviso de productos sin área
+- [ ] Pedidos internos entre almacenes
+- [ ] Toma de inventario físico
+- [ ] Mantenimiento de proveedores (alta, edición, baja)
+- [ ] Órdenes de compra: creación, emisión, anulación y recepción desde la vertical
+- [ ] Sugerencia de compra actual (se rehace dentro del requerimiento)
+- [ ] Unidades para pedir y recepcionar del insumo (D-003)
 
-**3 · Insumos y reglas de abastecimiento**
+**Pasar a solo lectura** _(con indicador «Sincronizado desde ERP»)_
 
-- [ ] Insumo propio de la vertical con unidad de uso
-- [ ] Reglas: conversión directa y transformación (salidas como insumo o merma, rendimiento esperado)
-- [ ] Parámetros heredados Cadena → Local → Almacén → Categoría → Insumo: lote, vencimiento, FEFO, ubicación, tipo de recepción
+- [ ] Empresa, locales, impuestos, medios de pago y series
+- [ ] Almacenes
+
+**Nuevo: consultas del ERP**
+
+- [ ] Artículos: código, nombre, marca, unidad de compra, proveedor habitual
+- [ ] Proveedores y marcas
+
+**Se conserva**
+
+- Recetas de venta con costo, margen y food cost
+- Movimientos y kardex como **consulta**
+- Canales de venta y motivos
+
+### F4.2 · Áreas
+
+- [ ] Maestro de áreas por local: nombre, tipo, piso o sala, impresora; admite varias del mismo tipo
+- [ ] Comanda: «Todos los productos» (por defecto con una sola área) o «Seleccionados» por categoría o producto
+- [ ] Aviso de productos sin área y de productos en más de un área
+- [ ] Migrar estaciones de producción existentes a áreas
+
+### F4.3 · Insumos y reglas de abastecimiento
+
+- [ ] Insumo propio de la vertical con unidad de uso y categoría de la cadena
+- [ ] Vínculo con uno o varios artículos del ERP (alternos) y artículo por defecto
+- [ ] **Conversión directa:** factor fijo, aplicada al recepcionar
+- [ ] **Transformación:** receta con rendimiento esperado; cada salida es insumo o merma
+- [ ] Parámetros heredados **Cadena → Local → Almacén → Categoría → Insumo**: lote, vencimiento, FEFO, alertas, bloqueo de vencidos, ubicación, tipo de recepción
 - [ ] Ubicaciones (pasillo, estante, fila, columna) y ubicación por defecto por almacén
-- [ ] Stock principal y stock detallado por lote y ubicación
+- [ ] Stock principal (insumo × almacén) y stock detallado (lote × ubicación) cuando aplique
+- [ ] Preparaciones (subrecetas) actuales encajadas como transformación
 
-**4 · Solicitudes y requerimientos de compra**
+### F4.4 · Solicitudes y requerimientos de compra
 
-- [ ] Solicitud por área en insumos, con marca preferida opcional
-- [ ] Requerimiento por local: consolidar, traducir a artículos, proveedor sugerido
-- [ ] Estados, n.° de OC, conversión total o parcial, línea no disponible con alterno
+- [ ] **Solicitud de compra** por área, en insumos, con marca preferida opcional · Borrador → Enviada → Atendida / Rechazada
+- [ ] **Requerimiento de compra** por local: consolidar solicitudes o crear directo; traducir insumos a artículos; proveedor sugerido; ajuste de cantidades con permiso
+- [ ] Estados: Borrador → Enviado → Aprobado → Convertido → Despachado → Recepcionado, y Anulado antes de ser tomado
+- [ ] Seguimiento: n.° de OC, conversión total o parcial por línea
+- [ ] Línea no disponible: alerta y reemplazo por un artículo alterno
 
-**5 · Recepción y transformación**
+### F4.5 · Recepción y transformación
 
-- [ ] Recepción total o a detalle, parcial; lote y ubicación según insumo
-- [ ] Ingreso sin OC con comprobante, tope, motivo y «Pendiente de regularizar»
-- [ ] Artículos por procesar y registro de transformación con rendimiento real
+- [ ] Recepción contra OC: **total** o **a detalle**, admite parcial
+- [ ] Al recepcionar: conversión directa, lote y ubicación según el insumo; lo que requiere transformación queda **por procesar**
+- [ ] **Ingreso sin OC** según configuración: comprobante (tipo, serie, número, monto, foto), tope, motivo y estado «Pendiente de regularizar»
+- [ ] Registro de transformación con rendimiento real, salidas a insumo o merma y vencimiento del resultado
 
-## F4 · Inventario y compras _(versión autónoma, se reemplaza por F4R)_
+## F7 · Ventas y caja
 
-- [x] Almacenes por local y stock por almacén
-- [x] Vista de insumos con alerta de mínimo y stock valorizado
-- [x] Movimientos: entrada, salida, merma y ajuste
-- [x] Kardex por insumo con saldo
-- [x] Traslados entre almacenes
-- [x] Toma de inventario físico con faltantes y sobrantes valorizados
-- [x] Recetas por plato con costo, margen y food cost
-- [x] Preparaciones (subrecetas) con producción en cocina
-- [x] Proveedores con validación de RUC
-- [x] Órdenes de compra: borrador, emisión, anulación y recepción parcial
-- [x] Costo promedio ponderado al recibir
-- [x] Sugerencia de compra por insumos bajo mínimo
+> ⚠️ **Decisión pendiente antes de empezar.** Tomar pedidos en mesa y barra, comandar y cobrar es el **núcleo de la vertical** (D-005). Falta decidir **dónde se construye**:
+>
+> - **Dentro de este proyecto:** una sección POS (mesero y caja) junto al back office, compartiendo carta, mesas, áreas y canales.
+> - **Aplicación aparte de la misma vertical:** el back office solo configura y supervisa, y el POS consume los mismos datos.
+>
+> Según la decisión, F7 incluirá la toma de pedido, la comanda a áreas, la división de cuenta y el cobro, o solo cajas, arqueos, listado de ventas y anulaciones desde el back office.
 
 ## Pendientes de revisión
 
@@ -131,8 +163,7 @@ Decisiones que ya funcionan, pero que deben validarse con datos de operación re
 | -------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Food cost objetivo**           | Con ventas reales en F9                                   | Ajustar los umbrales 30 % / 35 % por categoría (bebidas y postres suelen tener otro rango).                                                                                                                                                         |
 | **Descuento de stock por venta** | Al construir F7 · Ventas                                  | Hoy las recetas calculan costo; descontar insumos al vender llega con las ventas. Decidir de qué almacén descuenta cada área.                                                                                                                       |
-| **Herencia de parámetros**       | Al terminar F4R                                           | Probar con un flujo real si los niveles Cadena → Local → Almacén → Categoría → Insumo bastan o sobra alguno.                                                                                                                                        |
-| **Vencimiento al transformar**   | Al terminar F4R                                           | Si el insumo porcionado hereda el vencimiento del lote, toma nueva vida útil o la menor de ambas.                                                                                                                                                   |
+| **Herencia de parámetros**       | Al terminar F4.3                                          | Probar con un flujo real si los niveles Cadena → Local → Almacén → Categoría → Insumo bastan o sobra alguno.                                                                                                                                        |
+| **Vencimiento al transformar**   | Al terminar F4.5                                          | Si el insumo porcionado hereda el vencimiento del lote, toma nueva vida útil o la menor de ambas.                                                                                                                                                   |
+| **Concepto de cadena**           | Cuando haya locales de distinto formato                   | Crear «Concepto» (Cevichería, Hamburguesas) para agrupar locales y categorías.                                                                                                                                                                      |
 | **Recargo al consumo**           | Al construir F7 · Ventas y caja, y medir en F9 · Reportes | Cuánto recauda por día y por canal; cuántas cuentas lo retiran a pedido del cliente; efecto en el ticket medio y en las propinas; si conviene configurarlo por local u horario además de por canal. Añadir pruebas E2E del cobro con y sin recargo. |
-
-El POS del mesero, la pantalla de cocina (KDS), la carta QR y la app de delivery son sistemas aparte. El back office solo los **configura** y **supervisa**.
