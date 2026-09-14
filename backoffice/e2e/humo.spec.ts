@@ -32,9 +32,6 @@ const catalogos = [
   { ruta: '/carta', nuevo: 'Nuevo producto' },
   { ruta: '/combos', nuevo: 'Nuevo combo' },
   { ruta: '/inventario', nuevo: 'Nuevo insumo' },
-  { ruta: '/inventario/almacenes', nuevo: 'Nuevo almacén' },
-  { ruta: '/compras/proveedores', nuevo: 'Nuevo proveedor' },
-  { ruta: '/compras/ordenes', nuevo: 'Nueva orden' },
   { ruta: '/configuracion/canales', nuevo: 'Nuevo canal' },
   { ruta: '/configuracion/produccion', nuevo: 'Nueva estación' },
   { ruta: '/configuracion/motivos', nuevo: 'Nuevo motivo' },
@@ -77,6 +74,26 @@ test.describe('Humo: botones de cada pantalla', () => {
     })
   }
 
+  test('las consultas del ERP se abren en modo detalle sin errores', async ({ page, entrar }) => {
+    const errores = vigilarErrores(page)
+    await entrar()
+    for (const ruta of [
+      '/compras/articulos',
+      '/compras/proveedores',
+      '/compras/marcas',
+      '/inventario/almacenes',
+    ]) {
+      await page.goto(ruta)
+      await expect(page.locator('main tbody tr').first()).toBeVisible()
+      await expect(page.getByRole('button', { name: /^(Nuevo|Nueva) / })).toHaveCount(0)
+      await page.locator('main tbody').getByRole('button', { name: /^Ver / }).first().click()
+      await expect(page.getByRole('dialog').last()).toContainText('Sincronizado desde el ERP')
+      await page.getByRole('dialog').last().getByRole('button', { name: 'Cerrar' }).last().click()
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+    }
+    expect(errores).toEqual([])
+  })
+
   test('pantallas sin catálogo cargan y responden sin errores', async ({ page, entrar }) => {
     const errores = vigilarErrores(page)
     await entrar()
@@ -85,7 +102,6 @@ test.describe('Humo: botones de cada pantalla', () => {
       '/mesas',
       '/inventario/movimientos',
       '/inventario/recetas',
-      '/inventario/tomas',
       '/configuracion/vertical',
       '/configuracion/local',
       '/configuracion/roles',

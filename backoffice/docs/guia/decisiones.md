@@ -154,7 +154,8 @@ Permitido según configuración, para compras de emergencia o de mercado. Contro
 | Empresa, series, impuestos, locales, almacenes, medios de pago, proveedores, artículos, marcas, roles, órdenes de compra | Canales de venta, áreas, insumos, reglas de abastecimiento, recetas, carta, combos, salones y mesas, solicitudes, requerimientos, recepción |
 
 - El **horario de atención** del local también viene del ERP: puede servir a otras verticales.
-- Se retiran del back office: pedidos internos, toma de inventario y el mantenimiento de proveedores y órdenes de compra.
+- Se retiran del back office: pedidos internos, toma de inventario y el mantenimiento de proveedores y órdenes de compra _(hecho en F4.1)_.
+- Artículos, proveedores, marcas y almacenes se consultan en solo lectura desde `erp.service.ts`.
 - **Permisos:** los roles vienen del ERP y no se crean aquí. La vertical asigna **permisos de la vertical a cada rol del ERP** (el mismo rol puede funcionar distinto en otra vertical) y admite **ajustes por usuario**. Los define un administrador; el usuario solo cambia preferencias sin impacto (tema, colores).
 
 ## D-006 · Configuración de la vertical: global, por local y permisos

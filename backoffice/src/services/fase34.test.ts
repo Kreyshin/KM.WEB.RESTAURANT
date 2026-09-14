@@ -1,13 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { combosService, precioSueltos } from './combos.service'
-import { ordenesCompraService, proveedoresService, totalesOrden } from './compras.service'
 import { inventarioService } from './inventario.service'
 import { mesasService } from './mesas.service'
 import { db, reiniciarMock } from './mock/db'
 
 /**
  * Reglas de F3 y F4 donde un error cuesta dinero o descuadra el stock:
- * existencias por almacén, costo promedio, traslados, tomas, compras y combos.
+ * existencias por almacén, costo promedio, traslados, preparaciones y combos.
  */
 
 beforeEach(() => {
@@ -138,106 +137,6 @@ describe('preparaciones y recetas', () => {
     })
     expect(enAlmacen('i2', 'al2')).toBeCloseTo(pescado - 1)
     expect(enAlmacen('i16', 'al2')).toBeCloseTo(leche + 2)
-  })
-})
-
-describe('toma de inventario', () => {
-  it('ajusta solo lo contado: faltante como merma y sobrante como ajuste', async () => {
-    const toma = await inventarioService.abrirToma('al1', 'u1')
-    const [a, b] = toma.lineas
-    await inventarioService.guardarConteo(toma.id, [
-      { ...a!, contado: a!.teorico - 2 },
-      { ...b!, contado: b!.teorico + 1 },
-    ])
-    await inventarioService.aplicarToma(toma.id, 'u1')
-
-    expect(enAlmacen(a!.insumoId, 'al1')).toBeCloseTo(a!.teorico - 2)
-    expect(enAlmacen(b!.insumoId, 'al1')).toBeCloseTo(b!.teorico + 1)
-    const tipos = db.movimientos.filter((m) => m.referencia === toma.numero).map((m) => m.tipo)
-    expect(tipos.sort()).toEqual(['ajuste', 'merma'])
-  })
-
-  it('no permite dos tomas abiertas en el mismo almacén ni aplicar sin conteo', async () => {
-    const toma = await inventarioService.abrirToma('al1', 'u1')
-    await expect(inventarioService.abrirToma('al1', 'u1')).rejects.toBeTruthy()
-    await expect(inventarioService.aplicarToma(toma.id, 'u1')).rejects.toBeTruthy()
-  })
-})
-
-describe('compras', () => {
-  const orden = () => ({
-    proveedorId: 'pv1',
-    almacenId: 'al2',
-    fechaEmision: '2026-09-13',
-    lineas: [{ insumoId: 'i1', cantidad: 10, costoUnitario: 50, recibido: 0 }],
-  })
-
-  it('numera correlativamente y valida líneas duplicadas', async () => {
-    const oc = await ordenesCompraService.crear(orden())
-    expect(oc.numero).toBe('OC-000043')
-    await expect(
-      ordenesCompraService.crear({ ...orden(), lineas: [...orden().lineas, ...orden().lineas] }),
-    ).rejects.toMatchObject({ campos: { lineas: expect.any(String) } })
-  })
-
-  it('la recepción parcial deja la orden en parte y no permite recibir de más', async () => {
-    const oc = await ordenesCompraService.emitir((await ordenesCompraService.crear(orden())).id)
-    const stock = enAlmacen('i1', 'al2')
-    const parcial = await ordenesCompraService.recibir(
-      oc.id,
-      [{ insumoId: 'i1', cantidad: 4, costoUnitario: 50 }],
-      'u1',
-    )
-    expect(parcial.estado).toBe('parcial')
-    expect(enAlmacen('i1', 'al2')).toBeCloseTo(stock + 4)
-    await expect(
-      ordenesCompraService.recibir(
-        oc.id,
-        [{ insumoId: 'i1', cantidad: 7, costoUnitario: 50 }],
-        'u1',
-      ),
-    ).rejects.toBeTruthy()
-    const completa = await ordenesCompraService.recibir(
-      oc.id,
-      [{ insumoId: 'i1', cantidad: 6, costoUnitario: 50 }],
-      'u1',
-    )
-    expect(completa.estado).toBe('recibida')
-  })
-
-  it('una orden con recepción no se anula ni se edita', async () => {
-    await expect(ordenesCompraService.anular('oc2')).rejects.toBeTruthy()
-    await expect(ordenesCompraService.actualizar('oc2', orden())).rejects.toBeTruthy()
-  })
-
-  it('calcula subtotal, IGV y total sobre costos sin IGV', () => {
-    expect(
-      totalesOrden([{ insumoId: 'x', cantidad: 2, costoUnitario: 50, recibido: 0 }], 18),
-    ).toEqual({
-      subtotal: 100,
-      igv: 18,
-      total: 118,
-    })
-  })
-
-  it('valida el RUC del proveedor', async () => {
-    await expect(
-      proveedoresService.crear({
-        razonSocial: 'X',
-        ruc: '20100070971',
-        diasCredito: 0,
-        activo: true,
-      }),
-    ).rejects.toMatchObject({ campos: { ruc: expect.any(String) } })
-  })
-
-  it('sugiere reponer los insumos bajo mínimo agrupados por proveedor', async () => {
-    const sugerencias = await ordenesCompraService.sugerencias()
-    const lineas = sugerencias.flatMap((s) => s.lineas)
-    expect(lineas.every((l) => insumo(l.insumoId).stock < insumo(l.insumoId).stockMinimo)).toBe(
-      true,
-    )
-    expect(lineas.some((l) => l.insumoId === 'i1')).toBe(true)
   })
 })
 

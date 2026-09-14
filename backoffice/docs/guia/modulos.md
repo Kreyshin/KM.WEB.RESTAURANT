@@ -17,10 +17,10 @@ La estructura vive en `src/components/layout/navegacion.ts`. Una sección solo a
 | Inventario | Insumos                      | `/inventario`                | admin         | ✅       |
 | Inventario | Movimientos y kardex         | `/inventario/movimientos`    | admin         | ✅       |
 | Inventario | Recetas y costos             | `/inventario/recetas`        | admin         | ✅       |
-| Inventario | Toma de inventario           | `/inventario/tomas`          | admin         | ✅       |
 | Inventario | Almacenes                    | `/inventario/almacenes`      | admin         | ✅       |
-| Compras    | Órdenes de compra            | `/compras/ordenes`           | admin         | ✅       |
-| Compras    | Proveedores                  | `/compras/proveedores`       | admin         | ✅       |
+| Compras    | Artículos                    | `/compras/articulos`         | admin         | ✅ ERP   |
+| Compras    | Proveedores                  | `/compras/proveedores`       | admin         | ✅ ERP   |
+| Compras    | Marcas                       | `/compras/marcas`            | admin         | ✅ ERP   |
 | Admin      | Reportes y caja              | `/reportes`                  | admin, cajero | 🚧       |
 | Admin      | Facturación                  | `/facturacion`               | admin, cajero | 🚧       |
 | Admin      | Usuarios y roles             | `/usuarios`                  | admin         | 🚧       |
@@ -31,6 +31,8 @@ La estructura vive en `src/components/layout/navegacion.ts`. Una sección solo a
 | Config.    | Canales de venta             | `/configuracion/canales`     | admin         | ✅       |
 | Config.    | Estaciones e impresoras      | `/configuracion/produccion`  | admin         | ✅       |
 | Config.    | Motivos                      | `/configuracion/motivos`     | admin         | ✅       |
+
+«ERP» indica una consulta de un maestro del ERP: sin alta, edición ni baja. Pedidos internos, toma de inventario y órdenes de compra se retiraron en F4.1.
 
 «Vacía» indica que la pantalla existe y muestra su alcance, pero aún no tiene parámetros o permisos: cada fase los añade en `parametros.service.ts`. Empresa, locales, impuestos, medios de pago y series de comprobantes se gestionan en el ERP y no se muestran (D-006).
 

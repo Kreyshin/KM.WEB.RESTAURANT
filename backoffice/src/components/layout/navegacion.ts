@@ -89,7 +89,7 @@ export const modulos: ModuloNav[] = [
       {
         nombreRuta: 'inv-movimientos',
         etiqueta: 'Movimientos y kardex',
-        descripcion: 'Entradas, salidas y traslados',
+        descripcion: 'Historial de stock por insumo',
         roles: ['admin'],
       },
       {
@@ -99,21 +99,9 @@ export const modulos: ModuloNav[] = [
         roles: ['admin'],
       },
       {
-        nombreRuta: 'inv-tomas',
-        etiqueta: 'Toma de inventario',
-        descripcion: 'Conteo físico y ajustes',
-        roles: ['admin'],
-      },
-      {
-        nombreRuta: 'inv-pedidos',
-        etiqueta: 'Pedidos internos',
-        descripcion: 'Pedir, despachar y recibir mercadería entre almacenes',
-        roles: ['admin'],
-      },
-      {
         nombreRuta: 'inv-almacenes',
         etiqueta: 'Almacenes',
-        descripcion: 'Dónde se guarda por local',
+        descripcion: 'Dónde se guarda por local · ERP',
         roles: ['admin'],
       },
     ],
@@ -125,15 +113,21 @@ export const modulos: ModuloNav[] = [
       'M3 4h2l2.4 11h11.2L21 8H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
     secciones: [
       {
-        nombreRuta: 'compras-ordenes',
-        etiqueta: 'Órdenes de compra',
-        descripcion: 'Pedidos y recepción',
+        nombreRuta: 'compras-articulos',
+        etiqueta: 'Artículos',
+        descripcion: 'Lo que compra el ERP · consulta',
         roles: ['admin'],
       },
       {
         nombreRuta: 'compras-proveedores',
         etiqueta: 'Proveedores',
-        descripcion: 'Quién nos abastece',
+        descripcion: 'Maestro global del ERP · consulta',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-marcas',
+        etiqueta: 'Marcas',
+        descripcion: 'Marcas de los artículos · consulta',
         roles: ['admin'],
       },
     ],

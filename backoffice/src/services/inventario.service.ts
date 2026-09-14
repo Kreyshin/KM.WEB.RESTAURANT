@@ -1,16 +1,12 @@
 import type {
-  Almacen,
   Consulta,
   Insumo,
-  LineaToma,
   Movimiento,
-  NuevoAlmacen,
   NuevoInsumo,
   NuevoMovimiento,
   Paginado,
   Preparacion,
   Receta,
-  TomaInventario,
 } from '@/types'
 import { signoNumerico } from '@/utils/formato'
 import { aplicarConsulta } from './mock/consulta'
@@ -58,7 +54,7 @@ type MovimientoCompleto = NuevoMovimiento & { almacenId: string }
 
 /**
  * Aplica un movimiento al stock sin latencia ni persistencia, para poder
- * encadenar varios (traslados, tomas, recepciones) y guardar una sola vez.
+ * encadenar varios (traslados, producción, recepciones) y guardar una sola vez.
  * El stock nunca queda negativo: una salida mayor que las existencias es un
  * error de registro, no un inventario negativo.
  */
@@ -142,59 +138,17 @@ function recalcularPreparaciones() {
 
 // ── Almacenes ────────────────────────────────────────────────────────────────
 
+/** Almacenes: vienen del ERP y aquí solo se consultan (D-005). */
 const repoAlmacenes = crearRepositorio('almacenes', {
   prefijo: 'al',
   entidad: 'Almacén',
   camposBusqueda: ['nombre', 'descripcion'],
 })
 
-function validarAlmacen(datos: Partial<NuevoAlmacen>, id?: string) {
-  const actual = db.almacenes.find((a) => a.id === id)
-  const localId = datos.localId ?? actual?.localId
-  if (datos.nombre !== undefined) {
-    if (!datos.nombre.trim()) throw errorCampo('nombre', 'El nombre es obligatorio.')
-    const mismoLocal = db.almacenes.filter((a) => a.localId === localId)
-    if (existeOtro(mismoLocal, (a) => a.nombre, datos.nombre, id)) {
-      throw errorCampo('nombre', 'Ya hay un almacén con ese nombre en el local.', 'Duplicado')
-    }
-  }
-  if (datos.activo === false && id) {
-    const conStock = db.insumos.filter((i) =>
-      i.existencias.some((e) => e.almacenId === id && e.cantidad > 0),
-    ).length
-    if (conStock) {
-      throw {
-        mensaje: `No se puede desactivar: ${conStock} insumos tienen stock en este almacén. Trasládalos antes.`,
-      }
-    }
-  }
-}
-
 export const almacenesService = {
-  ...repoAlmacenes,
-
-  async crear(datos: NuevoAlmacen): Promise<Almacen> {
-    validarAlmacen(datos)
-    return repoAlmacenes.crear({ ...datos, nombre: datos.nombre.trim() })
-  },
-
-  async actualizar(id: string, datos: Partial<NuevoAlmacen>): Promise<Almacen> {
-    validarAlmacen(datos, id)
-    return repoAlmacenes.actualizar(id, datos)
-  },
-
-  async eliminar(id: string): Promise<void> {
-    const usado =
-      db.movimientos.some((m) => m.almacenId === id) ||
-      db.ordenesCompra.some((o) => o.almacenId === id) ||
-      db.tomas.some((t) => t.almacenId === id)
-    if (usado) {
-      throw {
-        mensaje: 'No se puede eliminar: el almacén tiene historial. Desactívalo en su lugar.',
-      }
-    }
-    return repoAlmacenes.eliminar(id)
-  },
+  consultar: repoAlmacenes.consultar,
+  todos: repoAlmacenes.todos,
+  obtener: repoAlmacenes.obtener,
 }
 
 // ── Insumos, movimientos y recetas ───────────────────────────────────────────
@@ -304,9 +258,6 @@ export const inventarioService = {
       db.insumos.some((i) => i.preparacion?.ingredientes.some((g) => g.insumoId === id))
     if (enReceta) {
       throw { mensaje: 'No se puede eliminar: el insumo forma parte de al menos una receta.' }
-    }
-    if (db.ordenesCompra.some((o) => o.lineas.some((l) => l.insumoId === id))) {
-      throw { mensaje: 'No se puede eliminar: aparece en órdenes de compra. Desactívalo.' }
     }
     db.insumos = db.insumos.filter((i) => i.id !== id)
     db.movimientos = db.movimientos.filter((m) => m.insumoId !== id)
@@ -509,111 +460,6 @@ export const inventarioService = {
   /** Coste teórico de un producto según su escandallo. */
   costeDeReceta(receta: Receta): number {
     return costeIngredientes(receta.ingredientes)
-  },
-
-  // ── Toma de inventario ─────────────────────────────────────────────────────
-
-  async listarTomas(): Promise<TomaInventario[]> {
-    return latencia([...db.tomas].sort((a, b) => b.fecha.localeCompare(a.fecha)))
-  },
-
-  async obtenerToma(id: string): Promise<TomaInventario> {
-    const toma = db.tomas.find((t) => t.id === id)
-    if (!toma) throw { mensaje: 'Toma de inventario no encontrada.' }
-    return latencia(toma)
-  },
-
-  /** Congela el stock teórico de cada insumo activo del almacén para contarlo. */
-  async abrirToma(almacenId: string, usuarioId: string): Promise<TomaInventario> {
-    const almacen = almacenOError(almacenId)
-    if (db.tomas.some((t) => t.almacenId === almacenId && t.estado === 'abierta')) {
-      throw errorCampo('almacenId', `Ya hay una toma abierta en ${almacen.nombre}.`)
-    }
-    const lineas: LineaToma[] = db.insumos
-      .filter((i) => i.activo && i.existencias.some((e) => e.almacenId === almacenId))
-      .sort((a, b) => a.nombre.localeCompare(b.nombre))
-      .map((i) => ({
-        insumoId: i.id,
-        teorico: i.existencias.find((e) => e.almacenId === almacenId)?.cantidad ?? 0,
-        contado: null,
-      }))
-    if (lineas.length === 0) {
-      throw errorCampo('almacenId', `${almacen.nombre} no tiene insumos que contar.`)
-    }
-    const siguiente = db.tomas.length + 8
-    const toma: TomaInventario = {
-      id: nuevoId('tm'),
-      numero: `TOMA-${String(siguiente).padStart(4, '0')}`,
-      almacenId,
-      estado: 'abierta',
-      lineas,
-      usuarioId,
-      fecha: new Date().toISOString(),
-    }
-    db.tomas.push(toma)
-    persistir()
-    return latencia(toma)
-  },
-
-  async guardarConteo(id: string, lineas: LineaToma[], notas?: string): Promise<TomaInventario> {
-    const toma = db.tomas.find((t) => t.id === id)
-    if (!toma) throw { mensaje: 'Toma de inventario no encontrada.' }
-    if (toma.estado !== 'abierta') throw { mensaje: 'La toma ya no se puede modificar.' }
-    for (const l of lineas) {
-      const linea = toma.lineas.find((x) => x.insumoId === l.insumoId)
-      if (!linea) continue
-      if (l.contado !== null && (!Number.isFinite(l.contado) || l.contado < 0)) {
-        throw { mensaje: 'Las cantidades contadas no pueden ser negativas.' }
-      }
-      linea.contado = l.contado === null ? null : r3(l.contado)
-    }
-    toma.notas = notas
-    persistir()
-    return latencia(toma)
-  },
-
-  /**
-   * Ajusta el stock al conteo. Solo los insumos contados cambian: un sobrante
-   * genera un ajuste positivo y un faltante una merma con la referencia de la toma.
-   */
-  async aplicarToma(id: string, usuarioId: string): Promise<TomaInventario> {
-    const toma = db.tomas.find((t) => t.id === id)
-    if (!toma) throw { mensaje: 'Toma de inventario no encontrada.' }
-    if (toma.estado !== 'abierta') throw { mensaje: 'La toma ya fue aplicada o anulada.' }
-    if (toma.lineas.every((l) => l.contado === null)) {
-      throw { mensaje: 'No hay nada contado. Registra al menos un conteo antes de aplicar.' }
-    }
-    transaccion(() => {
-      for (const l of toma.lineas) {
-        if (l.contado === null) continue
-        const insumo = insumoOError(l.insumoId)
-        const actual = insumo.existencias.find((e) => e.almacenId === toma.almacenId)?.cantidad ?? 0
-        const diferencia = r3(l.contado - actual)
-        if (diferencia === 0) continue
-        aplicar({
-          insumoId: l.insumoId,
-          almacenId: toma.almacenId,
-          tipo: diferencia > 0 ? 'ajuste' : 'merma',
-          cantidad: Math.abs(diferencia),
-          motivo:
-            diferencia > 0 ? 'Sobrante en toma de inventario' : 'Faltante en toma de inventario',
-          referencia: toma.numero,
-          usuarioId,
-        })
-      }
-      toma.estado = 'aplicada'
-      toma.aplicadaEn = new Date().toISOString()
-    })
-    return latencia(toma)
-  },
-
-  async anularToma(id: string): Promise<TomaInventario> {
-    const toma = db.tomas.find((t) => t.id === id)
-    if (!toma) throw { mensaje: 'Toma de inventario no encontrada.' }
-    if (toma.estado !== 'abierta') throw { mensaje: 'Solo se anula una toma abierta.' }
-    toma.estado = 'anulada'
-    persistir()
-    return latencia(toma)
   },
 
   /** Uso interno de compras y pedidos: aplica varios movimientos como una transacción. */

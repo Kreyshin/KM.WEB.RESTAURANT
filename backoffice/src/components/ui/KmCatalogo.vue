@@ -31,8 +31,9 @@ import { exportarCsv, exportarExcel, type ColumnaExportable } from '@/utils/expo
 
 export interface ServicioCatalogo<I> {
   consultar(consulta: Consulta): Promise<Paginado<I>>
-  crear(datos: Omit<I, 'id'>): Promise<I>
-  actualizar(id: string, datos: Partial<Omit<I, 'id'>>): Promise<I>
+  /** Sin crear ni actualizar, la pantalla debe usarse con `soloLectura`. */
+  crear?(datos: Omit<I, 'id'>): Promise<I>
+  actualizar?(id: string, datos: Partial<Omit<I, 'id'>>): Promise<I>
   eliminar?(id: string): Promise<void>
 }
 
@@ -163,7 +164,8 @@ const activoBorrador = computed({
 })
 
 async function guardar() {
-  if (props.soloLectura) return
+  const { crear, actualizar } = props.servicio
+  if (props.soloLectura || !crear || !actualizar) return
   errores.value = props.validar?.(borrador.value) ?? {}
   if (Object.keys(errores.value).length) return
 
@@ -191,10 +193,10 @@ async function guardar() {
   guardando.value = true
   try {
     if (editandoId.value) {
-      await props.servicio.actualizar(editandoId.value, borrador.value)
+      await actualizar(editandoId.value, borrador.value)
       ui.exito(`${entidadCap.value} actualizad${props.femenino ? 'a' : 'o'}.`)
     } else {
-      await props.servicio.crear(borrador.value)
+      await crear(borrador.value)
       ui.exito(`${entidadCap.value} cread${props.femenino ? 'a' : 'o'}.`)
     }
     drawerAbierto.value = false

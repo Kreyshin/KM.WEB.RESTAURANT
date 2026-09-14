@@ -75,22 +75,16 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Recetas y costos', roles: ['admin'] },
       },
       {
-        path: 'inventario/tomas',
-        name: 'inv-tomas',
-        component: () => import('@/views/inventario/TomasView.vue'),
-        meta: { titulo: 'Toma de inventario', roles: ['admin'] },
-      },
-      {
-        path: 'inventario/pedidos',
-        name: 'inv-pedidos',
-        component: () => import('@/views/inventario/PedidosView.vue'),
-        meta: { titulo: 'Pedidos internos', roles: ['admin'] },
-      },
-      {
         path: 'inventario/almacenes',
         name: 'inv-almacenes',
         component: () => import('@/views/inventario/AlmacenesView.vue'),
         meta: { titulo: 'Almacenes', roles: ['admin'] },
+      },
+      {
+        path: 'compras/articulos',
+        name: 'compras-articulos',
+        component: () => import('@/views/compras/ArticulosView.vue'),
+        meta: { titulo: 'Artículos', roles: ['admin'] },
       },
       {
         path: 'compras/proveedores',
@@ -99,12 +93,12 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Proveedores', roles: ['admin'] },
       },
       {
-        path: 'compras/ordenes',
-        name: 'compras-ordenes',
-        component: () => import('@/views/compras/OrdenesView.vue'),
-        meta: { titulo: 'Órdenes de compra', roles: ['admin'] },
+        path: 'compras/marcas',
+        name: 'compras-marcas',
+        component: () => import('@/views/compras/MarcasView.vue'),
+        meta: { titulo: 'Marcas', roles: ['admin'] },
       },
-      { path: 'compras', redirect: { name: 'compras-ordenes' } },
+      { path: 'compras', redirect: { name: 'compras-articulos' } },
       { path: 'configuracion', redirect: { name: 'config-vertical' } },
       {
         path: 'configuracion/vertical',

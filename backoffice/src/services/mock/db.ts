@@ -10,9 +10,7 @@ import type {
   CanalVenta,
   CategoriaInsumo,
   Combo,
-  OrdenCompra,
   Proveedor,
-  TomaInventario,
   Categoria,
   ConfigImpuestos,
   Empresa,
@@ -30,7 +28,8 @@ import type {
   Receta,
   Salon,
   Usuario,
-  PedidoInterno,
+  Articulo,
+  Marca,
 } from '@/types'
 import { ilustracionCombo, imagenPlato } from './ilustraciones'
 import { simularRed } from './red'
@@ -39,15 +38,14 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v14'
+const CLAVE = 'km.restaurante.mock.v15'
 
 export interface Esquema {
   combos: Combo[]
   almacenes: Almacen[]
   proveedores: Proveedor[]
-  ordenesCompra: OrdenCompra[]
-  pedidosInternos: PedidoInterno[]
-  tomas: TomaInventario[]
+  marcas: Marca[]
+  articulos: Articulo[]
   empresa: Empresa
   impuestos: ConfigImpuestos
   locales: Local[]
@@ -883,8 +881,6 @@ function semilla(): Esquema {
       id: 'i8',
       nombre: 'Arroz extra',
       unidad: 'kg',
-      unidadPedido: { nombre: 'Bolsa 5 kg', factor: 5 },
-      unidadRecepcion: { nombre: 'Bolsa 5 kg', factor: 5 },
       stock: 60,
       stockMinimo: 30,
       costoUnitario: 4.1,
@@ -895,8 +891,6 @@ function semilla(): Esquema {
       id: 'i9',
       nombre: 'Aceite vegetal',
       unidad: 'l',
-      unidadPedido: { nombre: 'Bidón 5 L', factor: 5 },
-      unidadRecepcion: { nombre: 'Bidón 5 L', factor: 5 },
       stock: 22,
       stockMinimo: 15,
       costoUnitario: 8.9,
@@ -907,8 +901,6 @@ function semilla(): Esquema {
       id: 'i10',
       nombre: 'Leche evaporada',
       unidad: 'unidad',
-      unidadPedido: { nombre: 'Caja x24', factor: 24 },
-      unidadRecepcion: { nombre: 'Caja x24', factor: 24 },
       stock: 40,
       stockMinimo: 24,
       costoUnitario: 4.3,
@@ -919,8 +911,6 @@ function semilla(): Esquema {
       id: 'i11',
       nombre: 'Huevo',
       unidad: 'unidad',
-      unidadPedido: { nombre: 'Jaba x30', factor: 30 },
-      unidadRecepcion: { nombre: 'Unidad', factor: 1 },
       stock: 120,
       stockMinimo: 60,
       costoUnitario: 0.6,
@@ -1294,112 +1284,168 @@ function semilla(): Esquema {
     almacenId: almacenPorCategoria[categoriaPorInsumo[m.insumoId] ?? 'abarrotes'],
   }))
 
-  const hoyIso = new Date(ahora).toISOString().slice(0, 10)
-  const diaIso = (dias: number) => new Date(ahora + dias * 86_400_000).toISOString().slice(0, 10)
+  const marcas: Marca[] = [
+    { id: 'mc1', nombre: 'Sin marca', activo: true },
+    { id: 'mc2', nombre: 'Costeño', activo: true },
+    { id: 'mc3', nombre: 'Primor', activo: true },
+    { id: 'mc4', nombre: 'Gloria', activo: true },
+    { id: 'mc5', nombre: 'La Calera', activo: true },
+    { id: 'mc6', nombre: 'Inca Kola', activo: true },
+  ]
 
-  const ordenesCompra: OrdenCompra[] = [
+  const articulos: Articulo[] = [
     {
-      id: 'oc1',
-      numero: 'OC-000041',
+      id: 'ar1',
+      codigo: 'ART-01024',
+      nombre: 'Lomo fino de res',
+      marcaId: 'mc1',
+      unidadCompra: 'kg',
       proveedorId: 'pv1',
-      almacenId: 'al2',
-      estado: 'emitida',
-      fechaEmision: hoyIso,
-      fechaEntrega: diaIso(1),
-      lineas: [{ insumoId: 'i1', cantidad: 12, costoUnitario: 51.5, recibido: 0 }],
-      notas: 'Entregar antes de las 9:00.',
+      activo: true,
     },
     {
-      id: 'oc2',
-      numero: 'OC-000040',
-      proveedorId: 'pv3',
-      almacenId: 'al1',
-      estado: 'parcial',
-      fechaEmision: diaIso(-2),
-      fechaEntrega: diaIso(-1),
-      lineas: [
-        { insumoId: 'i6', cantidad: 15, costoUnitario: 7.2, recibido: 10 },
-        { insumoId: 'i5', cantidad: 10, costoUnitario: 3.6, recibido: 10 },
-        { insumoId: 'i3', cantidad: 20, costoUnitario: 4.4, recibido: 0 },
-      ],
-    },
-    {
-      id: 'oc3',
-      numero: 'OC-000039',
-      proveedorId: 'pv4',
-      almacenId: 'al1',
-      estado: 'recibida',
-      fechaEmision: diaIso(-6),
-      fechaEntrega: diaIso(-5),
-      lineas: [
-        { insumoId: 'i8', cantidad: 50, costoUnitario: 4.1, recibido: 50 },
-        { insumoId: 'i9', cantidad: 20, costoUnitario: 8.9, recibido: 20 },
-      ],
-    },
-    {
-      id: 'oc4',
-      numero: 'OC-000042',
+      id: 'ar2',
+      codigo: 'ART-01101',
+      nombre: 'Pescado entero lenguado',
+      marcaId: 'mc1',
+      unidadCompra: 'kg',
       proveedorId: 'pv2',
-      almacenId: 'al2',
-      estado: 'borrador',
-      fechaEmision: hoyIso,
-      lineas: [{ insumoId: 'i12', cantidad: 8, costoUnitario: 37, recibido: 0 }],
-    },
-  ]
-
-  const tomas: TomaInventario[] = [
-    {
-      id: 'tm1',
-      numero: 'TOMA-0007',
-      almacenId: 'al1',
-      estado: 'aplicada',
-      fecha: new Date(ahora - 7 * 86_400_000).toISOString(),
-      aplicadaEn: new Date(ahora - 7 * 86_400_000 + 3_600_000).toISOString(),
-      usuarioId: 'u1',
-      lineas: [
-        { insumoId: 'i3', teorico: 30, contado: 29.5 },
-        { insumoId: 'i8', teorico: 58, contado: 58 },
-      ],
-    },
-  ]
-
-  const pedidosInternos: PedidoInterno[] = [
-    {
-      id: 'pi1',
-      numero: 'PI-000001',
-      destinoId: 'al4',
-      origenId: 'al1',
-      estado: 'enviado',
-      fecha: hoyIso,
-      fechaRequerida: hoyIso,
-      lineas: [
-        { insumoId: 'i3', solicitado: 3, despachado: 0, recibido: 0 },
-        { insumoId: 'i6', solicitado: 2, despachado: 0, recibido: 0 },
-        { insumoId: 'i8', solicitado: 2, despachado: 0, recibido: 0 },
-      ],
-      notas: 'Para el turno de la noche',
-      usuarioId: 'u1',
+      activo: true,
     },
     {
-      id: 'pi2',
-      numero: 'PI-000002',
-      destinoId: 'al3',
-      origenId: 'al1',
-      estado: 'borrador',
-      fecha: hoyIso,
-      lineas: [{ insumoId: 'i6', solicitado: 1.5, despachado: 0, recibido: 0 }],
-      notas: 'Limones para la barra',
-      usuarioId: 'u1',
+      id: 'ar3',
+      codigo: 'ART-01102',
+      nombre: 'Pescado entero corvina',
+      marcaId: 'mc1',
+      unidadCompra: 'kg',
+      proveedorId: 'pv2',
+      activo: true,
+    },
+    {
+      id: 'ar4',
+      codigo: 'ART-01110',
+      nombre: 'Calamar entero',
+      marcaId: 'mc1',
+      unidadCompra: 'kg',
+      proveedorId: 'pv2',
+      activo: true,
+    },
+    {
+      id: 'ar5',
+      codigo: 'ART-02001',
+      nombre: 'Papa amarilla',
+      marcaId: 'mc1',
+      unidadCompra: 'Saco 50 kg',
+      proveedorId: 'pv3',
+      activo: true,
+    },
+    {
+      id: 'ar6',
+      codigo: 'ART-02002',
+      nombre: 'Papa blanca',
+      marcaId: 'mc1',
+      unidadCompra: 'Saco 50 kg',
+      proveedorId: 'pv3',
+      activo: true,
+    },
+    {
+      id: 'ar7',
+      codigo: 'ART-02010',
+      nombre: 'Cebolla roja',
+      marcaId: 'mc1',
+      unidadCompra: 'Malla 20 kg',
+      proveedorId: 'pv3',
+      activo: true,
+    },
+    {
+      id: 'ar8',
+      codigo: 'ART-02020',
+      nombre: 'Limón sutil',
+      marcaId: 'mc1',
+      unidadCompra: 'Caja 20 kg',
+      proveedorId: 'pv3',
+      activo: true,
+    },
+    {
+      id: 'ar9',
+      codigo: 'ART-02030',
+      nombre: 'Ají amarillo',
+      marcaId: 'mc1',
+      unidadCompra: 'kg',
+      proveedorId: 'pv3',
+      activo: true,
+    },
+    {
+      id: 'ar10',
+      codigo: 'ART-03001',
+      nombre: 'Arroz extra',
+      marcaId: 'mc2',
+      unidadCompra: 'Saco 50 kg',
+      proveedorId: 'pv4',
+      activo: true,
+    },
+    {
+      id: 'ar11',
+      codigo: 'ART-03010',
+      nombre: 'Aceite vegetal 5 L',
+      marcaId: 'mc3',
+      unidadCompra: 'Bidón 5 L',
+      proveedorId: 'pv4',
+      activo: true,
+    },
+    {
+      id: 'ar12',
+      codigo: 'ART-03011',
+      nombre: 'Aceite vegetal 1 L',
+      marcaId: 'mc3',
+      unidadCompra: 'Caja x12',
+      proveedorId: 'pv4',
+      activo: false,
+    },
+    {
+      id: 'ar13',
+      codigo: 'ART-03020',
+      nombre: 'Leche evaporada 400 g',
+      marcaId: 'mc4',
+      unidadCompra: 'Caja x24',
+      proveedorId: 'pv4',
+      activo: true,
+    },
+    {
+      id: 'ar14',
+      codigo: 'ART-04001',
+      nombre: 'Huevo de gallina',
+      marcaId: 'mc5',
+      unidadCompra: 'Jaba x30',
+      proveedorId: 'pv5',
+      activo: true,
+    },
+    {
+      id: 'ar15',
+      codigo: 'ART-05001',
+      nombre: 'Inca Kola 500 ml',
+      marcaId: 'mc6',
+      unidadCompra: 'Paquete x12',
+      proveedorId: 'pv4',
+      activo: true,
+    },
+    {
+      id: 'ar16',
+      codigo: 'ART-02040',
+      nombre: 'Maíz morado',
+      marcaId: 'mc1',
+      unidadCompra: 'kg',
+      proveedorId: 'pv3',
+      activo: true,
     },
   ]
 
   return {
     combos,
     almacenes,
-    pedidosInternos,
     proveedores,
-    ordenesCompra,
-    tomas,
+    marcas,
+    articulos,
     empresa,
     impuestos,
     locales,

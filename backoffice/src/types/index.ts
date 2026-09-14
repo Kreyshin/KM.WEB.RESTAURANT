@@ -212,15 +212,6 @@ export interface Preparacion {
   ingredientes: IngredienteReceta[]
 }
 
-/**
- * Unidad con la que el restaurante pide o recepciona un insumo y cuánto
- * equivale en la unidad de stock (Jaba = 30 unidades). La define el ERP.
- */
-export interface UnidadOperativa {
-  nombre: string
-  factor: number
-}
-
 export interface Insumo {
   id: string
   nombre: string
@@ -234,10 +225,6 @@ export interface Insumo {
   /** Costo promedio ponderado, sin IGV. */
   costoUnitario: number
   proveedorId?: string
-  /** Sin valor, se pide en la unidad de stock. */
-  unidadPedido?: UnidadOperativa
-  /** Sin valor, se recepciona en la unidad de stock. */
-  unidadRecepcion?: UnidadOperativa
   preparacion?: Preparacion
   activo: boolean
 }
@@ -269,31 +256,29 @@ export interface Movimiento {
   fecha: string
 }
 
-export interface LineaToma {
-  insumoId: string
-  /** Stock del sistema al abrir la toma. */
-  teorico: number
-  /** `null` mientras no se ha contado. */
-  contado: number | null
-}
-
-export type EstadoToma = 'abierta' | 'aplicada' | 'anulada'
-
-export interface TomaInventario {
-  id: string
-  numero: string
-  almacenId: string
-  estado: EstadoToma
-  lineas: LineaToma[]
-  notas?: string
-  usuarioId: string
-  /** ISO 8601. */
-  fecha: string
-  aplicadaEn?: string
-}
-
 // ── Compras ──────────────────────────────────────────────────────────────────
 
+/** Marca comercial de un artículo (maestro del ERP). */
+export interface Marca {
+  id: string
+  nombre: string
+  activo: boolean
+}
+
+/** Lo que el ERP compra: con su marca, su unidad de compra y su proveedor habitual. */
+export interface Articulo {
+  id: string
+  /** Código del artículo en el ERP. */
+  codigo: string
+  nombre: string
+  marcaId?: string
+  /** Cómo se compra: saco 50 kg, caja x24, kg. */
+  unidadCompra: string
+  proveedorId?: string
+  activo: boolean
+}
+
+/** Proveedor (maestro global del ERP). */
 export interface Proveedor {
   id: string
   razonSocial: string
@@ -304,29 +289,6 @@ export interface Proveedor {
   /** 0 = pago al contado. */
   diasCredito: number
   activo: boolean
-}
-
-export type EstadoOrdenCompra = 'borrador' | 'emitida' | 'parcial' | 'recibida' | 'anulada'
-
-export interface LineaOrdenCompra {
-  insumoId: string
-  cantidad: number
-  /** Sin IGV. */
-  costoUnitario: number
-  recibido: number
-}
-
-export interface OrdenCompra {
-  id: string
-  numero: string
-  proveedorId: string
-  almacenId: string
-  estado: EstadoOrdenCompra
-  /** `YYYY-MM-DD`. */
-  fechaEmision: string
-  fechaEntrega?: string
-  lineas: LineaOrdenCompra[]
-  notas?: string
 }
 
 export interface IngredienteReceta {
@@ -347,45 +309,7 @@ export type NuevoSalon = Omit<Salon, 'id'>
 export type NuevaMesa = Omit<Mesa, 'id'>
 export type NuevoCombo = Omit<Combo, 'id'>
 export type NuevoAlmacen = Omit<Almacen, 'id'>
-export type NuevoProveedor = Omit<Proveedor, 'id'>
-export type NuevaOrdenCompra = Omit<OrdenCompra, 'id' | 'numero' | 'estado'>
 
-export type EstadoPedidoInterno = 'borrador' | 'enviado' | 'despachado' | 'recibido' | 'anulado'
-
-export interface LineaPedidoInterno {
-  insumoId: string
-  /** En la unidad de pedido del insumo. */
-  solicitado: number
-  /** En la unidad de recepción del insumo. */
-  despachado: number
-  /** En la unidad de recepción del insumo. */
-  recibido: number
-}
-
-/** Pedido de mercadería de un almacén a otro (cocina o sucursal al almacén central). */
-export interface PedidoInterno {
-  id: string
-  numero: string
-  /** Almacén que pide y recibe. */
-  destinoId: string
-  /** Almacén que despacha. */
-  origenId: string
-  estado: EstadoPedidoInterno
-  /** `YYYY-MM-DD`. */
-  fecha: string
-  /** Para cuándo se necesita, `YYYY-MM-DD`. */
-  fechaRequerida?: string
-  lineas: LineaPedidoInterno[]
-  notas?: string
-  usuarioId: string
-  despachadoEn?: string
-  recibidoEn?: string
-}
-
-export type NuevoPedidoInterno = Omit<
-  PedidoInterno,
-  'id' | 'numero' | 'estado' | 'despachadoEn' | 'recibidoEn'
->
 export type NuevaCategoria = Omit<Categoria, 'id'>
 export type NuevoProducto = Omit<Producto, 'id'>
 /** Stock y existencias no se editan desde la ficha: cambian con movimientos. */

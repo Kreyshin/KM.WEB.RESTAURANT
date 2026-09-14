@@ -2,13 +2,14 @@
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
-import KmSelect from '@/components/ui/KmSelect.vue'
 import { useCatalogos } from '@/composables/useCatalogos'
 import { almacenesService } from '@/services/inventario.service'
-import type { Almacen, NuevoAlmacen } from '@/types'
+import type { Almacen } from '@/types'
 import type { ColumnaTabla } from '@/types/ui'
 
-const { opcionesLocal, nombreLocal, insumos, recargar } = useCatalogos(['locales', 'insumos'])
+/** Almacenes: vienen del ERP y aquí solo se consultan (D-005). */
+
+const { nombreLocal, insumos } = useCatalogos(['locales', 'insumos'])
 
 const columnas: ColumnaTabla[] = [
   { clave: 'nombre', etiqueta: 'Almacén', ordenable: true },
@@ -16,31 +17,11 @@ const columnas: ColumnaTabla[] = [
   { clave: 'insumos', etiqueta: 'Insumos con stock', clase: 'w-40 text-right' },
 ]
 
-const nuevo = (): NuevoAlmacen => ({
-  nombre: '',
-  localId: (opcionesLocal.value[0]?.valor as string) ?? '',
-  descripcion: '',
-  activo: true,
-})
-
-function validar(a: NuevoAlmacen): Record<string, string> {
-  const e: Record<string, string> = {}
-  if (!a.nombre.trim()) e.nombre = 'El nombre es obligatorio.'
-  if (!a.localId) e.localId = 'Elige un local.'
-  return e
-}
+const vacio = (): Omit<Almacen, 'id'> => ({ nombre: '', localId: '', activo: true })
 
 const conStock = (id: string) =>
   insumos.value.filter((i) => i.existencias.some((x) => x.almacenId === id && x.cantidad > 0))
     .length
-
-async function consecuencias(id: string, activar: boolean) {
-  if (activar) return ['Vuelve a poder recibir compras, traslados y tomas de inventario.']
-  return [
-    'No recibirá compras ni traslados.',
-    `Tiene ${conStock(id)} insumos con stock: si hay alguno, habrá que trasladarlo antes.`,
-  ]
-}
 </script>
 
 <template>
@@ -49,11 +30,10 @@ async function consecuencias(id: string, activar: boolean) {
       titulo="Almacenes"
       subtitulo="Lugares donde se guarda la mercadería de cada local: cámara de frío, secos, barra."
       entidad="almacén"
+      solo-lectura
       :servicio="almacenesService"
-      :consecuencias-estado="consecuencias"
       :columnas="columnas"
-      :nuevo="nuevo"
-      :validar="validar"
+      :nuevo="vacio"
       :nombre-de="(a: Almacen) => a.nombre"
       :exportacion="[
         { etiqueta: 'Almacén', valor: (a: Almacen) => a.nombre },
@@ -62,7 +42,6 @@ async function consecuencias(id: string, activar: boolean) {
         { etiqueta: 'Activo', valor: (a: Almacen) => a.activo },
       ]"
       archivo="almacenes"
-      @cambio="recargar"
     >
       <template #col-nombre="{ fila }">
         <p class="font-medium text-tinta">{{ fila.nombre }}</p>
@@ -73,25 +52,15 @@ async function consecuencias(id: string, activar: boolean) {
         <span class="tabular-nums">{{ conStock(fila.id) }}</span>
       </template>
 
-      <template #formulario="{ borrador, errores }">
-        <KmField v-slot="{ id, invalido }" label="Nombre" requerido :error="errores.nombre">
-          <KmInput
-            :id="id"
-            v-model="borrador.nombre"
-            placeholder="Ej. Cámara de frío"
-            :invalido="invalido"
-          />
+      <template #formulario="{ borrador }">
+        <KmField v-slot="{ id }" label="Nombre">
+          <KmInput :id="id" :model-value="borrador.nombre" />
         </KmField>
-        <KmField v-slot="{ id, invalido }" label="Local" requerido :error="errores.localId">
-          <KmSelect
-            :id="id"
-            v-model="borrador.localId"
-            :opciones="opcionesLocal"
-            :invalido="invalido"
-          />
+        <KmField v-slot="{ id }" label="Local">
+          <KmInput :id="id" :model-value="nombreLocal(borrador.localId)" />
         </KmField>
-        <KmField v-slot="{ id }" label="Descripción" ayuda="Qué se guarda aquí.">
-          <KmInput :id="id" v-model="borrador.descripcion" />
+        <KmField v-slot="{ id }" label="Descripción">
+          <KmInput :id="id" :model-value="borrador.descripcion ?? ''" />
         </KmField>
       </template>
     </KmCatalogo>

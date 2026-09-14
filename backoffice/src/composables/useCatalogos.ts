@@ -1,6 +1,6 @@
 import { computed, onMounted, shallowRef } from 'vue'
 import { cartaService } from '@/services/carta.service'
-import { proveedoresService } from '@/services/compras.service'
+import { proveedoresService } from '@/services/erp.service'
 import { almacenesService, inventarioService } from '@/services/inventario.service'
 import { localesService } from '@/services/locales.service'
 import type { Almacen, Insumo, Local, Producto, Proveedor } from '@/types'

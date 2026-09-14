@@ -1,8 +1,5 @@
 import type {
   DiaSemana,
-  EstadoOrdenCompra,
-  EstadoPedidoInterno,
-  EstadoToma,
   TipoCombo,
   TipoCanal,
   TipoComprobante,
@@ -76,50 +73,6 @@ export const tonoTipoComprobante: Record<TipoComprobante, TonoMesa> = {
   factura: 'pizarra',
   notaCredito: 'vino',
   notaVenta: 'neutro',
-}
-
-export const etiquetaEstadoOrden: Record<EstadoOrdenCompra, string> = {
-  borrador: 'Borrador',
-  emitida: 'Emitida',
-  parcial: 'Recibida en parte',
-  recibida: 'Recibida',
-  anulada: 'Anulada',
-}
-
-export const tonoEstadoOrden: Record<EstadoOrdenCompra, TonoMesa> = {
-  borrador: 'neutro',
-  emitida: 'pizarra',
-  parcial: 'laton',
-  recibida: 'verde',
-  anulada: 'vino',
-}
-
-export const etiquetaEstadoPedido: Record<EstadoPedidoInterno, string> = {
-  borrador: 'Borrador',
-  enviado: 'Por despachar',
-  despachado: 'En camino',
-  recibido: 'Recibido',
-  anulado: 'Anulado',
-}
-
-export const tonoEstadoPedido: Record<EstadoPedidoInterno, TonoMesa> = {
-  borrador: 'neutro',
-  enviado: 'laton',
-  despachado: 'pizarra',
-  recibido: 'verde',
-  anulado: 'vino',
-}
-
-export const etiquetaEstadoToma: Record<EstadoToma, string> = {
-  abierta: 'Abierta',
-  aplicada: 'Aplicada',
-  anulada: 'Anulada',
-}
-
-export const tonoEstadoToma: Record<EstadoToma, TonoMesa> = {
-  abierta: 'laton',
-  aplicada: 'verde',
-  anulada: 'neutro',
 }
 
 export const etiquetaTipoCombo: Record<TipoCombo, string> = {

@@ -4,19 +4,19 @@ Fases de **front-end** sobre datos de ejemplo. Una fase no empieza sin los maest
 
 > **Reencuadre (D-004, D-005).** El restaurante es una **vertical sobre un ERP**: los maestros del ERP se muestran de solo lectura y la vertical se centra en su operación. **F4 se rehace** con ese criterio.
 
-| Fase                              | Grupo     | Objetivo                                                    | Estado             |
-| --------------------------------- | --------- | ----------------------------------------------------------- | ------------------ |
-| F0 · Higiene                      | Base      | Git, lint, formato, tipos y pruebas                         | ✅ Hecha           |
-| F1 · Cimientos de interfaz y mock | Base      | Componentes y capa de datos reutilizables                   | ✅ Hecha\*         |
-| F2 · Configuración                | Base      | Configuración de la vertical y por local, permisos, canales | ✅ Hecha · revisar |
-| F3 · Sala y carta                 | Maestros  | Cierre de sala y carta: imagen, combos, precio por canal    | ✅ Hecha           |
-| F4 · Abastecimiento               | Maestros  | Límite ERP, áreas, insumos, requerimientos, recepción       | ♻️ Rehacer         |
-| F5 · Personal y permisos          | Maestros  | Catálogo de permisos, turnos y auditoría                    | Pendiente          |
-| F6 · Clientes y promociones       | Maestros  | Clientes, puntos, cupones, reservas, zonas de delivery      | Pendiente          |
-| F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir       | ⚠️ Por decidir     |
-| F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados  | Pendiente          |
-| F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas            | Pendiente          |
-| F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades       | Pendiente          |
+| Fase                              | Grupo     | Objetivo                                                    | Estado         |
+| --------------------------------- | --------- | ----------------------------------------------------------- | -------------- |
+| F0 · Higiene                      | Base      | Git, lint, formato, tipos y pruebas                         | ✅ Hecha       |
+| F1 · Cimientos de interfaz y mock | Base      | Componentes y capa de datos reutilizables                   | ✅ Hecha\*     |
+| F2 · Configuración                | Base      | Configuración de la vertical y por local, permisos, canales | ✅ Hecha       |
+| F3 · Sala y carta                 | Maestros  | Cierre de sala y carta: imagen, combos, precio por canal    | ✅ Hecha       |
+| F4 · Abastecimiento               | Maestros  | Límite ERP, áreas, insumos, requerimientos, recepción       | En curso       |
+| F5 · Personal y permisos          | Maestros  | Catálogo de permisos, turnos y auditoría                    | Pendiente      |
+| F6 · Clientes y promociones       | Maestros  | Clientes, puntos, cupones, reservas, zonas de delivery      | Pendiente      |
+| F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir       | ⚠️ Por decidir |
+| F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados  | Pendiente      |
+| F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas            | Pendiente      |
+| F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades       | Pendiente      |
 
 \* La semilla realista se amplía en cada fase, cuando existan sus entidades.
 
@@ -87,7 +87,7 @@ Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede ava
 
 | Subfase                                       | Qué entrega                                                                                           | Depende de | Estado    |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| **F4.1 · Límite con el ERP**                  | Retiros, maestros del ERP en solo lectura, artículos y proveedores de consulta                        | —          | Pendiente |
+| **F4.1 · Límite con el ERP**                  | Retiros, maestros del ERP en solo lectura, artículos y proveedores de consulta                        | —          | ✅ Hecha  |
 | **F4.2 · Áreas**                              | Maestro de áreas y a qué área se comanda cada producto                                                | F4.1       | Pendiente |
 | **F4.3 · Insumos y reglas de abastecimiento** | Insumo de la vertical, conversión directa y transformación, parámetros, ubicaciones y stock detallado | F4.1       | Pendiente |
 | **F4.4 · Solicitudes y requerimientos**       | Solicitud por área, requerimiento por local y su seguimiento                                          | F4.2, F4.3 | Pendiente |
@@ -97,22 +97,22 @@ Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede ava
 
 **Retirar**
 
-- [ ] Pedidos internos entre almacenes
-- [ ] Toma de inventario físico
-- [ ] Mantenimiento de proveedores (alta, edición, baja)
-- [ ] Órdenes de compra: creación, emisión, anulación y recepción desde la vertical
-- [ ] Sugerencia de compra actual (se rehace dentro del requerimiento)
-- [ ] Unidades para pedir y recepcionar del insumo (D-003)
+- [x] Pedidos internos entre almacenes
+- [x] Toma de inventario físico
+- [x] Mantenimiento de proveedores (alta, edición, baja)
+- [x] Órdenes de compra: creación, emisión, anulación y recepción desde la vertical
+- [x] Sugerencia de compra actual (se rehace dentro del requerimiento)
+- [x] Unidades para pedir y recepcionar del insumo (D-003)
 
 **Pasar a solo lectura** _(con indicador «Sincronizado desde ERP»)_
 
 - [x] Hecho en F2: empresa, locales, impuestos, medios de pago y series retirados (D-006)
-- [ ] Almacenes
+- [x] Almacenes
 
-**Nuevo: consultas del ERP**
+**Nuevo: consultas del ERP** _(Compras → Artículos, Proveedores y Marcas, con filtros por marca y proveedor)_
 
-- [ ] Artículos: código, nombre, marca, unidad de compra, proveedor habitual
-- [ ] Proveedores y marcas
+- [x] Artículos: código, nombre, marca, unidad de compra, proveedor habitual
+- [x] Proveedores y marcas
 
 **Se conserva**
 
