@@ -2,6 +2,10 @@
 
 Receta para añadir una pantalla de mantenimiento, usando **Proveedores** como ejemplo. Salones (`views/salones/`) es la pantalla de referencia.
 
+::: tip Antes de crear un maestro
+Pregunta si pertenece al ERP o a la vertical ([D-005](./decisiones)). Si es del ERP, no se crea aquí: se consulta con `KmCatalogo` en modo `solo-lectura` y un servicio de solo consulta como `erp.service.ts`. El ejemplo de Proveedores sirve solo para ilustrar la receta; en la vertical real, Proveedores es un maestro del ERP.
+:::
+
 ## 1. Tipo
 
 En `src/types/index.ts`. Es el borrador de la tabla en base de datos.

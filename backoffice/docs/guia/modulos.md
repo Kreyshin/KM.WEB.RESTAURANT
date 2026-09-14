@@ -38,21 +38,19 @@ La estructura vive en `src/components/layout/navegacion.ts`. Una sección solo a
 
 ## Navegación final prevista
 
-Al terminar el [roadmap](./roadmap), la barra tendrá 11 módulos:
+Con el reencuadre sobre el ERP ([D-005](./decisiones)), la barra quedará así. **ERP** marca consultas de solo lectura.
 
-| Módulo        | Secciones                                                                    |
-| ------------- | ---------------------------------------------------------------------------- |
-| Inicio        | Dashboard, Dashboard ejecutivo                                               |
-| Sala          | Salones, Mesas, Reservas                                                     |
-| Carta         | Carta y menú, Combos y menú del día, Precios por canal                       |
-| Inventario    | Insumos, Almacenes, Movimientos y kardex, Recetas, Toma de inventario        |
-| Compras       | Proveedores, Órdenes de compra                                               |
-| Ventas        | Ventas, Cajas y arqueos, Anulaciones                                         |
-| Clientes      | Clientes, Puntos, Promociones y cupones                                      |
-| Comprobantes  | Boletas y facturas, Notas de crédito                                         |
-| Reportes      | Ventas, Productos, Personal, Costos y stock                                  |
-| Personal      | Usuarios, Roles y permisos, Turnos y asistencia, Auditoría                   |
-| Configuración | Empresa y locales, Impuestos y pagos, Canales y estaciones, Series, Delivery |
+| Módulo        | Secciones                                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inicio        | Dashboard                                                                                                                                       |
+| Sala          | Salones, Mesas, Reservas                                                                                                                        |
+| Carta         | Carta y menú, Combos y menús                                                                                                                    |
+| Inventario    | Insumos, Reglas de abastecimiento, Ubicaciones y lotes, Movimientos y kardex, Recetas, Transformaciones, Almacenes (ERP)                        |
+| Compras       | Solicitudes de compra, Requerimientos, Recepción, Artículos (ERP), Proveedores (ERP), Marcas (ERP)                                              |
+| Ventas        | Alcance por decidir en F7                                                                                                                       |
+| Clientes      | Clientes, Puntos, Promociones y cupones                                                                                                         |
+| Reportes      | Ventas, Costos, consumo y mermas                                                                                                                |
+| Configuración | Configuración de la vertical, Configuración por local, Permisos por rol, Excepciones por usuario, Canales de venta, Áreas e impresoras, Motivos |
 
 ## Piezas globales del shell
 

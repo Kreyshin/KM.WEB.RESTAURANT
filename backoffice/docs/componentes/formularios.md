@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
+import KmCheckbox from '@/components/ui/KmCheckbox.vue'
+import KmHora from '@/components/ui/KmHora.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
@@ -12,6 +14,10 @@ const errores = ref({})
 const incluyeIgv = ref(true)
 const recargo = ref(10)
 const costo = ref(4.5)
+const disponible = ref(true)
+const soloDiferencias = ref(false)
+const desde = ref('12:00')
+const hasta = ref('16:00')
 
 function validar() {
   errores.value = {}
@@ -164,3 +170,56 @@ try {
 | `disabled`    | `boolean` |                                    |
 
 Usa `role="switch"` con `aria-checked`. Para una opción que se aplica al guardar un formulario; para acciones inmediatas sobre una fila, usa un botón.
+
+## KmCheckbox
+
+Casilla propia con la estética del sistema: borde, check sobre el color de acción y foco visible. Sustituye al `<input type="checkbox">` nativo.
+
+<Demo>
+  <div class="flex flex-col gap-3">
+    <KmCheckbox v-model="disponible">Disponible hoy</KmCheckbox>
+    <KmCheckbox v-model="soloDiferencias" ayuda="Oculta lo que cuadra con el sistema.">Ver solo diferencias</KmCheckbox>
+    <KmCheckbox v-model="disponible" tamano="sm">Activa</KmCheckbox>
+  </div>
+</Demo>
+
+```vue
+<KmCheckbox v-model="form.disponible">Disponible hoy</KmCheckbox>
+<KmCheckbox v-model="v.activa" tamano="sm">Activa</KmCheckbox>
+```
+
+| Prop / slot | Tipo           | Descripción                                     |
+| ----------- | -------------- | ----------------------------------------------- |
+| `v-model`   | `boolean`      | Marcado                                         |
+| `tamano`    | `'sm' \| 'md'` | `sm` para filas densas (presentaciones, listas) |
+| `ayuda`     | `string`       | Texto bajo la etiqueta                          |
+| `disabled`  | `boolean`      |                                                 |
+| `default`   | slot           | Etiqueta; también es el nombre accesible        |
+
+Junto a campos de 36 px de alto, envuélvela en una caja con borde de la misma altura para alinear.
+
+## KmHora
+
+Hora en formato 24 h (`HH:mm`). Se escribe a mano (`1830`, `18:30` o `9` → `09:00`) o se elige en un panel con columnas de horas y minutos. Un valor inválido vuelve al anterior al salir del campo.
+
+<Demo>
+  <div class="flex items-center gap-2">
+    <KmHora v-model="desde" etiqueta="Desde" />
+    <span class="text-tenue">a</span>
+    <KmHora v-model="hasta" etiqueta="Hasta" :paso-minutos="15" />
+  </div>
+  <p class="mt-3 text-xs text-tenue">Modelos: <code>{{ desde }}</code> · <code>{{ hasta }}</code></p>
+</Demo>
+
+```vue
+<KmHora v-model="form.disponibilidad.desde" etiqueta="Desde" />
+```
+
+| Prop                         | Tipo     | Descripción                                      |
+| ---------------------------- | -------- | ------------------------------------------------ |
+| `v-model`                    | `string` | `HH:mm`; vacío si no hay hora                    |
+| `etiqueta`                   | `string` | Nombre accesible del campo y del botón del reloj |
+| `pasoMinutos`                | `number` | Salto de los minutos del panel. Por defecto 5    |
+| `id`, `invalido`, `disabled` |          | Igual que `KmInput`                              |
+
+El panel se dibuja fuera del formulario (no lo recorta un modal) y se cierra al elegir los minutos, con Escape o con un clic fuera.

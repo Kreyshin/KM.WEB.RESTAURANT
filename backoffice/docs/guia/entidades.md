@@ -2,6 +2,11 @@
 
 Estas entidades salen de `src/types/index.ts` y son la base para diseñar la base de datos. Se amplían en cada fase del [roadmap](./roadmap).
 
+La vertical de restaurante depende de un **ERP** ([D-005](./decisiones)). Cada entidad indica su origen:
+
+- **ERP**: llega sincronizada y aquí solo se consulta.
+- **Vertical**: la administra el restaurante.
+
 Convenciones del contrato:
 
 - `id` lo asigna el servidor. Los payloads de creación son `NuevoX = Omit<X, 'id'>`.
@@ -11,72 +16,120 @@ Convenciones del contrato:
 ## Mapa de relaciones
 
 ```text
-Empresa (única) · ConfigImpuestos (única) ─* CanalVenta
-Local 1──* SerieComprobante
-      1──* Impresora 1──* EstacionProduccion *──1 Local
-MedioPago · Motivo (anulación, descuento, cortesía)
-Salon 1──* Mesa *──0..1 Usuario (mesero)
-Categoria 1──* Producto 1──* Variante
-                        1──* GrupoModificador 1──* Modificador
-                        1──0..1 Receta 1──* IngredienteReceta *──1 Insumo
-Insumo 1──* Movimiento *──1 Usuario
+ERP ─────────────────────────────────────────────────────────────────────
+Local 1──* Almacen            Usuario *──* Local (localIds)
+Proveedor 1──* Articulo *──0..1 Marca
+
+Vertical ────────────────────────────────────────────────────────────────
+Local 1──* Salon 1──* Mesa *──0..1 Usuario (mesero)
+Local 1──* Area *──0..1 Salon
+           Area *──0..1 Impresora *──1 Local
+           Area ──comanda──> Categoria · Producto
+Categoria 1──* Producto 1──* Variante · GrupoModificador 1──* Modificador
+Producto 1──0..1 Receta 1──* IngredienteReceta *──1 Insumo
+Insumo 1──* Existencia *──1 Almacen
+Insumo 1──* Movimiento *──1 Almacen · Usuario
+Combo 1──* GrupoCombo ──opciones──> Producto
+CanalVenta · Motivo · DefinicionParametro · PermisoVertical
 ```
 
-## Empresa y configuración
+## Maestros del ERP
 
-### Empresa
-
-Registro único por cuenta.
-
-| Campo               | Tipo    | Notas                                                          |
-| ------------------- | ------- | -------------------------------------------------------------- |
-| `ruc`               | string  | 11 dígitos, prefijo 10/15/17/20 y dígito verificador módulo 11 |
-| `razonSocial`       | string  |                                                                |
-| `nombreComercial`   | string  | El que ve el cliente                                           |
-| `direccionFiscal`   | string  |                                                                |
-| `telefono`, `email` | string? | Correo de facturación                                          |
-| `logo`              | string? | Data URL en mock; URL con backend                              |
-| `moneda`            | `'PEN'` |                                                                |
-| `zonaHoraria`       | string  | `America/Lima`                                                 |
+Se muestran con «Sincronizado desde ERP». No tienen alta, edición ni baja en la vertical.
 
 ### Local
 
 | Campo                   | Tipo           | Notas                                                                           |
 | ----------------------- | -------------- | ------------------------------------------------------------------------------- |
-| `id`                    | string         |                                                                                 |
 | `nombre`                | string         | Único                                                                           |
 | `direccion`, `distrito` | string         |                                                                                 |
-| `telefono`              | string?        |                                                                                 |
-| `codigoEstablecimiento` | string         | 4 dígitos, único. `0000` = domicilio fiscal                                     |
+| `codigoEstablecimiento` | string         | 4 dígitos SUNAT. `0000` = domicilio fiscal                                      |
 | `horario`               | `HorarioDia[]` | 7 días: `dia` (0 lunes … 6 domingo), `abierto`, `apertura`, `cierre` en `HH:mm` |
-| `activo`                | boolean        | Debe quedar al menos uno activo                                                 |
+| `activo`                | boolean        |                                                                                 |
 
-Reglas: si `cierre` es menor que `apertura`, el turno cruza la medianoche. No se elimina un local con series, estaciones o impresoras.
+Empresa, impuestos (`ConfigImpuestos`), medios de pago y series de comprobantes también vienen del ERP. La vertical los usa internamente (por ejemplo, para calcular un ticket) pero no los muestra ([D-006](./decisiones)).
 
-### ConfigImpuestos
+### Almacen
 
-Registro único por cuenta.
+| Campo         | Tipo    | Notas   |
+| ------------- | ------- | ------- |
+| `nombre`      | string  |         |
+| `localId`     | string  | → Local |
+| `descripcion` | string? |         |
+| `activo`      | boolean |         |
 
-| Campo                      | Tipo    | Notas            |
-| -------------------------- | ------- | ---------------- |
-| `igvPorcentaje`            | number  | 0–30. 18 general |
-| `preciosIncluyenIgv`       | boolean |                  |
-| `recargoConsumoActivo`     | boolean |                  |
-| `recargoConsumoPorcentaje` | number  | Máximo 13 %      |
-| `icbperMonto`              | number  | Soles por bolsa  |
+### Proveedor
 
-El recargo al consumo se calcula sobre el valor sin IGV (`utils/impuestos.ts`).
+Maestro **global** de la cadena.
 
-### MedioPago
+| Campo                           | Tipo    | Notas                      |
+| ------------------------------- | ------- | -------------------------- |
+| `razonSocial`                   | string  |                            |
+| `ruc`                           | string  | 11 dígitos con verificador |
+| `contacto`, `telefono`, `email` | string? |                            |
+| `diasCredito`                   | number  | 0 = contado                |
+| `activo`                        | boolean |                            |
 
-| Campo                | Tipo                                                                     | Notas                           |
-| -------------------- | ------------------------------------------------------------------------ | ------------------------------- |
-| `nombre`             | string                                                                   | Único                           |
-| `tipo`               | `'efectivo' \| 'tarjeta' \| 'billetera' \| 'transferencia' \| 'credito'` |                                 |
-| `requiereReferencia` | boolean                                                                  | Pide número de operación        |
-| `comisionPorcentaje` | number                                                                   | 0–100                           |
-| `orden`              | number                                                                   | Orden en caja                   |
-| `activo`             | boolean                                                                  | Debe quedar al menos uno activo |
+### Marca
+
+| Campo    | Tipo    |
+| -------- | ------- |
+| `nombre` | string  |
+| `activo` | boolean |
+
+### Articulo
+
+Lo que el ERP compra ([D-004](./decisiones)). No es un insumo: se vincula a los insumos en F4.3.
+
+| Campo          | Tipo    | Notas                                    |
+| -------------- | ------- | ---------------------------------------- |
+| `codigo`       | string  | Código en el ERP (`ART-03001`)           |
+| `nombre`       | string  |                                          |
+| `marcaId`      | string? | → Marca                                  |
+| `unidadCompra` | string  | Cómo se compra: `Saco 50 kg`, `Caja x24` |
+| `proveedorId`  | string? | → Proveedor habitual                     |
+| `activo`       | boolean |                                          |
+
+### Usuario
+
+| Campo       | Tipo                                            | Notas                                            |
+| ----------- | ----------------------------------------------- | ------------------------------------------------ |
+| `nombre`    | string                                          |                                                  |
+| `email`     | string                                          | Único                                            |
+| `rol`       | `'admin' \| 'cajero' \| 'mesero' \| 'cocinero'` | Rol del ERP                                      |
+| `localIds`  | string[]?                                       | Locales a los que tiene acceso. Sin valor: todos |
+| `activo`    | boolean                                         |                                                  |
+| `avatarUrl` | string?                                         |                                                  |
+
+El selector de local de la cabecera solo muestra los locales del usuario.
+
+## Configuración de la vertical
+
+### DefinicionParametro
+
+Catálogo de opciones configurables. Empieza vacío: cada fase añade las suyas en `parametros.service.ts`.
+
+| Campo         | Tipo                                            | Notas                            |
+| ------------- | ----------------------------------------------- | -------------------------------- |
+| `clave`       | string                                          | Identificador estable            |
+| `etiqueta`    | string                                          |                                  |
+| `descripcion` | string?                                         |                                  |
+| `alcance`     | `'vertical' \| 'local'`                         | Toda la cadena o un local        |
+| `grupo`       | string                                          | Agrupa en pantalla               |
+| `tipo`        | `'booleano' \| 'numero' \| 'texto' \| 'opcion'` |                                  |
+| `opciones`    | `{ valor, etiqueta }[]`?                        | Para `tipo: 'opcion'`            |
+| `porDefecto`  | string \| number \| boolean                     | Un local sin valor usa el global |
+
+### PermisoVertical
+
+Acción de la vertical que se concede a un **rol del ERP** y se ajusta por usuario. Empieza vacío.
+
+| Campo         | Tipo    |
+| ------------- | ------- |
+| `clave`       | string  |
+| `etiqueta`    | string  |
+| `modulo`      | string  |
+| `descripcion` | string? |
 
 ### CanalVenta
 
@@ -84,9 +137,29 @@ El recargo al consumo se calcula sobre el valor sin IGV (`utils/impuestos.ts`).
 | ---------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | `nombre`               | string                                              | Único                                                                                           |
 | `tipo`                 | `'salon' \| 'llevar' \| 'delivery' \| 'plataforma'` | Modalidad de atención. Ver [D-001](./decisiones#d-001-canales-de-venta-y-modalidad-de-atencion) |
-| `aplicaRecargoConsumo` | boolean                                             | Cobra el recargo configurado en Impuestos                                                       |
-| `comisionPorcentaje`   | number                                              | Comisión de la plataforma                                                                       |
+| `aplicaRecargoConsumo` | boolean                                             | Cobra el recargo configurado en el ERP                                                          |
+| `comisionPorcentaje`   | number                                              | Solo en apps de delivery                                                                        |
 | `activo`               | boolean                                             | Debe quedar al menos uno activo                                                                 |
+
+### Area
+
+Dónde se prepara y a dónde se comanda cada producto ([D-004](./decisiones)). Reemplaza a las estaciones de producción.
+
+| Campo            | Tipo                                  | Notas                                                        |
+| ---------------- | ------------------------------------- | ------------------------------------------------------------ |
+| `nombre`         | string                                | Único por salón dentro del local                             |
+| `localId`        | string                                | → Local                                                      |
+| `salonId`        | string?                               | → Salon del **mismo** local. Sin valor: fuera de los salones |
+| `impresoraId`    | string?                               | → Impresora de comandas del **mismo** local                  |
+| `recibeComandas` | boolean                               | Recepción o almacén no reciben                               |
+| `comanda`        | `{ modo, categoriaIds, productoIds }` | `modo`: `'todos' \| 'seleccionados'`                         |
+| `activo`         | boolean                               |                                                              |
+
+Reglas:
+
+- Con `modo: 'seleccionados'` hace falta al menos una categoría o un producto.
+- El producto **no guarda** su área: el destino se calcula con `recibeProducto(area, producto)`.
+- `coberturaComanda(areas, productos, localId)` devuelve los productos sin área y los que salen en varias.
 
 ### Impresora
 
@@ -99,15 +172,7 @@ El recargo al consumo se calcula sobre el valor sin IGV (`utils/impuestos.ts`).
 | `conexion`    | `'red' \| 'usb'`                               |                                           |
 | `direccionIp` | string?                                        | IPv4 obligatoria si la conexión es de red |
 
-Regla: no se elimina una impresora asignada a estaciones.
-
-### EstacionProduccion
-
-| Campo         | Tipo    | Notas                           |
-| ------------- | ------- | ------------------------------- |
-| `nombre`      | string  | Único por local                 |
-| `localId`     | string  | → Local                         |
-| `impresoraId` | string? | → Impresora del **mismo** local |
+Regla: no se elimina una impresora asignada a áreas.
 
 ### Motivo
 
@@ -117,28 +182,60 @@ Regla: no se elimina una impresora asignada a estaciones.
 | `descripcion`          | string                                     | Única dentro de su tipo              |
 | `requiereAutorizacion` | boolean                                    | Exige aprobación de un administrador |
 
-### SerieComprobante
+## Sala
 
-| Campo         | Tipo                                                    | Notas                                                                |
-| ------------- | ------------------------------------------------------- | -------------------------------------------------------------------- |
-| `localId`     | string                                                  | → Local                                                              |
-| `tipo`        | `'boleta' \| 'factura' \| 'notaCredito' \| 'notaVenta'` |                                                                      |
-| `serie`       | string                                                  | 4 caracteres. Boleta `B…`, factura `F…`, nota de crédito `B…` o `F…` |
-| `correlativo` | number                                                  | Último número emitido. Solo avanza                                   |
+### Salon
 
-Reglas: la serie es única por tipo en todo el RUC. Tipo, local y serie no cambian tras crearla. Solo se elimina si nunca emitió (`correlativo = 0`). El número completo se muestra como `B001-00000123`.
+| Campo         | Tipo    | Notas                  |
+| ------------- | ------- | ---------------------- |
+| `nombre`      | string  | Único dentro del local |
+| `localId`     | string  | → Local                |
+| `descripcion` | string? |                        |
+| `orden`       | number  | Orden en selectores    |
+| `activo`      | boolean |                        |
 
-## Carta: fase 3
+Regla: no se elimina un salón con mesas o áreas.
 
-Campos añadidos:
+### Mesa
 
-| Entidad   | Campo            | Tipo                      | Notas                                                                                 |
-| --------- | ---------------- | ------------------------- | ------------------------------------------------------------------------------------- |
-| Mesa      | `grupoId`        | string?                   | Mesas unidas comparten grupo. Solo del mismo salón; no se separa con una mesa ocupada |
-| Categoria | `disponibilidad` | `{ dias, desde, hasta }`? | Franja en que se ofrece                                                               |
-| Producto  | `imagen`         | string?                   |                                                                                       |
-| Producto  | `estacionId`     | string?                   | → EstacionProduccion                                                                  |
-| Producto  | `preciosCanal`   | `{ canalId, precio }[]`   | Sin entrada, el canal usa el precio base                                              |
+| Campo          | Tipo                                                              | Notas                                                        |
+| -------------- | ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| `salonId`      | string                                                            | → Salon                                                      |
+| `codigo`       | string                                                            | «M-12», único dentro del salón                               |
+| `capacidad`    | number                                                            | Personas                                                     |
+| `forma`        | `'cuadrada' \| 'redonda' \| 'rectangular'`                        |                                                              |
+| `estado`       | `'libre' \| 'ocupada' \| 'reservada' \| 'limpieza' \| 'inactiva'` |                                                              |
+| `meseroId`     | string?                                                           | → Usuario                                                    |
+| `posX`, `posY` | number                                                            | Posición en el plano, 0–100 %                                |
+| `grupoId`      | string?                                                           | Mesas juntadas. Solo del mismo salón; no se separan ocupadas |
+
+## Carta
+
+### Categoria
+
+| Campo            | Tipo                      | Notas                   |
+| ---------------- | ------------------------- | ----------------------- |
+| `nombre`         | string                    |                         |
+| `descripcion`    | string?                   |                         |
+| `orden`          | number                    |                         |
+| `disponibilidad` | `{ dias, desde, hasta }`? | Franja en que se ofrece |
+| `activa`         | boolean                   |                         |
+
+### Producto
+
+| Campo                  | Tipo                    | Notas                                                              |
+| ---------------------- | ----------------------- | ------------------------------------------------------------------ |
+| `categoriaId`          | string                  | → Categoria                                                        |
+| `nombre`               | string                  |                                                                    |
+| `descripcion`          | string?                 |                                                                    |
+| `precio`               | number                  | Precio base                                                        |
+| `preciosCanal`         | `{ canalId, precio }[]` | Sin entrada, el canal usa el precio base                           |
+| `disponible`           | boolean                 | Conmutador de agotado                                              |
+| `tiempoPreparacionMin` | number?                 |                                                                    |
+| `alergenos`            | `Alergeno[]`            | gluten, lácteos, huevo, pescado, mariscos, frutos secos, soya, ají |
+| `variantes`            | `Variante[]`            | Presentaciones con **precio final**                                |
+| `gruposModificadores`  | `GrupoModificador[]`    | `seleccionMinima`, `seleccionMaxima`, modificadores con recargo    |
+| `imagen`               | string?                 | Data URL en mock; URL con backend                                  |
 
 ### Combo
 
@@ -153,187 +250,39 @@ Campos añadidos:
 
 Un producto que forma parte de un combo no se puede eliminar.
 
-## Inventario y compras: fase 4
-
-### Almacen
-
-| Campo     | Tipo    | Notas                                                         |
-| --------- | ------- | ------------------------------------------------------------- |
-| `nombre`  | string  | Único por local                                               |
-| `localId` | string  | → Local                                                       |
-| `activo`  | boolean | No se desactiva con stock dentro; no se elimina con historial |
-
-### Insumo (ampliado)
-
-| Campo           | Tipo                             | Notas                                                                                |
-| --------------- | -------------------------------- | ------------------------------------------------------------------------------------ |
-| `categoria`     | CategoriaInsumo                  | carnes, pescados, verduras, abarrotes, lácteos, bebidas, descartables, preparaciones |
-| `existencias`   | `{ almacenId, cantidad }[]`      | Stock por almacén                                                                    |
-| `stock`         | number                           | Suma de existencias (derivado)                                                       |
-| `costoUnitario` | number                           | Promedio ponderado sin IGV; en preparaciones se calcula                              |
-| `proveedorId`   | string?                          | → Proveedor habitual                                                                 |
-| `preparacion`   | `{ rendimiento, ingredientes }`? | Subreceta                                                                            |
-
-### Movimiento (ampliado)
-
-| Campo           | Tipo           | Notas                                                                                          |
-| --------------- | -------------- | ---------------------------------------------------------------------------------------------- |
-| `almacenId`     | string         | → Almacen                                                                                      |
-| `tipo`          | TipoMovimiento | entrada, salida, merma, ajuste, trasladoSalida, trasladoEntrada, produccion, consumoProduccion |
-| `costoUnitario` | number?        | Costo de la entrada o vigente                                                                  |
-| `referencia`    | string?        | OC-000041, TOMA-0008, TR-…, PR-…                                                               |
-
-Reglas: el stock de un almacén nunca queda negativo. Traslados, producciones, tomas y recepciones se aplican como transacción: si un movimiento falla, no se guarda ninguno.
-
-### TomaInventario
-
-| Campo       | Tipo                                   | Notas                             |
-| ----------- | -------------------------------------- | --------------------------------- |
-| `numero`    | string                                 | TOMA-0008                         |
-| `almacenId` | string                                 | Una sola toma abierta por almacén |
-| `estado`    | `'abierta' \| 'aplicada' \| 'anulada'` |                                   |
-| `lineas`    | `{ insumoId, teorico, contado }[]`     | `contado: null` = sin contar      |
-
-Al aplicar, la diferencia con el stock actual genera `ajuste` (sobrante) o `merma` (faltante).
-
-### Proveedor
-
-| Campo                           | Tipo    | Notas          |
-| ------------------------------- | ------- | -------------- |
-| `razonSocial`                   | string  |                |
-| `ruc`                           | string  | Válido y único |
-| `contacto`, `telefono`, `email` | string? |                |
-| `diasCredito`                   | number  | 0 = contado    |
-
-### OrdenCompra
-
-| Campo                          | Tipo                                                              | Notas                               |
-| ------------------------------ | ----------------------------------------------------------------- | ----------------------------------- |
-| `numero`                       | string                                                            | OC-000042, correlativo              |
-| `proveedorId`, `almacenId`     | string                                                            | Destino de la mercadería            |
-| `estado`                       | `'borrador' \| 'emitida' \| 'parcial' \| 'recibida' \| 'anulada'` |                                     |
-| `fechaEmision`, `fechaEntrega` | `YYYY-MM-DD`                                                      | Entrega ≥ emisión                   |
-| `lineas`                       | `{ insumoId, cantidad, costoUnitario, recibido }[]`               | Costos sin IGV; un insumo por línea |
-
-Reglas: solo un borrador se edita o elimina; solo una orden emitida se anula; no se recibe más de lo pendiente; cada recepción crea entradas con la referencia de la orden y actualiza el costo promedio.
-
-## Personal
-
-### Usuario
-
-| Campo       | Tipo                                            | Notas |
-| ----------- | ----------------------------------------------- | ----- |
-| `id`        | string                                          |       |
-| `nombre`    | string                                          |       |
-| `email`     | string                                          | Único |
-| `rol`       | `'admin' \| 'cajero' \| 'mesero' \| 'cocinero'` |       |
-| `activo`    | boolean                                         |       |
-| `avatarUrl` | string?                                         |       |
-
-Reglas: debe quedar al menos un **administrador activo**, y no se elimina un usuario con mesas asignadas.
-
-## Sala
-
-### Salon
-
-| Campo         | Tipo    | Notas               |
-| ------------- | ------- | ------------------- |
-| `id`          | string  |                     |
-| `nombre`      | string  | Único               |
-| `descripcion` | string? |                     |
-| `orden`       | number  | Orden en selectores |
-| `activo`      | boolean |                     |
-
-Regla: no se elimina un salón con mesas asignadas.
-
-### Mesa
-
-| Campo          | Tipo                                                              | Notas                          |
-| -------------- | ----------------------------------------------------------------- | ------------------------------ |
-| `id`           | string                                                            |                                |
-| `salonId`      | string                                                            | → Salon                        |
-| `codigo`       | string                                                            | «M-12», único dentro del salón |
-| `capacidad`    | number                                                            | Personas                       |
-| `forma`        | `'cuadrada' \| 'redonda' \| 'rectangular'`                        |                                |
-| `estado`       | `'libre' \| 'ocupada' \| 'reservada' \| 'limpieza' \| 'inactiva'` |                                |
-| `meseroId`     | string?                                                           | → Usuario                      |
-| `posX`, `posY` | number                                                            | Posición en el plano, 0–100 %  |
-
-## Carta
-
-### Categoria
-
-| Campo         | Tipo    | Notas |
-| ------------- | ------- | ----- |
-| `id`          | string  |       |
-| `nombre`      | string  |       |
-| `descripcion` | string? |       |
-| `orden`       | number  |       |
-| `activa`      | boolean |       |
-
-### Producto
-
-| Campo                  | Tipo                 | Notas                                                              |
-| ---------------------- | -------------------- | ------------------------------------------------------------------ |
-| `id`                   | string               |                                                                    |
-| `categoriaId`          | string               | → Categoria                                                        |
-| `nombre`               | string               |                                                                    |
-| `descripcion`          | string?              |                                                                    |
-| `precio`               | number               | Precio base                                                        |
-| `disponible`           | boolean              | Conmutador de agotado                                              |
-| `tiempoPreparacionMin` | number?              |                                                                    |
-| `alergenos`            | `Alergeno[]`         | gluten, lácteos, huevo, pescado, mariscos, frutos secos, soya, ají |
-| `variantes`            | `Variante[]`         |                                                                    |
-| `gruposModificadores`  | `GrupoModificador[]` |                                                                    |
-
-### Variante
-
-Presentación alternativa (personal, fuente…). `precio` es el **precio final**, no un recargo.
-
-| Campo    | Tipo    |
-| -------- | ------- |
-| `id`     | string  |
-| `nombre` | string  |
-| `precio` | number  |
-| `activa` | boolean |
-
-### GrupoModificador y Modificador
-
-| Campo                     | Tipo   | Notas                               |
-| ------------------------- | ------ | ----------------------------------- |
-| `seleccionMinima`         | number | `1` lo vuelve obligatorio           |
-| `seleccionMaxima`         | number | `1` = elección única; `>1` = extras |
-| `modificadores[].nombre`  | string | «Sin cebolla»                       |
-| `modificadores[].recargo` | number | `0` si no cuesta                    |
-
 ## Inventario
+
+> F4.3 rehace el insumo como entidad propia de la vertical, vinculada a artículos del ERP con reglas de conversión directa y transformación.
 
 ### Insumo
 
-| Campo           | Tipo                                                  | Notas                           |
-| --------------- | ----------------------------------------------------- | ------------------------------- |
-| `id`            | string                                                |                                 |
-| `nombre`        | string                                                |                                 |
-| `unidad`        | `'kg' \| 'g' \| 'l' \| 'ml' \| 'unidad' \| 'paquete'` |                                 |
-| `stock`         | number                                                |                                 |
-| `stockMinimo`   | number                                                | Umbral de alerta                |
-| `costoUnitario` | number                                                |                                 |
-| `proveedor`     | string?                                               | Pasará a relación con Proveedor |
-| `activo`        | boolean                                               |                                 |
+| Campo           | Tipo                                                  | Notas                                                                                |
+| --------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `nombre`        | string                                                |                                                                                      |
+| `unidad`        | `'kg' \| 'g' \| 'l' \| 'ml' \| 'unidad' \| 'paquete'` |                                                                                      |
+| `categoria`     | CategoriaInsumo                                       | carnes, pescados, verduras, abarrotes, lácteos, bebidas, descartables, preparaciones |
+| `existencias`   | `{ almacenId, cantidad }[]`                           | Stock por almacén                                                                    |
+| `stock`         | number                                                | Suma de existencias (derivado)                                                       |
+| `stockMinimo`   | number                                                | Umbral de alerta                                                                     |
+| `costoUnitario` | number                                                | Promedio ponderado sin IGV; en preparaciones se calcula                              |
+| `preparacion`   | `{ rendimiento, ingredientes }`?                      | Subreceta                                                                            |
+| `activo`        | boolean                                               |                                                                                      |
 
 ### Movimiento
 
-| Campo       | Tipo                                           | Notas              |
-| ----------- | ---------------------------------------------- | ------------------ |
-| `id`        | string                                         |                    |
-| `insumoId`  | string                                         | → Insumo           |
-| `tipo`      | `'entrada' \| 'salida' \| 'merma' \| 'ajuste'` | Determina el signo |
-| `cantidad`  | number                                         | Siempre positiva   |
-| `motivo`    | string?                                        |                    |
-| `usuarioId` | string                                         | → Usuario          |
-| `fecha`     | string                                         | ISO 8601           |
+| Campo           | Tipo           | Notas                                                                                          |
+| --------------- | -------------- | ---------------------------------------------------------------------------------------------- |
+| `insumoId`      | string         | → Insumo                                                                                       |
+| `almacenId`     | string         | → Almacen                                                                                      |
+| `tipo`          | TipoMovimiento | entrada, salida, merma, ajuste, trasladoSalida, trasladoEntrada, produccion, consumoProduccion |
+| `cantidad`      | number         | Siempre positiva; el tipo define el signo                                                      |
+| `costoUnitario` | number?        | Costo de la entrada o vigente                                                                  |
+| `motivo`        | string?        |                                                                                                |
+| `referencia`    | string?        | Documento que lo origina                                                                       |
+| `usuarioId`     | string         | → Usuario                                                                                      |
+| `fecha`         | string         | ISO 8601                                                                                       |
 
-Regla: una salida o merma no puede dejar el stock en negativo, y la cantidad debe ser mayor que cero. Un insumo usado en una receta no se puede eliminar.
+Reglas: el stock de un almacén nunca queda negativo. Traslados y producciones se aplican como transacción: si un movimiento falla, no se guarda ninguno.
 
 ### Receta
 
@@ -342,3 +291,7 @@ Regla: una salida o merma no puede dejar el stock en negativo, y la cantidad deb
 | `productoId`              | string | → Producto (1 a 1)      |
 | `ingredientes[].insumoId` | string | → Insumo                |
 | `ingredientes[].cantidad` | number | En la unidad del insumo |
+
+## Retiradas
+
+Existieron en la versión autónoma y se retiraron en F4.1 porque pertenecen al ERP o aún no aplican: `OrdenCompra`, `TomaInventario`, `PedidoInterno` y las unidades de pedido y recepción del insumo.

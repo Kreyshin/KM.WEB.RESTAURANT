@@ -1,6 +1,6 @@
 # KmCatalogo
 
-Pantalla de mantenimiento completa en un solo componente. Pensado para catálogos simples: medios de pago, canales, motivos, series, locales…
+Pantalla de mantenimiento completa en un solo componente. Pensado para catálogos simples: canales, motivos, áreas, impresoras… y para consultar maestros del ERP en solo lectura.
 
 Incluye, sin escribir nada más:
 
@@ -69,36 +69,39 @@ function validar(c: NuevoCanalVenta): Record<string, string> {
 
 - Cada registro tiene `id: string` y `activo: boolean`.
 - El servicio implementa `consultar`, `crear` y `actualizar`. Si además tiene `eliminar`, aparece el botón.
+- Con `solo-lectura` basta `consultar`: `crear` y `actualizar` son opcionales.
 - Las reglas de negocio viven en el servicio y lanzan `ApiError` con `campos`: el drawer las muestra en su campo.
 
 ## Props
 
-| Prop                  | Tipo                                   | Descripción                                                               |
-| --------------------- | -------------------------------------- | ------------------------------------------------------------------------- |
-| `titulo`, `subtitulo` | `string`                               | Cabecera de la tarjeta                                                    |
-| `entidad`             | `string`                               | Singular en minúscula: textos de botones, drawer y avisos                 |
-| `femenino`            | `boolean`                              | «Nueva serie», «Activa», «creada»                                         |
-| `servicio`            | `ServicioCatalogo<T>`                  | `consultar`, `crear`, `actualizar`, `eliminar?`                           |
-| `columnas`            | `ColumnaTabla[]`                       | Sin Estado ni acciones: se añaden solas                                   |
-| `nuevo`               | `() => Omit<T, 'id'>`                  | Registro vacío para el alta                                               |
-| `nombreDe`            | `(item: T) => string`                  | Nombre en la confirmación de borrado                                      |
-| `validar`             | `(borrador) => Record<string, string>` | Validación en cliente antes de llamar al servicio                         |
-| `filtrosFijos`        | `Consulta['filtros']`                  | Filtro permanente; también se copia en los registros nuevos               |
-| `orden`               | `Orden`                                | Orden inicial                                                             |
-| `exportacion`         | `ColumnaExportable<T>[]`               | Activa el botón Exportar                                                  |
-| `archivo`             | `string`                               | Nombre base del archivo exportado                                         |
-| `anchoDrawer`         | `'sm' \| 'md' \| 'lg'`                 | Por defecto `md`                                                          |
-| `sinTarjeta`          | `boolean`                              | Sin `KmCard`: para usarlo dentro de pestañas                              |
-| `consecuenciasEstado` | `(id, activar) => Promise<string[]>`   | Frases de la confirmación de estado. Normalmente de `dependenciasService` |
+| Prop                  | Tipo                                   | Descripción                                                                   |
+| --------------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| `titulo`, `subtitulo` | `string`                               | Cabecera de la tarjeta                                                        |
+| `entidad`             | `string`                               | Singular en minúscula: textos de botones, drawer y avisos                     |
+| `femenino`            | `boolean`                              | «Nueva serie», «Activa», «creada»                                             |
+| `servicio`            | `ServicioCatalogo<T>`                  | `consultar`, `crear`, `actualizar`, `eliminar?`                               |
+| `columnas`            | `ColumnaTabla[]`                       | Sin Estado ni acciones: se añaden solas                                       |
+| `nuevo`               | `() => Omit<T, 'id'>`                  | Registro vacío para el alta                                                   |
+| `nombreDe`            | `(item: T) => string`                  | Nombre en la confirmación de borrado                                          |
+| `validar`             | `(borrador) => Record<string, string>` | Validación en cliente antes de llamar al servicio                             |
+| `filtrosFijos`        | `Consulta['filtros']`                  | Filtro permanente; también se copia en los registros nuevos                   |
+| `orden`               | `Orden`                                | Orden inicial                                                                 |
+| `exportacion`         | `ColumnaExportable<T>[]`               | Activa el botón Exportar                                                      |
+| `archivo`             | `string`                               | Nombre base del archivo exportado                                             |
+| `anchoDrawer`         | `'sm' \| 'md' \| 'lg'`                 | Por defecto `md`                                                              |
+| `sinTarjeta`          | `boolean`                              | Sin `KmCard`: para usarlo dentro de pestañas                                  |
+| `consecuenciasEstado` | `(id, activar) => Promise<string[]>`   | Frases de la confirmación de estado. Normalmente de `dependenciasService`     |
+| `soloLectura`         | `boolean`                              | Datos del ERP: sin alta, edición ni baja. Ver [Datos del ERP](#datos-del-erp) |
 
 ## Slots
 
-| Slot           | Props                             | Uso                                                              |
-| -------------- | --------------------------------- | ---------------------------------------------------------------- |
-| `#formulario`  | `{ borrador, errores, editando }` | Campos del drawer. `editando` permite bloquear campos inmutables |
-| `#col-<clave>` | `{ fila }`                        | Celda personalizada                                              |
-| `#filtros`     | `{ consulta }`                    | Selects extra junto a la búsqueda                                |
-| `#acciones`    | —                                 | Botones extra en la cabecera                                     |
+| Slot           | Props                             | Uso                                                                                 |
+| -------------- | --------------------------------- | ----------------------------------------------------------------------------------- |
+| `#formulario`  | `{ borrador, errores, editando }` | Campos del drawer. `editando` permite bloquear campos inmutables                    |
+| `#col-<clave>` | `{ fila }`                        | Celda personalizada                                                                 |
+| `#filtros`     | `{ consulta }`                    | Selects extra junto a la búsqueda                                                   |
+| `#acciones`    | —                                 | Botones extra en la cabecera                                                        |
+| `#tarjeta`     | `{ fila, editar, eliminar? }`     | Activa el interruptor Tabla / Tarjetas. Ver [Vista en tarjetas](#vista-en-tarjetas) |
 
 ## Eventos y métodos
 
@@ -143,4 +146,68 @@ Las acciones usan `KmBotonIcono`: botón cuadrado de 32 px con borde e icono. El
 />
 ```
 
-Iconos disponibles: `editar`, `eliminar`, `subir`, `bajar`, `ver`.
+Iconos disponibles: `editar`, `eliminar`, `subir`, `bajar`, `ver`, `movimiento`, `recibir`, `enviar`, `anular`, `separar`.
+
+## Datos del ERP
+
+Los maestros que administra el ERP (artículos, proveedores, marcas, almacenes) se consultan con el mismo componente en modo `solo-lectura`:
+
+```vue
+<KmCatalogo
+  titulo="Proveedores"
+  entidad="proveedor"
+  solo-lectura
+  :servicio="proveedoresService"
+  :columnas="columnas"
+  :nuevo="vacio"
+  :nombre-de="(p: Proveedor) => p.razonSocial"
+>
+  <template #formulario="{ borrador }">
+    <KmField v-slot="{ id }" label="Razón social">
+      <KmInput :id="id" :model-value="borrador.razonSocial" />
+    </KmField>
+  </template>
+</KmCatalogo>
+```
+
+Qué cambia:
+
+- La cabecera muestra `KmOrigenErp` («Sincronizado desde ERP») y no aparece el botón **Nuevo**.
+- Cada fila tiene solo **Ver**. El drawer se titula «Detalle de …», avisa del origen, bloquea los campos con un `fieldset` deshabilitado, oculta los asteriscos de obligatorio y solo ofrece **Cerrar**.
+- Siguen la búsqueda, los filtros, la paginación y la exportación.
+
+`KmOrigenErp` también se usa suelto: `<KmOrigenErp />` es la insignia y `<KmOrigenErp detalle>` el aviso con texto (acepta un slot para explicar qué sí se decide en la vertical).
+
+## Vista en tarjetas
+
+Si la vista define el slot `#tarjeta`, aparece `KmCambioVista` (Tabla / Tarjetas) junto a los filtros. La elección se recuerda por entidad en el navegador.
+
+```vue
+<KmCatalogo entidad="combo" ...>
+  <template #tarjeta="{ fila, editar, eliminar }">
+    <KmTarjetaPlato
+      ancha
+      :nombre="fila.nombre"
+      :imagen="fila.imagen"
+      :precio="formatearSoles(fila.precio)"
+      :cinta="fila.activo ? undefined : 'Inactivo'"
+      :eliminable="!!eliminar"
+      @editar="editar"
+      @eliminar="eliminar?.()"
+    />
+  </template>
+</KmCatalogo>
+```
+
+| Prop de `KmTarjetaPlato` | Tipo      | Descripción                                     |
+| ------------------------ | --------- | ----------------------------------------------- |
+| `nombre`, `precio`       | `string`  | Texto principal y precio ya formateado          |
+| `imagen`                 | `string`  | Foto o ilustración                              |
+| `antesPrecio`            | `string`  | «desde» cuando hay presentaciones               |
+| `detalle`                | `string`  | Línea secundaria (categoría, partes del combo)  |
+| `marca`                  | `string`  | Etiqueta sobre la imagen (tiempo, tipo)         |
+| `cinta`                  | `string`  | Apaga la tarjeta y muestra la cinta («Agotado») |
+| `ancha`                  | `boolean` | Imagen 16:9 para combos                         |
+| `eliminable`             | `boolean` | Muestra el botón de eliminar                    |
+
+Emite `editar` y `eliminar`. Fuera de `KmCatalogo` (como en la Carta) se usa `<KmCambioVista v-model="vista" clave="producto" />` y la cuadrícula en la propia vista.

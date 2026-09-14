@@ -25,9 +25,13 @@ import KmButton from '@/components/ui/KmButton.vue'
 | `KmNumero`                            | Cantidades, porcentajes y soles                  | [Formularios](./formularios#kmnumero)            |
 | `KmSelect`                            | Lista desplegable                                | [Formularios](./formularios)                     |
 | `KmSwitch`                            | Interruptor sí/no con etiqueta                   | [Formularios](./formularios#kmswitch)            |
+| `KmCheckbox`                          | Casilla con etiqueta y ayuda, dos tamaños        | [Formularios](./formularios#kmcheckbox)          |
+| `KmHora`                              | Hora en 24 h, escrita o con panel                | [Formularios](./formularios#kmhora)              |
 | `KmCatalogo`                          | Pantalla de mantenimiento completa               | [KmCatalogo](./catalogo)                         |
 | `KmBotonIcono`                        | Acción de fila con icono y tooltip               | [KmCatalogo](./catalogo#acciones-de-fila)        |
 | `KmConfirmarEstado` · `KmCampoEstado` | Cambio de estado con confirmación                | [KmCatalogo](./catalogo#cambio-de-estado)        |
+| `KmOrigenErp`                         | Marca de datos que vienen del ERP                | [KmCatalogo](./catalogo#datos-del-erp)           |
+| `KmCambioVista` · `KmTarjetaPlato`    | Alternar tabla o tarjetas estilo POS             | [KmCatalogo](./catalogo#vista-en-tarjetas)       |
 | `KmButton`                            | Botón con variantes, tamaños y carga             | [Botones](./botones)                             |
 | `KmBadge`                             | Insignia de estado                               | [Botones](./botones)                             |
 | `KmCard`                              | Tarjeta con cabecera y acciones                  | [Botones](./botones)                             |
