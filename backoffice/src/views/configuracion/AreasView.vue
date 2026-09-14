@@ -352,6 +352,15 @@ function validarImpresora(i: NuevaImpresora) {
                     :invalido="invalido"
                   />
                 </KmField>
+                <KmField v-slot="{ id, invalido }" label="Local" requerido :error="errores.localId">
+                  <KmSelect
+                    :id="id"
+                    v-model="borrador.localId"
+                    :opciones="opcionesLocal"
+                    :invalido="invalido"
+                    @update:model-value="((borrador.impresoraId = ''), (borrador.salonId = ''))"
+                  />
+                </KmField>
                 <KmField
                   v-slot="{ id, invalido }"
                   label="Salón"
@@ -363,15 +372,6 @@ function validarImpresora(i: NuevaImpresora) {
                     v-model="borrador.salonId"
                     :opciones="opcionesSalon(borrador.localId)"
                     :invalido="invalido"
-                  />
-                </KmField>
-                <KmField v-slot="{ id, invalido }" label="Local" requerido :error="errores.localId">
-                  <KmSelect
-                    :id="id"
-                    v-model="borrador.localId"
-                    :opciones="opcionesLocal"
-                    :invalido="invalido"
-                    @update:model-value="((borrador.impresoraId = ''), (borrador.salonId = ''))"
                   />
                 </KmField>
                 <KmField
