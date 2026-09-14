@@ -6,32 +6,34 @@ La estructura vive en `src/components/layout/navegacion.ts`. Una sección solo a
 
 ## Estado actual
 
-| Módulo     | Sección                 | Ruta                         | Roles         | Estado |
-| ---------- | ----------------------- | ---------------------------- | ------------- | ------ |
-| Inicio     | Dashboard               | `/dashboard`                 | Todos         | ✅     |
-| Inicio     | Guía de componentes     | `/componentes`               | admin         | ✅     |
-| Sala       | Salones                 | `/salones`                   | admin         | ✅     |
-| Sala       | Mesas                   | `/mesas`                     | Todos         | ✅     |
-| Carta      | Carta y menú            | `/carta`                     | admin         | ✅     |
-| Carta      | Combos y menús          | `/combos`                    | admin         | ✅     |
-| Inventario | Insumos                 | `/inventario`                | admin         | ✅     |
-| Inventario | Movimientos y kardex    | `/inventario/movimientos`    | admin         | ✅     |
-| Inventario | Recetas y costos        | `/inventario/recetas`        | admin         | ✅     |
-| Inventario | Toma de inventario      | `/inventario/tomas`          | admin         | ✅     |
-| Inventario | Almacenes               | `/inventario/almacenes`      | admin         | ✅     |
-| Compras    | Órdenes de compra       | `/compras/ordenes`           | admin         | ✅     |
-| Compras    | Proveedores             | `/compras/proveedores`       | admin         | ✅     |
-| Admin      | Reportes y caja         | `/reportes`                  | admin, cajero | 🚧     |
-| Admin      | Facturación             | `/facturacion`               | admin, cajero | 🚧     |
-| Admin      | Usuarios y roles        | `/usuarios`                  | admin         | 🚧     |
-| Config.    | Empresa                 | `/configuracion/empresa`     | admin         | ✅     |
-| Config.    | Locales                 | `/configuracion/locales`     | admin         | ✅     |
-| Config.    | Impuestos y cargos      | `/configuracion/impuestos`   | admin         | ✅     |
-| Config.    | Medios de pago          | `/configuracion/medios-pago` | admin         | ✅     |
-| Config.    | Canales de venta        | `/configuracion/canales`     | admin         | ✅     |
-| Config.    | Estaciones e impresoras | `/configuracion/produccion`  | admin         | ✅     |
-| Config.    | Motivos                 | `/configuracion/motivos`     | admin         | ✅     |
-| Config.    | Series de comprobantes  | `/configuracion/series`      | admin         | ✅     |
+| Módulo     | Sección                      | Ruta                         | Roles         | Estado   |
+| ---------- | ---------------------------- | ---------------------------- | ------------- | -------- |
+| Inicio     | Dashboard                    | `/dashboard`                 | Todos         | ✅       |
+| Inicio     | Guía de componentes          | `/componentes`               | admin         | ✅       |
+| Sala       | Salones                      | `/salones`                   | admin         | ✅       |
+| Sala       | Mesas                        | `/mesas`                     | Todos         | ✅       |
+| Carta      | Carta y menú                 | `/carta`                     | admin         | ✅       |
+| Carta      | Combos y menús               | `/combos`                    | admin         | ✅       |
+| Inventario | Insumos                      | `/inventario`                | admin         | ✅       |
+| Inventario | Movimientos y kardex         | `/inventario/movimientos`    | admin         | ✅       |
+| Inventario | Recetas y costos             | `/inventario/recetas`        | admin         | ✅       |
+| Inventario | Toma de inventario           | `/inventario/tomas`          | admin         | ✅       |
+| Inventario | Almacenes                    | `/inventario/almacenes`      | admin         | ✅       |
+| Compras    | Órdenes de compra            | `/compras/ordenes`           | admin         | ✅       |
+| Compras    | Proveedores                  | `/compras/proveedores`       | admin         | ✅       |
+| Admin      | Reportes y caja              | `/reportes`                  | admin, cajero | 🚧       |
+| Admin      | Facturación                  | `/facturacion`               | admin, cajero | 🚧       |
+| Admin      | Usuarios y roles             | `/usuarios`                  | admin         | 🚧       |
+| Config.    | Configuración de la vertical | `/configuracion/vertical`    | admin         | ✅ vacía |
+| Config.    | Configuración por local      | `/configuracion/local`       | admin         | ✅ vacía |
+| Config.    | Permisos por rol             | `/configuracion/roles`       | admin         | ✅ vacía |
+| Config.    | Excepciones por usuario      | `/configuracion/excepciones` | admin         | ✅ vacía |
+| Config.    | Canales de venta             | `/configuracion/canales`     | admin         | ✅       |
+| Config.    | Estaciones e impresoras      | `/configuracion/produccion`  | admin         | ✅       |
+| Config.    | Motivos                      | `/configuracion/motivos`     | admin         | ✅       |
+| Config.    | Series de comprobantes       | `/configuracion/series`      | admin         | ✅ ERP   |
+
+«Vacía» indica que la pantalla existe y muestra su alcance, pero aún no tiene parámetros o permisos: cada fase los añade en `parametros.service.ts`. Empresa, locales, impuestos y medios de pago se gestionan en el ERP y no se muestran (D-006).
 
 ## Navegación final prevista
 

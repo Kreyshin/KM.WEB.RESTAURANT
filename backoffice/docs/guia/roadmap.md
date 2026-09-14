@@ -1,22 +1,22 @@
-# Roadmap
+﻿# Roadmap
 
 Fases de **front-end** sobre datos de ejemplo. Una fase no empieza sin los maestros que necesita.
 
 > **Reencuadre (D-004, D-005).** El restaurante es una **vertical sobre un ERP**: los maestros del ERP se muestran de solo lectura y la vertical se centra en su operación. **F4 se rehace** con ese criterio.
 
-| Fase                              | Grupo     | Objetivo                                                     | Estado             |
-| --------------------------------- | --------- | ------------------------------------------------------------ | ------------------ |
-| F0 · Higiene                      | Base      | Git, lint, formato, tipos y pruebas                          | ✅ Hecha           |
-| F1 · Cimientos de interfaz y mock | Base      | Componentes y capa de datos reutilizables                    | ✅ Hecha\*         |
-| F2 · Configuración del negocio    | Base      | Empresa, locales, impuestos, medios de pago, canales, series | ✅ Hecha · ajustar |
-| F3 · Sala y carta                 | Maestros  | Cierre de sala y carta: imagen, combos, precio por canal     | ✅ Hecha           |
-| F4 · Abastecimiento               | Maestros  | Límite ERP, áreas, insumos, requerimientos, recepción        | ♻️ Rehacer         |
-| F5 · Personal y permisos          | Maestros  | Permisos por rol del ERP y por usuario, turnos, auditoría    | Pendiente          |
-| F6 · Clientes y promociones       | Maestros  | Clientes, puntos, cupones, reservas, zonas de delivery       | Pendiente          |
-| F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir        | ⚠️ Por decidir     |
-| F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados   | Pendiente          |
-| F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas             | Pendiente          |
-| F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades        | Pendiente          |
+| Fase                              | Grupo     | Objetivo                                                    | Estado             |
+| --------------------------------- | --------- | ----------------------------------------------------------- | ------------------ |
+| F0 · Higiene                      | Base      | Git, lint, formato, tipos y pruebas                         | ✅ Hecha           |
+| F1 · Cimientos de interfaz y mock | Base      | Componentes y capa de datos reutilizables                   | ✅ Hecha\*         |
+| F2 · Configuración                | Base      | Configuración de la vertical y por local, permisos, canales | ✅ Hecha · revisar |
+| F3 · Sala y carta                 | Maestros  | Cierre de sala y carta: imagen, combos, precio por canal    | ✅ Hecha           |
+| F4 · Abastecimiento               | Maestros  | Límite ERP, áreas, insumos, requerimientos, recepción       | ♻️ Rehacer         |
+| F5 · Personal y permisos          | Maestros  | Catálogo de permisos, turnos y auditoría                    | Pendiente          |
+| F6 · Clientes y promociones       | Maestros  | Clientes, puntos, cupones, reservas, zonas de delivery      | Pendiente          |
+| F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir       | ⚠️ Por decidir     |
+| F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados  | Pendiente          |
+| F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas            | Pendiente          |
+| F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades       | Pendiente          |
 
 \* La semilla realista se amplía en cada fase, cuando existan sus entidades.
 
@@ -52,7 +52,7 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 - [x] Selector de local
 - [x] Migas de pan
 
-## F2 · Configuración del negocio
+## F2 · Configuración
 
 - [x] Datos de empresa: RUC con dígito verificador, razón social, logo
 - [x] Locales con horario semanal y código de establecimiento SUNAT
@@ -63,7 +63,15 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 - [x] Motivos de anulación, descuento y cortesía
 - [x] Series y correlativos por local
 
-> **Ajuste por D-005 (se hace en F4.1).** Empresa, locales, impuestos, medios de pago y series pasan a **solo lectura** (vienen del ERP). Canales de venta y motivos siguen siendo de la vertical. Estaciones de producción se convierten en **Áreas** (F4.2).
+**Ajuste por D-005 y D-006**
+
+- [x] Series de comprobantes en solo lectura con «Sincronizado desde ERP»
+- [x] Quitar empresa, locales, impuestos y medios de pago (se gestionan en el ERP)
+- [x] Configuración de la vertical (alcance global, sin parámetros aún)
+- [x] Configuración por local según los locales a los que accede el usuario (sin parámetros aún)
+- [x] Permisos por rol del ERP (sin permisos aún)
+- [x] Excepciones por usuario (sin permisos aún)
+- [ ] Estaciones de producción se convierten en **Áreas** _(F4.2)_
 
 ## F3 · Sala y carta
 
@@ -99,7 +107,7 @@ Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede ava
 
 **Pasar a solo lectura** _(con indicador «Sincronizado desde ERP»)_
 
-- [ ] Empresa, locales, impuestos, medios de pago y series
+- [x] Hecho en F2: series en solo lectura; empresa, locales, impuestos y medios de pago retirados (D-006)
 - [ ] Almacenes
 
 **Nuevo: consultas del ERP**

@@ -5,53 +5,61 @@ test.describe('Configuración del negocio', () => {
     await entrar()
   })
 
-  test.describe('Datos del ERP en solo lectura', () => {
-    for (const { ruta, fila: nombre } of [
-      { ruta: '/configuracion/locales', fila: 'Barranco' },
-      { ruta: '/configuracion/medios-pago', fila: 'Efectivo' },
-      { ruta: '/configuracion/series', fila: 'B001' },
-    ]) {
-      test(`${ruta}: se consulta pero no se crea, edita ni elimina`, async ({ page }) => {
-        await page.goto(ruta)
-        await expect(fila(page, nombre)).toBeVisible()
-        await expect(page.getByText('Sincronizado desde ERP').first()).toBeVisible()
-        await expect(page.getByRole('button', { name: /^(Nuevo|Nueva) / })).toHaveCount(0)
-        await expect(
-          page.locator('main tbody').getByRole('button', { name: /^Editar / }),
-        ).toHaveCount(0)
-        await expect(
-          page.locator('main tbody').getByRole('button', { name: /^Eliminar / }),
-        ).toHaveCount(0)
+  test('las series del ERP se consultan pero no se crean, editan ni eliminan', async ({ page }) => {
+    await page.goto('/configuracion/series')
+    await expect(fila(page, 'B001')).toBeVisible()
+    await expect(page.getByText('Sincronizado desde ERP').first()).toBeVisible()
+    await expect(page.getByRole('button', { name: /^(Nuevo|Nueva) / })).toHaveCount(0)
+    await expect(page.locator('main tbody').getByRole('button', { name: /^Editar / })).toHaveCount(
+      0,
+    )
 
-        await fila(page, nombre).getByRole('button', { name: /^Ver / }).click()
-        const d = drawer(page)
-        await expect(d).toContainText('Sincronizado desde el ERP')
-        await expect(d.getByRole('button', { name: /Guardar|Crear/ })).toHaveCount(0)
-        await expect(d.locator('input, select, textarea').first()).toBeDisabled()
-        await d.getByRole('button', { name: 'Cerrar' }).last().click()
-        await expect(page.getByRole('dialog')).toHaveCount(0)
-      })
+    await fila(page, 'B001').getByRole('button', { name: /^Ver / }).click()
+    const d = drawer(page)
+    await expect(d).toContainText('Sincronizado desde el ERP')
+    await expect(d.locator('input, select, textarea').first()).toBeDisabled()
+    await expect(d.getByRole('button', { name: /Guardar|Crear/ })).toHaveCount(0)
+  })
+
+  test('empresa, locales, impuestos y medios de pago ya no están en el menú', async ({ page }) => {
+    await page.goto('/configuracion')
+    await expect(page).toHaveURL(/configuracion\/vertical/)
+    const menu = page.getByRole('navigation').filter({ hasText: 'Configuración de la vertical' })
+    for (const nombre of ['Empresa', 'Locales', 'Impuestos y cargos', 'Medios de pago']) {
+      await expect(menu.getByRole('link', { name: new RegExp(`^${nombre}`) })).toHaveCount(0)
     }
+  })
 
-    test('empresa se muestra como ficha sin campos editables', async ({ page }) => {
-      await page.goto('/configuracion/empresa')
-      await expect(page.getByText('Sincronizado desde el ERP')).toBeVisible()
-      await expect(page.getByText('Razón social', { exact: true })).toBeVisible()
-      await expect(page.locator('main input')).toHaveCount(0)
-      await expect(page.getByRole('button', { name: 'Guardar cambios' })).toHaveCount(0)
-    })
+  test('configuración de la vertical y por local muestran su alcance', async ({ page }) => {
+    await page.goto('/configuracion/vertical')
+    await expect(page.getByText('afecta a todos los locales')).toBeVisible()
+    await expect(page.getByText('Aún no hay parámetros en esta sección')).toBeVisible()
 
-    test('impuestos se consultan y el ticket de ejemplo sigue calculando', async ({ page }) => {
-      await page.goto('/configuracion/impuestos')
-      await expect(page.getByText('Sincronizado desde el ERP')).toBeVisible()
-      await expect(page.getByRole('button', { name: 'Guardar cambios' })).toHaveCount(0)
+    // El administrador tiene acceso a varios locales: elige cuál configurar.
+    await page.goto('/configuracion/local')
+    const locales = page.getByRole('navigation', { name: 'Locales' })
+    await expect(locales.getByRole('button')).toHaveCount(2)
+    await locales.getByRole('button', { name: /San Isidro/ }).click()
+    await expect(page.getByRole('heading', { name: 'Configuración de San Isidro' })).toBeVisible()
+  })
 
-      const ticket = page.getByRole('complementary', { name: 'Ticket de ejemplo' })
-      const total = ticket.locator('dd').last()
-      const antes = await total.textContent()
-      await ticket.getByLabel('Consumo de la mesa (S/)').fill('200')
-      await expect(total).not.toHaveText(antes!)
-    })
+  test('permisos por rol del ERP y excepciones por usuario', async ({ page }) => {
+    await page.goto('/configuracion/roles')
+    await page
+      .getByRole('navigation', { name: 'Roles del ERP' })
+      .getByRole('button', { name: /Mesero/ })
+      .click()
+    await expect(page.getByRole('heading', { name: 'Permisos de Mesero' })).toBeVisible()
+    await expect(page.getByText('Aún no hay permisos de la vertical para asignar')).toBeVisible()
+
+    await page.goto('/configuracion/excepciones')
+    await page
+      .getByRole('navigation', { name: 'Usuarios' })
+      .getByRole('button', { name: /Ana Quispe/ })
+      .click()
+    await expect(page.getByRole('heading', { name: 'Ana Quispe' })).toBeVisible()
+    await expect(page.getByText('Miraflores, San Isidro')).toBeVisible()
+    await expect(page.getByText('Sin excepciones')).toBeVisible()
   })
 
   test('no permite eliminar una impresora usada por estaciones', async ({ page }) => {

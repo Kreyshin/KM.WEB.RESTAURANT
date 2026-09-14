@@ -86,8 +86,10 @@ test.describe('Humo: botones de cada pantalla', () => {
       '/inventario/movimientos',
       '/inventario/recetas',
       '/inventario/tomas',
-      '/configuracion/empresa',
-      '/configuracion/impuestos',
+      '/configuracion/vertical',
+      '/configuracion/local',
+      '/configuracion/roles',
+      '/configuracion/excepciones',
       '/componentes',
     ]) {
       await page.goto(ruta)

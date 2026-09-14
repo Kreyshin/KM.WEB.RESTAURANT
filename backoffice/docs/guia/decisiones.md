@@ -156,3 +156,23 @@ Permitido según configuración, para compras de emergencia o de mercado. Contro
 - El **horario de atención** del local también viene del ERP: puede servir a otras verticales.
 - Se retiran del back office: pedidos internos, toma de inventario y el mantenimiento de proveedores y órdenes de compra.
 - **Permisos:** los roles vienen del ERP y no se crean aquí. La vertical asigna **permisos de la vertical a cada rol del ERP** (el mismo rol puede funcionar distinto en otra vertical) y admite **ajustes por usuario**. Los define un administrador; el usuario solo cambia preferencias sin impacto (tema, colores).
+
+## D-006 · Configuración de la vertical: global, por local y permisos
+
+**Contexto.** Empresa, locales, impuestos y medios de pago se gestionan enteramente en el ERP. Mostrarlos en la vertical, aunque sea en solo lectura, es carga sin valor para el usuario del restaurante. En cambio, la vertical sí necesita decidir cómo funciona, y eso puede variar por local.
+
+**Decisión.**
+
+- Se **quitan** del back office las pantallas de empresa, locales, impuestos y medios de pago. Sus datos se siguen usando internamente (selector de local, cálculo de tickets).
+- Se crea la sección **Configuración** con cuatro partes:
+
+| Parte                            | Alcance                                     | Quién la ve                                                                                                                |
+| -------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Configuración de la vertical** | Toda la cadena                              | Administrador de la vertical                                                                                               |
+| **Configuración por local**      | Un local                                    | Cada usuario ve solo los locales a los que tiene acceso (dato del ERP): con uno, configura el suyo; con varios, elige cuál |
+| **Permisos por rol**             | Permisos de la vertical para un rol del ERP | Administrador; los roles no se crean aquí                                                                                  |
+| **Excepciones por usuario**      | Ajustes sobre los permisos de su rol        | Administrador                                                                                                              |
+
+- **Herencia:** un local sin valor propio usa el de la vertical (base de la cadena Cadena → Local → Almacén → Categoría → Insumo de D-004).
+- Los catálogos de **parámetros** y **permisos** empiezan vacíos. Cada fase añade sus definiciones en `parametros.service.ts` y las pantallas las muestran sin cambios.
+- Series de comprobantes, canales de venta, estaciones e impresoras y motivos siguen en Configuración.

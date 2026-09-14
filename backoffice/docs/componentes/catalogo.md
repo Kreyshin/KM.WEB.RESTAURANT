@@ -12,7 +12,7 @@ Incluye, sin escribir nada más:
 - Confirmación de borrado y avisos de éxito o error
 - Estados de carga, vacío y error
 
-La vista solo aporta **servicio, columnas, registro vacío y formulario**. Puedes verlo funcionando en la [demo](https://kreyshin.github.io/KM.WEB.RESTAURANT/demo/#/configuracion/medios-pago), en Configuración.
+La vista solo aporta **servicio, columnas, registro vacío y formulario**. Puedes verlo funcionando en la [demo](https://kreyshin.github.io/KM.WEB.RESTAURANT/demo/#/configuracion/canales), en Configuración.
 
 ## Uso
 

@@ -39,7 +39,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v13'
+const CLAVE = 'km.restaurante.mock.v14'
 
 export interface Esquema {
   combos: Combo[]
@@ -361,6 +361,7 @@ function semilla(): Esquema {
       email: 'admin@kmrestaurante.pe',
       rol: 'admin',
       activo: true,
+      localIds: ['l1', 'l2', 'l3'],
     },
     {
       id: 'u2',
@@ -368,6 +369,7 @@ function semilla(): Esquema {
       email: 'lucia@kmrestaurante.pe',
       rol: 'mesero',
       activo: true,
+      localIds: ['l1'],
     },
     {
       id: 'u3',
@@ -375,14 +377,23 @@ function semilla(): Esquema {
       email: 'diego@kmrestaurante.pe',
       rol: 'mesero',
       activo: true,
+      localIds: ['l1'],
     },
-    { id: 'u4', nombre: 'Ana Quispe', email: 'ana@kmrestaurante.pe', rol: 'cajero', activo: true },
+    {
+      id: 'u4',
+      nombre: 'Ana Quispe',
+      email: 'ana@kmrestaurante.pe',
+      rol: 'cajero',
+      activo: true,
+      localIds: ['l1', 'l2'],
+    },
     {
       id: 'u5',
       nombre: 'Marco Tello',
       email: 'marco@kmrestaurante.pe',
       rol: 'cocinero',
       activo: false,
+      localIds: ['l2'],
     },
     {
       id: 'u6',
@@ -390,6 +401,7 @@ function semilla(): Esquema {
       email: 'rosa@kmrestaurante.pe',
       rol: 'cocinero',
       activo: true,
+      localIds: ['l1'],
     },
   ]
 

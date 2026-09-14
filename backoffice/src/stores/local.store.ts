@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { Local } from '@/types'
 import { localesService } from '@/services/locales.service'
+import { useAuthStore } from './auth.store'
 
 const CLAVE = 'km.restaurante.local'
 
@@ -21,7 +22,10 @@ export const useLocalStore = defineStore('local', () => {
   })
 
   async function cargar() {
-    locales.value = await localesService.listarActivos()
+    // Solo los locales a los que el usuario tiene acceso según el ERP.
+    const acceso = useAuthStore().usuario?.localIds
+    const activos = await localesService.listarActivos()
+    locales.value = acceso ? activos.filter((l) => acceso.includes(l.id)) : activos
     // Si el local guardado ya no existe o se desactivó, se toma el primero.
     if (!local.value) localId.value = locales.value[0]?.id ?? null
   }

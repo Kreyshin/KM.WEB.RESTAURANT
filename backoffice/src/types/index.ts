@@ -16,6 +16,8 @@ export interface Usuario {
   rol: Rol
   activo: boolean
   avatarUrl?: string
+  /** Locales a los que tiene acceso (dato del ERP). Sin valor: todos. */
+  localIds?: string[]
 }
 
 export interface Sesion {
@@ -563,4 +565,29 @@ export interface SerieComprobante {
 export interface ApiError {
   mensaje: string
   campos?: Record<string, string>
+}
+
+// ── Configuración de la vertical ─────────────────────────────────────────────
+
+/** A quién afecta un parámetro: a toda la cadena o a un local. */
+export type AlcanceParametro = 'vertical' | 'local'
+
+/** Parámetro que la vertical permite configurar. Cada fase añade los suyos. */
+export interface DefinicionParametro {
+  clave: string
+  etiqueta: string
+  descripcion?: string
+  alcance: AlcanceParametro
+  grupo: string
+  tipo: 'booleano' | 'numero' | 'texto' | 'opcion'
+  opciones?: { valor: string; etiqueta: string }[]
+  porDefecto: string | number | boolean
+}
+
+/** Acción de la vertical que se concede a un rol del ERP o a un usuario. */
+export interface PermisoVertical {
+  clave: string
+  etiqueta: string
+  modulo: string
+  descripcion?: string
 }
