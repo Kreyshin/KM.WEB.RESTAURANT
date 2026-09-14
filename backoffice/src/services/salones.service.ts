@@ -21,9 +21,12 @@ export const salonesService = {
   },
 
   async crear(datos: NuevoSalon): Promise<Salon> {
-    if (db.salones.some((s) => s.nombre.toLowerCase() === datos.nombre.trim().toLowerCase())) {
+    if (!datos.localId)
+      throw { mensaje: 'Elige el local del salón.', campos: { localId: 'Obligatorio' } }
+    const mismoLocal = db.salones.filter((s) => s.localId === datos.localId)
+    if (mismoLocal.some((s) => s.nombre.toLowerCase() === datos.nombre.trim().toLowerCase())) {
       throw {
-        mensaje: 'Ya existe un salón con ese nombre.',
+        mensaje: 'Ya existe un salón con ese nombre en el local.',
         campos: { nombre: 'Nombre duplicado' },
       }
     }
@@ -39,7 +42,10 @@ export const salonesService = {
     if (
       datos.nombre &&
       db.salones.some(
-        (s) => s.id !== id && s.nombre.toLowerCase() === datos.nombre!.trim().toLowerCase(),
+        (s) =>
+          s.id !== id &&
+          s.localId === salon.localId &&
+          s.nombre.toLowerCase() === datos.nombre!.trim().toLowerCase(),
       )
     ) {
       throw {
@@ -55,6 +61,10 @@ export const salonesService = {
   async eliminar(id: string): Promise<void> {
     if (db.mesas.some((m) => m.salonId === id)) {
       throw { mensaje: 'No se puede eliminar: el salón todavía tiene mesas asignadas.' }
+    }
+    const areas = db.areas.filter((a) => a.salonId === id).map((a) => a.nombre)
+    if (areas.length) {
+      throw { mensaje: `No se puede eliminar: el salón tiene las áreas ${areas.join(', ')}.` }
     }
     db.salones = db.salones.filter((s) => s.id !== id)
     persistir()

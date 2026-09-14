@@ -107,21 +107,25 @@ describe('impresoras y áreas', () => {
     })
   })
 
-  it('admite dos áreas con el mismo nombre si están en distinta ubicación', async () => {
-    const base: Omit<NuevaArea, 'ubicacion'> = {
+  it('admite dos áreas con el mismo nombre si están en salones distintos', async () => {
+    const base: Omit<NuevaArea, 'salonId'> = {
       nombre: 'Barra',
       localId: 'l1',
       recibeComandas: true,
       comanda: { modo: 'todos', categoriaIds: [], productoIds: [] },
       activo: true,
     }
-    await expect(
-      areasService.crear({ ...base, ubicacion: 'Salón principal' }),
-    ).rejects.toMatchObject({
+    await expect(areasService.crear({ ...base, salonId: 's1' })).rejects.toMatchObject({
       campos: { nombre: expect.any(String) },
     })
-    const terraza = await areasService.crear({ ...base, ubicacion: 'Terraza' })
+    const terraza = await areasService.crear({ ...base, salonId: 's2' })
     expect(terraza.id).toBeTruthy()
+  })
+
+  it('el salón de un área debe ser de su mismo local', async () => {
+    await expect(areasService.actualizar('ae5', { salonId: 's1' })).rejects.toMatchObject({
+      campos: { salonId: expect.any(String) },
+    })
   })
 
   it('un área con productos seleccionados necesita al menos uno', async () => {

@@ -38,7 +38,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v16'
+const CLAVE = 'km.restaurante.mock.v17'
 
 export interface Esquema {
   combos: Combo[]
@@ -283,7 +283,7 @@ function semilla(): Esquema {
       id: 'ae1',
       nombre: 'Cocina caliente',
       localId: 'l1',
-      ubicacion: 'Primer piso',
+      salonId: 's1',
       impresoraId: 'im1',
       recibeComandas: true,
       comanda: {
@@ -297,7 +297,7 @@ function semilla(): Esquema {
       id: 'ae2',
       nombre: 'Cocina fría (cebichería)',
       localId: 'l1',
-      ubicacion: 'Primer piso',
+      salonId: 's1',
       impresoraId: 'im1',
       recibeComandas: true,
       comanda: { modo: 'seleccionados', categoriaIds: ['c2'], productoIds: [] },
@@ -307,7 +307,7 @@ function semilla(): Esquema {
       id: 'ae3',
       nombre: 'Barra',
       localId: 'l1',
-      ubicacion: 'Salón principal',
+      salonId: 's1',
       impresoraId: 'im2',
       recibeComandas: true,
       comanda: { modo: 'seleccionados', categoriaIds: ['c6'], productoIds: [] },
@@ -317,7 +317,6 @@ function semilla(): Esquema {
       id: 'ae4',
       nombre: 'Recepción de mercadería',
       localId: 'l1',
-      ubicacion: 'Patio de servicio',
       recibeComandas: false,
       comanda: { modo: 'seleccionados', categoriaIds: [], productoIds: [] },
       activo: true,
@@ -449,19 +448,35 @@ function semilla(): Esquema {
     {
       id: 's1',
       nombre: 'Salón principal',
+      localId: 'l1',
       descripcion: 'Planta baja, junto a la barra',
       orden: 1,
       activo: true,
     },
-    { id: 's2', nombre: 'Terraza', descripcion: 'Al aire libre, techada', orden: 2, activo: true },
+    {
+      id: 's2',
+      nombre: 'Terraza',
+      localId: 'l1',
+      descripcion: 'Al aire libre, techada',
+      orden: 2,
+      activo: true,
+    },
     {
       id: 's3',
       nombre: 'Segundo piso',
+      localId: 'l1',
       descripcion: 'Eventos y grupos grandes',
       orden: 3,
       activo: true,
     },
-    { id: 's4', nombre: 'Barra', descripcion: 'Atención rápida', orden: 4, activo: false },
+    {
+      id: 's4',
+      nombre: 'Barra',
+      localId: 'l1',
+      descripcion: 'Atención rápida',
+      orden: 4,
+      activo: false,
+    },
   ]
 
   const mesas: Mesa[] = [

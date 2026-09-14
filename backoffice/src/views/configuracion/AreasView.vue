@@ -11,6 +11,7 @@ import KmSwitch from '@/components/ui/KmSwitch.vue'
 import KmTabs from '@/components/ui/KmTabs.vue'
 import { useLocales } from '@/composables/useLocales'
 import { cartaService } from '@/services/carta.service'
+import { salonesService } from '@/services/salones.service'
 import { dependenciasService } from '@/services/dependencias.service'
 import { areasService, coberturaComanda, impresorasService } from '@/services/produccion.service'
 import { useLocalStore } from '@/stores/local.store'
@@ -22,6 +23,7 @@ import type {
   NuevaArea,
   NuevaImpresora,
   Producto,
+  Salon,
 } from '@/types'
 import type { ColumnaTabla, OpcionSelect, Pestana } from '@/types/ui'
 import { etiquetaUsoImpresora, opcionesUsoImpresora } from '@/utils/configuracion'
@@ -46,18 +48,32 @@ const impresoras = shallowRef<Impresora[]>([])
 const areas = shallowRef<Area[]>([])
 const productos = shallowRef<Producto[]>([])
 const categorias = shallowRef<Categoria[]>([])
+const salones = shallowRef<Salon[]>([])
 
 async function cargarReferencias() {
-  ;[impresoras.value, areas.value, productos.value, categorias.value] = await Promise.all([
-    impresorasService.todos(),
-    areasService.todos(),
-    cartaService.listarProductos(),
-    cartaService.listarCategorias(),
-  ])
+  ;[impresoras.value, areas.value, productos.value, categorias.value, salones.value] =
+    await Promise.all([
+      impresorasService.todos(),
+      areasService.todos(),
+      cartaService.listarProductos(),
+      cartaService.listarCategorias(),
+      salonesService.listar(),
+    ])
 }
 onMounted(cargarReferencias)
 
 const nombreImpresora = (id?: string) => impresoras.value.find((i) => i.id === id)?.nombre
+const nombreSalon = (id?: string) =>
+  id ? (salones.value.find((s) => s.id === id)?.nombre ?? '—') : 'Fuera de los salones'
+
+function opcionesSalon(localId: string): OpcionSelect[] {
+  return [
+    { valor: '', etiqueta: 'Fuera de los salones' },
+    ...salones.value
+      .filter((s) => s.localId === localId && s.activo)
+      .map((s) => ({ valor: s.id, etiqueta: s.nombre })),
+  ]
+}
 const nombreCategoria = (id: string) => categorias.value.find((c) => c.id === id)?.nombre ?? '—'
 const nombreProducto = (id: string) => productos.value.find((p) => p.id === id)?.nombre ?? '—'
 const productosDe = (categoriaId: string) =>
@@ -117,7 +133,7 @@ const nuevaArea = (): NuevaArea => {
   return {
     nombre: '',
     localId,
-    ubicacion: '',
+    salonId: '',
     impresoraId: '',
     recibeComandas: true,
     // Con una sola área en el local, lo natural es que reciba todo.
@@ -286,7 +302,7 @@ function validarImpresora(i: NuevaImpresora) {
             :nombre-de="(a: Area) => a.nombre"
             :exportacion="[
               { etiqueta: 'Área', valor: (a: Area) => a.nombre },
-              { etiqueta: 'Ubicación', valor: (a: Area) => a.ubicacion },
+              { etiqueta: 'Salón', valor: (a: Area) => nombreSalon(a.salonId) },
               { etiqueta: 'Local', valor: (a: Area) => nombreLocal(a.localId) },
               { etiqueta: 'Recibe', valor: (a: Area) => resumenComanda(a) },
               { etiqueta: 'Impresora', valor: (a: Area) => nombreImpresora(a.impresoraId) },
@@ -308,7 +324,7 @@ function validarImpresora(i: NuevaImpresora) {
 
             <template #col-nombre="{ fila }">
               <p class="font-medium text-tinta">{{ fila.nombre }}</p>
-              <p v-if="fila.ubicacion" class="text-xs text-tenue">{{ fila.ubicacion }}</p>
+              <p class="text-xs text-tenue">{{ nombreSalon(fila.salonId) }}</p>
             </template>
             <template #col-localId="{ fila }">{{ nombreLocal(fila.localId) }}</template>
             <template #col-comanda="{ fila }">
@@ -337,11 +353,17 @@ function validarImpresora(i: NuevaImpresora) {
                   />
                 </KmField>
                 <KmField
-                  v-slot="{ id }"
-                  label="Ubicación"
-                  ayuda="Piso, sala o zona. Distingue áreas con el mismo nombre."
+                  v-slot="{ id, invalido }"
+                  label="Salón"
+                  ayuda="Dónde está el área. Recepción o almacén suelen estar fuera de los salones."
+                  :error="errores.salonId"
                 >
-                  <KmInput :id="id" v-model="borrador.ubicacion" placeholder="Ej. Segundo piso" />
+                  <KmSelect
+                    :id="id"
+                    v-model="borrador.salonId"
+                    :opciones="opcionesSalon(borrador.localId)"
+                    :invalido="invalido"
+                  />
                 </KmField>
                 <KmField v-slot="{ id, invalido }" label="Local" requerido :error="errores.localId">
                   <KmSelect
@@ -349,7 +371,7 @@ function validarImpresora(i: NuevaImpresora) {
                     v-model="borrador.localId"
                     :opciones="opcionesLocal"
                     :invalido="invalido"
-                    @update:model-value="borrador.impresoraId = ''"
+                    @update:model-value="((borrador.impresoraId = ''), (borrador.salonId = ''))"
                   />
                 </KmField>
                 <KmField

@@ -34,6 +34,8 @@ export type FormaMesa = 'cuadrada' | 'redonda' | 'rectangular'
 export interface Salon {
   id: string
   nombre: string
+  /** Local al que pertenece (dato del ERP). */
+  localId: string
   descripcion?: string
   /** Orden de aparición en el selector de salones. */
   orden: number
@@ -455,8 +457,8 @@ export interface Area {
   id: string
   nombre: string
   localId: string
-  /** Piso, sala o zona, para distinguir áreas iguales. */
-  ubicacion?: string
+  /** Salón donde está el área. Sin valor: fuera de los salones (recepción, almacén). */
+  salonId?: string
   /** Impresora donde salen sus comandas. */
   impresoraId?: string
   /** Recepción o almacén no reciben comandas: solo solicitan. */

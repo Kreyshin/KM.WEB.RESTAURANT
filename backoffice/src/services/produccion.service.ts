@@ -70,29 +70,38 @@ export const impresorasService = {
 const repoAreas = crearRepositorio('areas', {
   prefijo: 'ae',
   entidad: 'Área',
-  camposBusqueda: ['nombre', 'ubicacion'],
+  camposBusqueda: ['nombre'],
 })
 
 function validarArea(datos: Partial<NuevaArea>, id?: string) {
   const actual = db.areas.find((a) => a.id === id)
   const combinada = { ...actual, ...datos }
-  if (datos.nombre !== undefined || datos.ubicacion !== undefined) {
+  if (datos.nombre !== undefined || datos.salonId !== undefined) {
     const nombre = (combinada.nombre ?? '').trim()
     if (!nombre) throw errorCampo('nombre', 'El nombre es obligatorio.')
-    // Dos «Cocina» valen si están en distinto piso o sala.
-    const clave = (a: { nombre: string; ubicacion?: string }) =>
-      `${a.nombre.trim().toLowerCase()}|${(a.ubicacion ?? '').trim().toLowerCase()}`
+    // Dos «Barra» valen si están en salones distintos.
     const repetida = db.areas.some(
       (a) =>
         a.id !== id &&
         a.localId === combinada.localId &&
-        clave(a) === clave({ nombre, ubicacion: combinada.ubicacion }),
+        (a.salonId ?? '') === (combinada.salonId ?? '') &&
+        a.nombre.trim().toLowerCase() === nombre.toLowerCase(),
     )
     if (repetida) {
       throw errorCampo(
         'nombre',
-        'Ya hay un área con ese nombre en la misma ubicación del local. Indica el piso o la sala.',
+        'Ya hay un área con ese nombre en el mismo salón. Elige otro salón o cambia el nombre.',
         'Duplicada',
+      )
+    }
+  }
+  if (combinada.salonId) {
+    const salon = db.salones.find((x) => x.id === combinada.salonId)
+    if (!salon || salon.localId !== combinada.localId) {
+      throw errorCampo(
+        'salonId',
+        'El salón debe pertenecer al mismo local que el área.',
+        'Elige un salón de este local',
       )
     }
   }
@@ -123,7 +132,7 @@ function limpiar<T extends Partial<NuevaArea>>(datos: T): T {
   return {
     ...datos,
     ...(datos.nombre !== undefined ? { nombre: datos.nombre.trim() } : {}),
-    ...(datos.ubicacion !== undefined ? { ubicacion: datos.ubicacion.trim() || undefined } : {}),
+    ...(datos.salonId !== undefined ? { salonId: datos.salonId || undefined } : {}),
     ...(datos.impresoraId !== undefined ? { impresoraId: datos.impresoraId || undefined } : {}),
   }
 }

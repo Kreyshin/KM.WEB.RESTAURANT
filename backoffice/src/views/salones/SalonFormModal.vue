@@ -6,6 +6,7 @@ import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
 import KmModal from '@/components/ui/KmModal.vue'
+import { useLocalStore } from '@/stores/local.store'
 import type { ApiError, NuevoSalon, Salon } from '@/types'
 
 const props = defineProps<{
@@ -18,7 +19,8 @@ const props = defineProps<{
 const abierto = defineModel<boolean>({ required: true })
 const emit = defineEmits<{ guardado: [datos: NuevoSalon, id?: string] }>()
 
-const form = ref<NuevoSalon>({ nombre: '', descripcion: '', orden: 1, activo: true })
+const localStore = useLocalStore()
+const form = ref<NuevoSalon>({ nombre: '', localId: '', descripcion: '', orden: 1, activo: true })
 const errores = ref<Record<string, string>>({})
 const guardando = ref(false)
 
@@ -29,7 +31,13 @@ watch(abierto, (esta) => {
   guardando.value = false
   form.value = props.salon
     ? { ...props.salon }
-    : { nombre: '', descripcion: '', orden: props.ordenSugerido, activo: true }
+    : {
+        nombre: '',
+        localId: localStore.localId ?? '',
+        descripcion: '',
+        orden: props.ordenSugerido,
+        activo: true,
+      }
 })
 
 function validar() {
