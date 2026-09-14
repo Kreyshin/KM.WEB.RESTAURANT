@@ -75,6 +75,30 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Recetas y costos', roles: ['admin'] },
       },
       {
+        path: 'inventario/transformaciones',
+        name: 'inv-transformaciones',
+        component: () => import('@/views/inventario/TransformacionesView.vue'),
+        meta: { titulo: 'Transformaciones', roles: ['admin'] },
+      },
+      {
+        path: 'inventario/parametros',
+        name: 'inv-parametros',
+        component: () => import('@/views/inventario/ParametrosAbastecimientoView.vue'),
+        meta: { titulo: 'Parámetros de abastecimiento', roles: ['admin'] },
+      },
+      {
+        path: 'inventario/stock-detallado',
+        name: 'inv-stock-detalle',
+        component: () => import('@/views/inventario/StockDetalleView.vue'),
+        meta: { titulo: 'Lotes y stock detallado', roles: ['admin'] },
+      },
+      {
+        path: 'inventario/ubicaciones',
+        name: 'inv-ubicaciones',
+        component: () => import('@/views/inventario/UbicacionesView.vue'),
+        meta: { titulo: 'Ubicaciones', roles: ['admin'] },
+      },
+      {
         path: 'inventario/almacenes',
         name: 'inv-almacenes',
         component: () => import('@/views/inventario/AlmacenesView.vue'),

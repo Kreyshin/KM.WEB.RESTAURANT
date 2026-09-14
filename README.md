@@ -75,7 +75,7 @@ npm run docs:dev   # documentación en local
 | F1 · Cimientos | Componentes y capa de datos mock | ✅ |
 | F2 · Configuración | Empresa, locales, impuestos, pagos, series | ✅ |
 | F3 · Sala y carta | Combos, precios por canal, mesas unidas | ✅ |
-| F4 · Inventario y compras | Almacenes, kardex, recetas, tomas, órdenes de compra | ✅ |
+| F4 · Abastecimiento | Áreas, insumos ligados al ERP, transformación, lotes y ubicaciones | 🔨 F4.1–F4.3 |
 | F5–F6 · Maestros | Personal y permisos, clientes y promociones | ⏳ |
 | F7–F8 · Operación | Ventas, caja y comprobantes | ⏳ |
 | F9–F10 · Análisis | Reportes, pulido y entidades | ⏳ |

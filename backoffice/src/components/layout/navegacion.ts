@@ -99,6 +99,30 @@ export const modulos: ModuloNav[] = [
         roles: ['admin'],
       },
       {
+        nombreRuta: 'inv-transformaciones',
+        etiqueta: 'Transformaciones',
+        descripcion: 'Despiece y preparaciones con su merma',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-stock-detalle',
+        etiqueta: 'Lotes y stock detallado',
+        descripcion: 'Qué lote hay y dónde está',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-parametros',
+        etiqueta: 'Parámetros de abastecimiento',
+        descripcion: 'Lote, vencimiento, FEFO y ubicación',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-ubicaciones',
+        etiqueta: 'Ubicaciones',
+        descripcion: 'Pasillo, estante, fila y columna',
+        roles: ['admin'],
+      },
+      {
         nombreRuta: 'inv-almacenes',
         etiqueta: 'Almacenes',
         descripcion: 'Dónde se guarda por local · ERP',

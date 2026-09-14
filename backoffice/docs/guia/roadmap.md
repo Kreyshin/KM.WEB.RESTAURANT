@@ -89,8 +89,8 @@ Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede ava
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **F4.1 · Límite con el ERP**                  | Retiros, maestros del ERP en solo lectura, artículos y proveedores de consulta                        | —          | ✅ Hecha  |
 | **F4.2 · Áreas**                              | Maestro de áreas y a qué área se comanda cada producto                                                | F4.1       | ✅ Hecha  |
-| **F4.3 · Insumos y reglas de abastecimiento** | Insumo de la vertical, conversión directa y transformación, parámetros, ubicaciones y stock detallado | F4.1       | Pendiente |
-| **F4.4 · Solicitudes y requerimientos**       | Solicitud por área, requerimiento por local y su seguimiento                                          | F4.2, F4.3 | Pendiente |
+| **F4.3 · Insumos y reglas de abastecimiento** | Insumo de la vertical, conversión directa y transformación, parámetros, ubicaciones y stock detallado | F4.1       | ✅ Hecha  |
+| **F4.4 · Solicitudes y requerimientos**       | Solicitud por área, requerimiento por local y su seguimiento                                          | F4.2, F4.3 | Siguiente |
 | **F4.5 · Recepción y transformación**         | Recepción con y sin OC, lotes, ubicación y artículos por procesar                                     | F4.3, F4.4 | Pendiente |
 
 ### F4.1 · Límite con el ERP
@@ -129,14 +129,18 @@ Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede ava
 
 ### F4.3 · Insumos y reglas de abastecimiento
 
-- [ ] Insumo propio de la vertical con unidad de uso y categoría de la cadena
-- [ ] Vínculo con uno o varios artículos del ERP (alternos) y artículo por defecto
-- [ ] **Conversión directa:** factor fijo, aplicada al recepcionar
-- [ ] **Transformación:** receta con rendimiento esperado; cada salida es insumo o merma
-- [ ] Parámetros heredados **Cadena → Local → Almacén → Categoría → Insumo**: lote, vencimiento, FEFO, alertas, bloqueo de vencidos, ubicación, tipo de recepción
-- [ ] Ubicaciones (pasillo, estante, fila, columna) y ubicación por defecto por almacén
-- [ ] Stock principal (insumo × almacén) y stock detallado (lote × ubicación) cuando aplique
-- [ ] Preparaciones (subrecetas) actuales encajadas como transformación
+- [x] Insumo propio de la vertical con unidad de uso y categoría de la cadena
+- [x] Vínculo con uno o varios artículos del ERP (alternos) y artículo por defecto _(el proveedor sale del artículo: el insumo ya no lo guarda)_
+- [x] **Conversión directa:** factor fijo, aplicada al recepcionar
+- [x] **Transformación:** receta con rendimiento esperado; cada salida es insumo o merma, con reparto del costo
+- [x] Parámetros heredados **Cadena → Local → Almacén → Categoría → Insumo**: lote, vencimiento, FEFO, alertas, bloqueo de vencidos, ubicación, tipo de recepción _(pantalla con simulador: dice de qué nivel sale cada valor)_
+- [x] Ubicaciones (pasillo, estante, fila, columna) y ubicación por defecto por almacén
+- [x] Stock principal (insumo × almacén) y stock detallado (lote × ubicación) cuando aplique, con aviso de descuadres
+- [x] Preparaciones (subrecetas) actuales encajadas como transformación
+
+Pantallas nuevas: **Transformaciones**, **Lotes y stock detallado**, **Parámetros de abastecimiento** y **Ubicaciones**.
+
+El **reparto del costo** entre las salidas de una transformación es un porcentaje explícito por salida, que debe sumar 100 %. La merma no absorbe costo, así que lo que se pierde encarece lo que sí sale.
 
 ### F4.4 · Solicitudes y requerimientos de compra
 

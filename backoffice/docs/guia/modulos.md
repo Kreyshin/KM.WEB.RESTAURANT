@@ -6,31 +6,35 @@ La estructura vive en `src/components/layout/navegacion.ts`. Una sección solo a
 
 ## Estado actual
 
-| Módulo     | Sección                      | Ruta                         | Roles         | Estado   |
-| ---------- | ---------------------------- | ---------------------------- | ------------- | -------- |
-| Inicio     | Dashboard                    | `/dashboard`                 | Todos         | ✅       |
-| Inicio     | Guía de componentes          | `/componentes`               | admin         | ✅       |
-| Sala       | Salones                      | `/salones`                   | admin         | ✅       |
-| Sala       | Mesas                        | `/mesas`                     | Todos         | ✅       |
-| Carta      | Carta y menú                 | `/carta`                     | admin         | ✅       |
-| Carta      | Combos y menús               | `/combos`                    | admin         | ✅       |
-| Inventario | Insumos                      | `/inventario`                | admin         | ✅       |
-| Inventario | Movimientos y kardex         | `/inventario/movimientos`    | admin         | ✅       |
-| Inventario | Recetas y costos             | `/inventario/recetas`        | admin         | ✅       |
-| Inventario | Almacenes                    | `/inventario/almacenes`      | admin         | ✅       |
-| Compras    | Artículos                    | `/compras/articulos`         | admin         | ✅ ERP   |
-| Compras    | Proveedores                  | `/compras/proveedores`       | admin         | ✅ ERP   |
-| Compras    | Marcas                       | `/compras/marcas`            | admin         | ✅ ERP   |
-| Admin      | Reportes y caja              | `/reportes`                  | admin, cajero | 🚧       |
-| Admin      | Facturación                  | `/facturacion`               | admin, cajero | 🚧       |
-| Admin      | Usuarios y roles             | `/usuarios`                  | admin         | 🚧       |
-| Config.    | Configuración de la vertical | `/configuracion/vertical`    | admin         | ✅ vacía |
-| Config.    | Configuración por local      | `/configuracion/local`       | admin         | ✅ vacía |
-| Config.    | Permisos por rol             | `/configuracion/roles`       | admin         | ✅ vacía |
-| Config.    | Excepciones por usuario      | `/configuracion/excepciones` | admin         | ✅ vacía |
-| Config.    | Canales de venta             | `/configuracion/canales`     | admin         | ✅       |
-| Config.    | Estaciones e impresoras      | `/configuracion/produccion`  | admin         | ✅       |
-| Config.    | Motivos                      | `/configuracion/motivos`     | admin         | ✅       |
+| Módulo     | Sección                      | Ruta                           | Roles         | Estado   |
+| ---------- | ---------------------------- | ------------------------------ | ------------- | -------- |
+| Inicio     | Dashboard                    | `/dashboard`                   | Todos         | ✅       |
+| Inicio     | Guía de componentes          | `/componentes`                 | admin         | ✅       |
+| Sala       | Salones                      | `/salones`                     | admin         | ✅       |
+| Sala       | Mesas                        | `/mesas`                       | Todos         | ✅       |
+| Carta      | Carta y menú                 | `/carta`                       | admin         | ✅       |
+| Carta      | Combos y menús               | `/combos`                      | admin         | ✅       |
+| Inventario | Insumos                      | `/inventario`                  | admin         | ✅       |
+| Inventario | Movimientos y kardex         | `/inventario/movimientos`      | admin         | ✅       |
+| Inventario | Recetas y costos             | `/inventario/recetas`          | admin         | ✅       |
+| Inventario | Transformaciones             | `/inventario/transformaciones` | admin         | ✅       |
+| Inventario | Lotes y stock detallado      | `/inventario/stock-detallado`  | admin         | ✅       |
+| Inventario | Parámetros de abastecimiento | `/inventario/parametros`       | admin         | ✅       |
+| Inventario | Ubicaciones                  | `/inventario/ubicaciones`      | admin         | ✅       |
+| Inventario | Almacenes                    | `/inventario/almacenes`        | admin         | ✅ ERP   |
+| Compras    | Artículos                    | `/compras/articulos`           | admin         | ✅ ERP   |
+| Compras    | Proveedores                  | `/compras/proveedores`         | admin         | ✅ ERP   |
+| Compras    | Marcas                       | `/compras/marcas`              | admin         | ✅ ERP   |
+| Admin      | Reportes y caja              | `/reportes`                    | admin, cajero | 🚧       |
+| Admin      | Facturación                  | `/facturacion`                 | admin, cajero | 🚧       |
+| Admin      | Usuarios y roles             | `/usuarios`                    | admin         | 🚧       |
+| Config.    | Configuración de la vertical | `/configuracion/vertical`      | admin         | ✅ vacía |
+| Config.    | Configuración por local      | `/configuracion/local`         | admin         | ✅ vacía |
+| Config.    | Permisos por rol             | `/configuracion/roles`         | admin         | ✅ vacía |
+| Config.    | Excepciones por usuario      | `/configuracion/excepciones`   | admin         | ✅ vacía |
+| Config.    | Canales de venta             | `/configuracion/canales`       | admin         | ✅       |
+| Config.    | Áreas e impresoras           | `/configuracion/areas`         | admin         | ✅       |
+| Config.    | Motivos                      | `/configuracion/motivos`       | admin         | ✅       |
 
 «ERP» indica una consulta de un maestro del ERP: sin alta, edición ni baja. Pedidos internos, toma de inventario y órdenes de compra se retiraron en F4.1.
 

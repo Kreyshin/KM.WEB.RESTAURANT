@@ -28,7 +28,12 @@ Local 1──* Area *──0..1 Salon
 Categoria 1──* Producto 1──* Variante · GrupoModificador 1──* Modificador
 Producto 1──0..1 Receta 1──* IngredienteReceta *──1 Insumo
 Insumo 1──* Existencia *──1 Almacen
+Insumo 1──* VinculoArticulo *──1 Articulo (ERP)
 Insumo 1──* Movimiento *──1 Almacen · Usuario
+Insumo 1──* Lote        Almacen 1──* Ubicacion
+StockDetalle *──1 Insumo · Almacen · 0..1 Lote · 0..1 Ubicacion
+Transformacion *──* Insumo (entradas y salidas)
+AjusteParametros ──> Cadena · Local · Almacen · CategoriaInsumo · Insumo
 Combo 1──* GrupoCombo ──opciones──> Producto
 CanalVenta · Motivo · DefinicionParametro · PermisoVertical
 ```
@@ -252,21 +257,107 @@ Un producto que forma parte de un combo no se puede eliminar.
 
 ## Inventario
 
-> F4.3 rehace el insumo como entidad propia de la vertical, vinculada a artículos del ERP con reglas de conversión directa y transformación.
-
 ### Insumo
 
-| Campo           | Tipo                                                  | Notas                                                                                |
-| --------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `nombre`        | string                                                |                                                                                      |
-| `unidad`        | `'kg' \| 'g' \| 'l' \| 'ml' \| 'unidad' \| 'paquete'` |                                                                                      |
-| `categoria`     | CategoriaInsumo                                       | carnes, pescados, verduras, abarrotes, lácteos, bebidas, descartables, preparaciones |
-| `existencias`   | `{ almacenId, cantidad }[]`                           | Stock por almacén                                                                    |
-| `stock`         | number                                                | Suma de existencias (derivado)                                                       |
-| `stockMinimo`   | number                                                | Umbral de alerta                                                                     |
-| `costoUnitario` | number                                                | Promedio ponderado sin IGV; en preparaciones se calcula                              |
-| `preparacion`   | `{ rendimiento, ingredientes }`?                      | Subreceta                                                                            |
-| `activo`        | boolean                                               |                                                                                      |
+Lo que usan cocina y barra, en **unidad de uso** ([D-004](./decisiones)). No es el artículo: el artículo es lo que compra el ERP, con su marca y su presentación.
+
+| Campo            | Tipo                                                  | Notas                                                                                |
+| ---------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `nombre`         | string                                                | Único                                                                                |
+| `unidad`         | `'kg' \| 'g' \| 'l' \| 'ml' \| 'unidad' \| 'paquete'` | Unidad de uso, la de la receta                                                       |
+| `categoria`      | CategoriaInsumo                                       | carnes, pescados, verduras, abarrotes, lácteos, bebidas, descartables, preparaciones |
+| `existencias`    | `{ almacenId, cantidad }[]`                           | Stock principal por almacén                                                          |
+| `stock`          | number                                                | Suma de existencias (derivado)                                                       |
+| `stockMinimo`    | number                                                | Umbral de alerta                                                                     |
+| `costoUnitario`  | number                                                | Promedio ponderado sin IGV; calculado si sale de una transformación                  |
+| `abastecimiento` | `'directa' \| 'transformacion'`                       | Cómo se llega desde el artículo hasta la unidad de uso                               |
+| `articulos`      | `VinculoArticulo[]`                                   | Artículos del ERP que lo abastecen. Vacío en lo que sale de una transformación       |
+| `parametros`     | `Partial<ParametrosAbastecimiento>`?                  | Lo que se fija en el propio insumo; el resto se hereda                               |
+| `activo`         | boolean                                               |                                                                                      |
+
+**Criterio para separar insumos:** solo cuando cambia lo que se vende o cómo se usa en la receta. La marca y la presentación de compra son del artículo, no del insumo.
+
+### VinculoArticulo
+
+Regla de **conversión directa**. Varios vínculos en un insumo son sus **alternos**.
+
+| Campo        | Tipo    | Notas                                                                     |
+| ------------ | ------- | ------------------------------------------------------------------------- |
+| `articuloId` | string  | → Articulo                                                                |
+| `factor`     | number  | Unidades de uso que rinde una unidad de compra. Saco de 50 kg → factor 50 |
+| `porDefecto` | boolean | El que se propone al pedir. Exactamente uno por insumo                    |
+
+### Transformacion
+
+Receta de proceso. Cubre el **despiece** (una entrada, varias salidas y merma) y la **preparación** o subreceta (varias entradas, una salida). Sustituye a `Insumo.preparacion`.
+
+| Campo      | Tipo                     | Notas                                |
+| ---------- | ------------------------ | ------------------------------------ |
+| `nombre`   | string                   | Único                                |
+| `entradas` | `IngredienteReceta[]`    | Insumos que se consumen en una tanda |
+| `salidas`  | `SalidaTransformacion[]` | Insumos y merma esperada             |
+| `activo`   | boolean                  |                                      |
+
+**SalidaTransformacion:** `tipo` (`'insumo' | 'merma'`), `insumoId?` (vacío en merma), `cantidad`, `reparto` (% del costo de las entradas que absorbe) y `descripcion?`.
+
+Reglas:
+
+- Un insumo no puede entrar y salir de la misma transformación, ni salir dos veces.
+- El `reparto` de las salidas que no son merma debe sumar **100 %**.
+- Costo de una salida = `costo de las entradas × reparto ÷ cantidad`. La merma no absorbe costo, así que **encarece** lo que sí sale.
+- Al procesarla se consumen las entradas y entran todas las salidas de tipo insumo, por las tandas que se hagan. El registro de lo que salió **realmente** llega en F4.5.
+
+### ParametrosAbastecimiento y AjusteParametros
+
+Cómo se controla un insumo al recepcionarlo y al guardarlo. Se fijan en cualquier nivel y **gana el más específico**: `cadena → local → almacen → categoria → insumo`.
+
+| Parámetro             | Tipo                   | Qué hace                                               |
+| --------------------- | ---------------------- | ------------------------------------------------------ |
+| `controlaLote`        | boolean                | Exige lote al recepcionar                              |
+| `controlaVencimiento` | boolean                | Exige fecha de vencimiento en el lote                  |
+| `fefo`                | boolean                | Propone primero el lote que vence antes                |
+| `diasAlerta`          | number                 | Días antes del vencimiento en que se avisa             |
+| `bloquearVencidos`    | boolean                | Impide sacar stock de un lote vencido                  |
+| `controlaUbicacion`   | boolean                | Exige ubicación al recepcionar y al mover              |
+| `tipoRecepcion`       | `'total' \| 'detalle'` | La línea entera, o lote a lote y ubicación a ubicación |
+
+`AjusteParametros` guarda `nivel`, `referencia` (`localId`, `almacenId`, `CategoriaInsumo` o `insumoId`; vacío en `cadena`) y los `valores` fijados. Lo que no se fija se hereda. El nivel `cadena` no hereda de nadie: no admite huecos y no se elimina.
+
+`resolverParametros({ insumoId, almacenId })` devuelve cada parámetro con el nivel del que salió, para poder explicarlo en pantalla.
+
+### Ubicacion
+
+| Campo                                   | Tipo    | Notas                                      |
+| --------------------------------------- | ------- | ------------------------------------------ |
+| `almacenId`                             | string  | → Almacen                                  |
+| `pasillo`, `estante`, `fila`, `columna` | string  | Su combinación es única dentro del almacén |
+| `porDefecto`                            | boolean | Como mucho una por almacén                 |
+| `activo`                                | boolean |                                            |
+
+Reglas: la recepción deja el stock en la ubicación por defecto del almacén; sin ella, un insumo que controla ubicación no se puede recepcionar. No se elimina una ubicación con stock.
+
+### Lote
+
+| Campo         | Tipo    | Notas                                                   |
+| ------------- | ------- | ------------------------------------------------------- |
+| `insumoId`    | string  | → Insumo                                                |
+| `codigo`      | string  | Único dentro del insumo. Si el ERP lo envía, se respeta |
+| `vencimiento` | string? | `YYYY-MM-DD`. Obligatorio si el insumo lo controla      |
+| `recepcion`   | string  | ISO 8601                                                |
+
+### StockDetalle
+
+Stock detallado: insumo × almacén × lote × ubicación. Solo lo llevan los insumos que controlan lote o ubicación; lote y ubicación son **opcionales e independientes**.
+
+| Campo         | Tipo    | Notas          |
+| ------------- | ------- | -------------- |
+| `insumoId`    | string  | → Insumo       |
+| `almacenId`   | string  | → Almacen      |
+| `loteId`      | string? | → Lote         |
+| `ubicacionId` | string? | → Ubicacion    |
+| `cantidad`    | number  | Nunca negativa |
+
+Regla: la suma del detalle por insumo y almacén debe cuadrar con el stock principal. Un descuadre es el síntoma de un movimiento registrado sin su detalle.
 
 ### Movimiento
 
@@ -278,11 +369,11 @@ Un producto que forma parte de un combo no se puede eliminar.
 | `cantidad`      | number         | Siempre positiva; el tipo define el signo                                                      |
 | `costoUnitario` | number?        | Costo de la entrada o vigente                                                                  |
 | `motivo`        | string?        |                                                                                                |
-| `referencia`    | string?        | Documento que lo origina                                                                       |
+| `referencia`    | string?        | Documento que lo origina: `TR-…` traslado, `TF-…` transformación                               |
 | `usuarioId`     | string         | → Usuario                                                                                      |
 | `fecha`         | string         | ISO 8601                                                                                       |
 
-Reglas: el stock de un almacén nunca queda negativo. Traslados y producciones se aplican como transacción: si un movimiento falla, no se guarda ninguno.
+Reglas: el stock de un almacén nunca queda negativo. Traslados y transformaciones se aplican como transacción: si un movimiento falla, no se guarda ninguno.
 
 ### Receta
 
@@ -294,4 +385,4 @@ Reglas: el stock de un almacén nunca queda negativo. Traslados y producciones s
 
 ## Retiradas
 
-Existieron en la versión autónoma y se retiraron en F4.1 porque pertenecen al ERP o aún no aplican: `OrdenCompra`, `TomaInventario`, `PedidoInterno` y las unidades de pedido y recepción del insumo.
+Existieron en la versión autónoma y se retiraron porque pertenecen al ERP, aún no aplican o quedaron sustituidas: `OrdenCompra`, `TomaInventario`, `PedidoInterno` y las unidades de pedido y recepción del insumo (F4.1); `Preparacion` y `Insumo.proveedorId` (F4.3, sustituidos por `Transformacion` y por el proveedor del artículo).

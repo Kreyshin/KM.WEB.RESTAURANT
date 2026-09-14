@@ -45,18 +45,17 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 | --- | --- | --- |
 | F4.1 · Límite con el ERP | Retiros, maestros del ERP en solo lectura, artículos y proveedores de consulta | ✅ |
 | F4.2 · Áreas | Maestro de áreas y a qué área se comanda cada producto | ✅ |
-| **F4.3 · Insumos y reglas de abastecimiento** | Insumo de la vertical, conversión y transformación, parámetros heredados, ubicaciones, stock detallado | 🔨 **En curso** |
-| F4.4 · Solicitudes y requerimientos | Solicitud por área, requerimiento por local y su seguimiento | ⏳ |
+| F4.3 · Insumos y reglas de abastecimiento | Insumo de la vertical, conversión y transformación, parámetros heredados, ubicaciones, stock detallado | ✅ |
+| **F4.4 · Solicitudes y requerimientos** | Solicitud por área, requerimiento por local y su seguimiento | 🔨 **Lo siguiente** |
 | F4.5 · Recepción y transformación | Recepción con y sin OC, lotes, ubicación, artículos por procesar | ⏳ |
 
 ## 3. Lo siguiente
 
-1. **F4.3** — desbloquea F4.4 y F4.5. Es la pieza que traduce lo que compra el ERP (artículo) a lo
-   que usa la cocina (insumo).
+1. **F4.4 y F4.5** — cierran el circuito de abastecimiento: solicitud por área, requerimiento por
+   local, recepción y registro de la transformación real.
 2. **Cerrar el alcance de F7** (§4). Bloquea el núcleo de la vertical.
-3. **F4.4 y F4.5** — cierran el circuito de abastecimiento.
-4. **F5 y F6** — maestros que faltan antes de operar.
-5. **F7 a F9** — operación y análisis.
+3. **F5 y F6** — maestros que faltan antes de operar.
+4. **F7 a F9** — operación y análisis.
 
 ## 4. Decisiones abiertas
 
