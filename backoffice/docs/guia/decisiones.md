@@ -43,6 +43,8 @@ Reglas de trabajo:
 
 ## D-002 · Inventario: qué opera el restaurante y qué queda en el ERP
 
+> **Reemplazada por D-004 y D-005.** Los pedidos internos entre almacenes se retiran: aún no aplican a un almacén de restaurante.
+
 **Contexto.** El back office tenía un modal para registrar cualquier movimiento insumo por insumo (entrada, salida, merma, ajuste, traslado). Con un ERP que hace de núcleo, ese registro manual duplica funciones; y pedir mercadería entre almacenes es un documento con varias líneas, no un movimiento suelto.
 
 **Alternativas evaluadas.**
@@ -63,6 +65,8 @@ Reglas de trabajo:
 
 ## D-003 · Unidades para pedir y recepcionar
 
+> **Reemplazada por D-004.** Las unidades de compra son del artículo del ERP; la conversión al insumo la define la regla de abastecimiento.
+
 **Contexto.** Hay insumos que se piden por empaque (bidón, caja, jaba) y otros por peso. Las conversiones completas (presentaciones de proveedor, empaques múltiples) son responsabilidad del ERP.
 
 **Decisión (básica).**
@@ -73,3 +77,81 @@ Reglas de trabajo:
 - La sugerencia bajo mínimo pide unidades enteras de pedido sin superar lo disponible en origen.
 
 **Con ERP.** Las equivalencias llegan del ERP; la ficha del insumo solo las muestra o permite ajustarlas mientras no haya integración. Varias presentaciones por insumo, redondeos y conversiones de proveedor quedan fuera del restaurante.
+
+## D-004 · Abastecimiento: artículos, insumos, compras y recepción
+
+**Contexto.** El restaurante es una vertical sobre un ERP (ver D-005). El ERP compra **artículos** con sus unidades, marcas y proveedores; la cocina y la barra trabajan con **insumos**; la carta vende **productos**. Entre lo que se compra y lo que se usa puede haber una conversión simple o un proceso de transformación.
+
+### Conceptos
+
+| Concepto     | Dueño                | Qué es                                  | Unidad                                   |
+| ------------ | -------------------- | --------------------------------------- | ---------------------------------------- |
+| **Artículo** | ERP (solo lectura)   | Lo que se compra, con marca y proveedor | Unidad de compra (caja, saco, kg)        |
+| **Insumo**   | Vertical (solo aquí) | Lo que usan cocina y barra              | Unidad de uso (kg, L, ml, u.)            |
+| **Producto** | Vertical             | Lo que se vende: plato, bebida, combo   | Unidad de venta (plato, vaso, jarra, u.) |
+
+- **Producto → insumos:** receta de venta. La reventa (Inca Kola) también pasa por un insumo: así puede usarse en una preparación.
+- **Artículo → insumo:** regla de abastecimiento.
+
+**Criterio para separar insumos.** Un insumo se separa solo cuando cambia lo que se vende o cómo se usa en la receta. Marca y presentación de compra son del artículo.
+
+| Caso                           | Insumos                                   | Artículos que lo abastecen        |
+| ------------------------------ | ----------------------------------------- | --------------------------------- |
+| La marca no importa            | «Aceite vegetal»                          | Aceite marca A 5 L, marca B 1 L   |
+| La marca es lo que se vende    | «Inca Kola 500 ml», «Coca-Cola 500 ml»    | Uno por marca y presentación      |
+| Solo importa el insumo final   | «Filete de pescado»                       | Pescado lenguado, pescado corvina |
+| Se quiere saber qué se consume | «Filete de lenguado», «Filete de corvina» | Uno por especie                   |
+
+### Reglas de abastecimiento
+
+- **Conversión directa:** factor fijo (1 caja x12 → 12 u.). Se aplica **automáticamente al recepcionar**.
+- **Transformación:** receta de transformación con rendimiento esperado (10 kg pescado → 6 kg filete + 1.5 kg cabeza y espinas + merma). Cada salida se define como **insumo** o **merma**. Al registrarla, el usuario confirma lo que salió realmente y puede enviar a merma una salida esperada, con motivo. Mientras no se transforma, el artículo queda **por procesar**.
+- Los artículos vinculados a un mismo insumo son sus **alternos**.
+- **Vencimiento al transformar** (a investigar con pruebas): heredar el del lote de origen, nueva vida útil o la menor de ambas (propuesta por defecto).
+
+### Stock, lotes y ubicaciones
+
+- **Stock principal:** insumo × almacén, siempre.
+- **Stock detallado:** insumo × almacén × lote × ubicación, solo para insumos que lo usan. Lote y ubicación son **opcionales e independientes**: solo lote, solo ubicación, ambos o ninguno.
+- **Parámetros** (lote, vencimiento, FEFO, alertas, bloqueo de vencidos, ubicación, tipo de recepción) se heredan: **Cadena → Local → Almacén → Categoría → Insumo**; el nivel más específico gana. Se validará con un flujo de pruebas.
+- **Lote:** si el ERP lo envía, se respeta; si no, el local puede crearlo y asignar vencimiento.
+- **Ubicación:** estante, fila, columna, pasillo. Todo insumo con ubicación tiene una **ubicación por defecto por almacén**; la recepción deja el stock ahí automáticamente. Sin ella, no se puede recepcionar. Un WMS más avanzado queda para después.
+
+### Áreas
+
+- Maestro configurable (reemplaza a las estaciones de producción): puede haber varias del mismo tipo, por piso o sala. Pertenece a un local.
+- **Comanda:** cada área recibe **todos los productos** (opción por defecto con una sola área) o **los seleccionados** por categoría o producto. Un producto en dos áreas se comanda a ambas; uno sin área se avisa al guardar.
+
+### Flujo de compras
+
+1. **Solicitud de compra** (por área): pide **insumos**, con marca preferida opcional (solo las marcas de sus artículos). Estados: Borrador → Enviada → Atendida / Rechazada.
+2. **Requerimiento de compra** (por local): consolida solicitudes o se crea directo. Traduce insumos a **artículos** con la regla por defecto. El sistema **sugiere el proveedor** (maestro global del ERP) según configuración e historial. Ajustar cantidades al consolidar requiere permiso.
+   Estados: **Borrador → Enviado → Aprobado → Convertido → Despachado → Recepcionado**, y **Anulado** mientras no haya sido tomado ni aprobado.
+   - Muestra el n.° de OC y si la conversión fue **total o parcial** por línea.
+   - Línea **no disponible** → alerta → reemplazo por un artículo alterno.
+3. **Aprobación, OC y despacho:** en el ERP (o el proveedor informa el despacho); la vertical lo refleja.
+4. **Recepción** (en la vertical, informa al ERP): **total** o **a detalle**, admite parcial. Aplica conversión directa, lote y ubicación según el insumo; deja por procesar lo que requiere transformación.
+
+### Ingreso sin orden de compra
+
+Permitido según configuración, para compras de emergencia o de mercado. Controles combinables:
+
+- Comprobante obligatorio: tipo, serie y número, proveedor u «ocasional», monto y foto.
+- Tope por ingreso o por día sin aprobación.
+- Motivo obligatorio.
+- El stock entra de inmediato, pero el ingreso queda **Pendiente de regularizar** hasta que administración lo valide.
+
+**Para después.** Concepto de cadena (Cevichería, Hamburguesas) que agrupa locales y categorías por concepto; traslados entre almacenes o locales; toma de inventario (ERP).
+
+## D-005 · Límite ERP ↔ vertical y permisos
+
+**Contexto.** El restaurante no es un sistema autónomo: depende de un ERP que es dueño de los maestros y del núcleo contable y logístico. Lo propio del rubro es la operación: tomar pedidos en mesa y barra, comandar y cobrar.
+
+**Decisión.**
+
+| Del ERP (solo lectura, «Sincronizado desde ERP»)                                                                         | De la vertical                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Empresa, series, impuestos, locales, almacenes, medios de pago, proveedores, artículos, marcas, roles, órdenes de compra | Canales de venta, áreas, insumos, reglas de abastecimiento, recetas, carta, combos, salones y mesas, solicitudes, requerimientos, recepción |
+
+- Se retiran del back office: pedidos internos, toma de inventario y el mantenimiento de proveedores y órdenes de compra.
+- **Permisos:** los roles vienen del ERP y no se crean aquí. La vertical asigna **permisos de la vertical a cada rol del ERP** (el mismo rol puede funcionar distinto en otra vertical) y admite **ajustes por usuario**. Los define un administrador; el usuario solo cambia preferencias sin impacto (tema, colores).
