@@ -120,7 +120,9 @@ Reglas de trabajo:
 ### Áreas
 
 - Maestro configurable (reemplaza a las estaciones de producción): puede haber varias del mismo tipo, por piso o sala. Pertenece a un local.
-- **Comanda:** cada área recibe **todos los productos** (opción por defecto con una sola área) o **los seleccionados** por categoría o producto. Un producto en dos áreas se comanda a ambas; uno sin área se avisa al guardar.
+- **Comanda:** cada área recibe **todos los productos** (opción por defecto con una sola área) o **los seleccionados** por categoría o producto. Un producto en dos áreas se comanda a ambas; uno sin área se avisa en la revisión de comandas del local.
+- El producto **no guarda** su área: el destino se deduce de las áreas, así una carta compartida funciona distinto en cada local. La ficha del producto muestra «Se comanda en» por local.
+- Un área puede **no recibir comandas** (recepción, almacén): solo solicita. Dos áreas pueden llamarse igual si su **ubicación** (piso o sala) es distinta.
 
 ### Flujo de compras
 

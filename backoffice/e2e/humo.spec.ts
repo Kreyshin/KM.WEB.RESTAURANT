@@ -33,7 +33,7 @@ const catalogos = [
   { ruta: '/combos', nuevo: 'Nuevo combo' },
   { ruta: '/inventario', nuevo: 'Nuevo insumo' },
   { ruta: '/configuracion/canales', nuevo: 'Nuevo canal' },
-  { ruta: '/configuracion/produccion', nuevo: 'Nueva estación' },
+  { ruta: '/configuracion/areas', nuevo: 'Nueva área' },
   { ruta: '/configuracion/motivos', nuevo: 'Nuevo motivo' },
 ]
 

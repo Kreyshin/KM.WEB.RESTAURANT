@@ -1,7 +1,8 @@
 import type {
-  EstacionProduccion,
+  Area,
+  Producto,
   Impresora,
-  NuevaEstacion,
+  NuevaArea,
   NuevaImpresora,
   NuevaSerie,
   SerieComprobante,
@@ -54,32 +55,45 @@ export const impresorasService = {
   },
 
   async eliminar(id: string): Promise<void> {
-    const usadas = db.estaciones.filter((e) => e.impresoraId === id).map((e) => e.nombre)
+    const usadas = db.areas.filter((a) => a.impresoraId === id).map((a) => a.nombre)
     if (usadas.length) {
       throw {
-        mensaje: `No se puede eliminar: la usan las estaciones ${usadas.join(', ')}.`,
+        mensaje: `No se puede eliminar: la usan las áreas ${usadas.join(', ')}.`,
       }
     }
     return repoImpresoras.eliminar(id)
   },
 }
 
-// ── Estaciones de producción ─────────────────────────────────────────────────
+// ── Áreas ────────────────────────────────────────────────────────────────────
 
-const repoEstaciones = crearRepositorio('estaciones', {
-  prefijo: 'es',
-  entidad: 'Estación',
-  camposBusqueda: ['nombre'],
+const repoAreas = crearRepositorio('areas', {
+  prefijo: 'ae',
+  entidad: 'Área',
+  camposBusqueda: ['nombre', 'ubicacion'],
 })
 
-function validarEstacion(datos: Partial<NuevaEstacion>, id?: string) {
-  const actual = db.estaciones.find((e) => e.id === id)
+function validarArea(datos: Partial<NuevaArea>, id?: string) {
+  const actual = db.areas.find((a) => a.id === id)
   const combinada = { ...actual, ...datos }
-  if (datos.nombre !== undefined) {
-    if (!datos.nombre.trim()) throw errorCampo('nombre', 'El nombre es obligatorio.')
-    const mismoLocal = db.estaciones.filter((e) => e.localId === combinada.localId)
-    if (existeOtro(mismoLocal, (e) => e.nombre, datos.nombre, id)) {
-      throw errorCampo('nombre', 'Ya hay una estación con ese nombre en el local.', 'Duplicado')
+  if (datos.nombre !== undefined || datos.ubicacion !== undefined) {
+    const nombre = (combinada.nombre ?? '').trim()
+    if (!nombre) throw errorCampo('nombre', 'El nombre es obligatorio.')
+    // Dos «Cocina» valen si están en distinto piso o sala.
+    const clave = (a: { nombre: string; ubicacion?: string }) =>
+      `${a.nombre.trim().toLowerCase()}|${(a.ubicacion ?? '').trim().toLowerCase()}`
+    const repetida = db.areas.some(
+      (a) =>
+        a.id !== id &&
+        a.localId === combinada.localId &&
+        clave(a) === clave({ nombre, ubicacion: combinada.ubicacion }),
+    )
+    if (repetida) {
+      throw errorCampo(
+        'nombre',
+        'Ya hay un área con ese nombre en la misma ubicación del local. Indica el piso o la sala.',
+        'Duplicada',
+      )
     }
   }
   if (combinada.impresoraId) {
@@ -87,25 +101,74 @@ function validarEstacion(datos: Partial<NuevaEstacion>, id?: string) {
     if (!impresora || impresora.localId !== combinada.localId) {
       throw errorCampo(
         'impresoraId',
-        'La impresora debe pertenecer al mismo local que la estación.',
+        'La impresora debe pertenecer al mismo local que el área.',
         'Elige una impresora de este local',
       )
     }
   }
+  if (
+    combinada.recibeComandas &&
+    combinada.comanda?.modo === 'seleccionados' &&
+    combinada.comanda.categoriaIds.length === 0 &&
+    combinada.comanda.productoIds.length === 0
+  ) {
+    throw errorCampo(
+      'comanda',
+      'Elige al menos una categoría o un producto, o marca «Todos los productos».',
+    )
+  }
 }
 
-export const estacionesService = {
-  ...repoEstaciones,
+function limpiar<T extends Partial<NuevaArea>>(datos: T): T {
+  return {
+    ...datos,
+    ...(datos.nombre !== undefined ? { nombre: datos.nombre.trim() } : {}),
+    ...(datos.ubicacion !== undefined ? { ubicacion: datos.ubicacion.trim() || undefined } : {}),
+    ...(datos.impresoraId !== undefined ? { impresoraId: datos.impresoraId || undefined } : {}),
+  }
+}
 
-  async crear(datos: NuevaEstacion): Promise<EstacionProduccion> {
-    validarEstacion(datos)
-    return repoEstaciones.crear({ ...datos, nombre: datos.nombre.trim() })
+export const areasService = {
+  ...repoAreas,
+
+  async crear(datos: NuevaArea): Promise<Area> {
+    validarArea(datos)
+    return repoAreas.crear(limpiar(datos))
   },
 
-  async actualizar(id: string, datos: Partial<NuevaEstacion>): Promise<EstacionProduccion> {
-    validarEstacion(datos, id)
-    return repoEstaciones.actualizar(id, datos)
+  async actualizar(id: string, datos: Partial<NuevaArea>): Promise<Area> {
+    validarArea(datos, id)
+    return repoAreas.actualizar(id, limpiar(datos))
   },
+}
+
+/** ¿Se comanda este producto en esta área? */
+export function recibeProducto(area: Area, producto: Pick<Producto, 'id' | 'categoriaId'>) {
+  if (!area.activo || !area.recibeComandas) return false
+  if (area.comanda.modo === 'todos') return true
+  return (
+    area.comanda.categoriaIds.includes(producto.categoriaId) ||
+    area.comanda.productoIds.includes(producto.id)
+  )
+}
+
+export interface CoberturaComanda {
+  /** Productos que no llegan a ninguna área del local. */
+  sinArea: Producto[]
+  /** Productos que salen en más de un área a la vez. */
+  enVarias: { producto: Producto; areas: Area[] }[]
+}
+
+/** Revisa a dónde va cada producto en un local, para avisar de huecos y duplicados. */
+export function coberturaComanda(areas: Area[], productos: Producto[], localId: string) {
+  const delLocal = areas.filter((a) => a.localId === localId)
+  const resultado: CoberturaComanda = { sinArea: [], enVarias: [] }
+  for (const producto of productos) {
+    const destino = delLocal.filter((a) => recibeProducto(a, producto))
+    if (destino.length === 0) resultado.sinArea.push(producto)
+    else if (destino.length > 1) resultado.enVarias.push({ producto, areas: destino })
+  }
+  return resultado
 }
 
 // ── Series de comprobantes ───────────────────────────────────────────────────

@@ -194,9 +194,9 @@ export const modulos: ModuloNav[] = [
         roles: ['admin'],
       },
       {
-        nombreRuta: 'config-produccion',
-        etiqueta: 'Estaciones e impresoras',
-        descripcion: 'Dónde se prepara y se imprime',
+        nombreRuta: 'config-areas',
+        etiqueta: 'Áreas e impresoras',
+        descripcion: 'Dónde se prepara, comanda e imprime',
         roles: ['admin'],
       },
       {

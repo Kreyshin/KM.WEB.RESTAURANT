@@ -5,7 +5,13 @@ import { empresaService, impuestosService } from './empresa.service'
 import { localesService } from './locales.service'
 import { db, reiniciarMock } from './mock/db'
 import { guardarConfigRed } from './mock/red'
-import { estacionesService, impresorasService, seriesService } from './produccion.service'
+import type { NuevaArea } from '@/types'
+import {
+  areasService,
+  coberturaComanda,
+  impresorasService,
+  seriesService,
+} from './produccion.service'
 
 /**
  * Reglas de configuración donde un error sería caro: comprobantes con numeración
@@ -73,7 +79,7 @@ describe('series de comprobantes', () => {
   })
 })
 
-describe('impresoras y estaciones', () => {
+describe('impresoras y áreas', () => {
   it('una impresora de red exige IP válida; una USB no', async () => {
     const base = {
       nombre: 'Postres',
@@ -89,18 +95,56 @@ describe('impresoras y estaciones', () => {
     expect(usb.direccionIp).toBeUndefined()
   })
 
-  it('no elimina una impresora asignada a estaciones', async () => {
+  it('no elimina una impresora asignada a áreas', async () => {
     await expect(impresorasService.eliminar('im1')).rejects.toMatchObject({
       mensaje: expect.stringContaining('Cocina caliente'),
     })
   })
 
-  it('la impresora de una estación debe ser de su mismo local', async () => {
-    await expect(estacionesService.actualizar('es4', { impresoraId: 'im1' })).rejects.toMatchObject(
-      {
-        campos: { impresoraId: expect.any(String) },
-      },
+  it('la impresora de un área debe ser de su mismo local', async () => {
+    await expect(areasService.actualizar('ae5', { impresoraId: 'im1' })).rejects.toMatchObject({
+      campos: { impresoraId: expect.any(String) },
+    })
+  })
+
+  it('admite dos áreas con el mismo nombre si están en distinta ubicación', async () => {
+    const base: Omit<NuevaArea, 'ubicacion'> = {
+      nombre: 'Barra',
+      localId: 'l1',
+      recibeComandas: true,
+      comanda: { modo: 'todos', categoriaIds: [], productoIds: [] },
+      activo: true,
+    }
+    await expect(
+      areasService.crear({ ...base, ubicacion: 'Salón principal' }),
+    ).rejects.toMatchObject({
+      campos: { nombre: expect.any(String) },
+    })
+    const terraza = await areasService.crear({ ...base, ubicacion: 'Terraza' })
+    expect(terraza.id).toBeTruthy()
+  })
+
+  it('un área con productos seleccionados necesita al menos uno', async () => {
+    await expect(
+      areasService.actualizar('ae3', {
+        comanda: { modo: 'seleccionados', categoriaIds: [], productoIds: [] },
+      }),
+    ).rejects.toMatchObject({ campos: { comanda: expect.any(String) } })
+  })
+
+  it('avisa de productos sin área y de productos en varias', () => {
+    const areas = db.areas.map((a) =>
+      a.id === 'ae3' ? { ...a, comanda: { ...a.comanda, categoriaIds: [] } } : a,
     )
+    const sinBarra = coberturaComanda(areas, db.productos, 'l1')
+    expect(sinBarra.sinArea.every((p) => p.categoriaId === 'c6')).toBe(true)
+    expect(sinBarra.sinArea.length).toBeGreaterThan(0)
+
+    const duplicada = db.areas.map((a) =>
+      a.id === 'ae2' ? { ...a, comanda: { ...a.comanda, categoriaIds: ['c2', 'c3'] } } : a,
+    )
+    expect(coberturaComanda(duplicada, db.productos, 'l1').enVarias.length).toBeGreaterThan(0)
+    expect(coberturaComanda(db.areas, db.productos, 'l2').sinArea).toHaveLength(0)
   })
 })
 

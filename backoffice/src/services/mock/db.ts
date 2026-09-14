@@ -14,7 +14,7 @@ import type {
   Categoria,
   ConfigImpuestos,
   Empresa,
-  EstacionProduccion,
+  Area,
   HorarioDia,
   Impresora,
   Insumo,
@@ -38,7 +38,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v15'
+const CLAVE = 'km.restaurante.mock.v16'
 
 export interface Esquema {
   combos: Combo[]
@@ -51,7 +51,7 @@ export interface Esquema {
   locales: Local[]
   mediosPago: MedioPago[]
   canales: CanalVenta[]
-  estaciones: EstacionProduccion[]
+  areas: Area[]
   impresoras: Impresora[]
   motivos: Motivo[]
   series: SerieComprobante[]
@@ -278,17 +278,59 @@ function semilla(): Esquema {
     },
   ]
 
-  const estaciones: EstacionProduccion[] = [
-    { id: 'es1', nombre: 'Cocina caliente', localId: 'l1', impresoraId: 'im1', activo: true },
+  const areas: Area[] = [
     {
-      id: 'es2',
-      nombre: 'Cocina fría (cebichería)',
+      id: 'ae1',
+      nombre: 'Cocina caliente',
       localId: 'l1',
+      ubicacion: 'Primer piso',
       impresoraId: 'im1',
+      recibeComandas: true,
+      comanda: {
+        modo: 'seleccionados',
+        categoriaIds: ['c1', 'c3', 'c4', 'c5', 'c7'],
+        productoIds: [],
+      },
       activo: true,
     },
-    { id: 'es3', nombre: 'Barra', localId: 'l1', impresoraId: 'im2', activo: true },
-    { id: 'es4', nombre: 'Cocina', localId: 'l2', impresoraId: 'im4', activo: true },
+    {
+      id: 'ae2',
+      nombre: 'Cocina fría (cebichería)',
+      localId: 'l1',
+      ubicacion: 'Primer piso',
+      impresoraId: 'im1',
+      recibeComandas: true,
+      comanda: { modo: 'seleccionados', categoriaIds: ['c2'], productoIds: [] },
+      activo: true,
+    },
+    {
+      id: 'ae3',
+      nombre: 'Barra',
+      localId: 'l1',
+      ubicacion: 'Salón principal',
+      impresoraId: 'im2',
+      recibeComandas: true,
+      comanda: { modo: 'seleccionados', categoriaIds: ['c6'], productoIds: [] },
+      activo: true,
+    },
+    {
+      id: 'ae4',
+      nombre: 'Recepción de mercadería',
+      localId: 'l1',
+      ubicacion: 'Patio de servicio',
+      recibeComandas: false,
+      comanda: { modo: 'seleccionados', categoriaIds: [], productoIds: [] },
+      activo: true,
+    },
+    {
+      id: 'ae5',
+      nombre: 'Cocina',
+      localId: 'l2',
+      impresoraId: 'im4',
+      recibeComandas: true,
+      comanda: { modo: 'todos', categoriaIds: [], productoIds: [] },
+      activo: true,
+    },
   ]
 
   const motivos: Motivo[] = [
@@ -1066,19 +1108,9 @@ function semilla(): Esquema {
   ]
 
   // ── Fase 3: carta ──
-  const estacionPorCategoria: Record<string, string> = {
-    c1: 'es1',
-    c2: 'es2',
-    c3: 'es1',
-    c4: 'es1',
-    c5: 'es1',
-    c6: 'es3',
-    c7: 'es1',
-  }
   const productos: Producto[] = productosBase.map((p) => ({
     ...p,
     imagen: imagenPlato(p.nombre),
-    estacionId: estacionPorCategoria[p.categoriaId],
     // Rappi cobra 25 % de comisión: los platos de fondo suben de precio en la app.
     preciosCanal: p.precio >= 30 ? [{ canalId: 'cv4', precio: Math.round(p.precio * 1.15) }] : [],
   }))
@@ -1451,7 +1483,7 @@ function semilla(): Esquema {
     locales,
     mediosPago,
     canales,
-    estaciones,
+    areas,
     impresoras,
     motivos,
     series,

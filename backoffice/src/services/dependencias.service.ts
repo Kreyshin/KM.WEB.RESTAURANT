@@ -22,7 +22,7 @@ const pluralComprobante: Record<TipoComprobante, string> = {
 export const dependenciasService = {
   async local(id: string, activar: boolean) {
     const series = db.series.filter((s) => s.localId === id && s.activo).length
-    const estaciones = db.estaciones.filter((e) => e.localId === id && e.activo).length
+    const areas = db.areas.filter((a) => a.localId === id && a.activo).length
     const impresoras = db.impresoras.filter((i) => i.localId === id && i.activo).length
     if (activar) {
       return latencia(['Vuelve a aparecer en el selector de local de la cabecera.'])
@@ -32,8 +32,7 @@ export const dependenciasService = {
       lineas.push(
         `${plural(series, 'serie activa', 'series activas')} no podrán emitir comprobantes.`,
       )
-    if (estaciones)
-      lineas.push(`${plural(estaciones, 'estación', 'estaciones')} dejarán de recibir comandas.`)
+    if (areas) lineas.push(`${plural(areas, 'área', 'áreas')} dejarán de recibir comandas.`)
     if (impresoras)
       lineas.push(`${plural(impresoras, 'impresora', 'impresoras')} quedarán sin uso.`)
     return latencia(lineas)
@@ -77,21 +76,21 @@ export const dependenciasService = {
     return latencia(lineas)
   },
 
-  async estacion(_id: string, activar: boolean) {
+  async area(_id: string, activar: boolean) {
     return latencia([
       activar
-        ? 'Vuelve a recibir las comandas de los productos asignados.'
-        : 'Las comandas de sus productos dejarán de enviarse a esta estación.',
+        ? 'Vuelve a recibir las comandas de sus productos.'
+        : 'Sus productos dejarán de comandarse aquí: revisa que otra área los reciba.',
     ])
   },
 
   async impresora(id: string, activar: boolean) {
-    const estaciones = db.estaciones.filter((e) => e.impresoraId === id).map((e) => e.nombre)
+    const areas = db.areas.filter((a) => a.impresoraId === id).map((a) => a.nombre)
     if (activar) return latencia(['Vuelve a imprimir los documentos que tiene asignados.'])
     return latencia(
-      estaciones.length
-        ? [`Dejarán de imprimir las estaciones: ${estaciones.join(', ')}.`]
-        : ['No tiene estaciones asignadas; no afecta a las comandas.'],
+      areas.length
+        ? [`Dejarán de imprimir las áreas: ${areas.join(', ')}.`]
+        : ['No tiene áreas asignadas; no afecta a las comandas.'],
     )
   },
 

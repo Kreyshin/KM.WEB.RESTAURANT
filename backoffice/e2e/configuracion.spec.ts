@@ -52,8 +52,8 @@ test.describe('Configuración del negocio', () => {
     await expect(page.getByText('Sin excepciones')).toBeVisible()
   })
 
-  test('no permite eliminar una impresora usada por estaciones', async ({ page }) => {
-    await page.goto('/configuracion/produccion')
+  test('no permite eliminar una impresora usada por áreas', async ({ page }) => {
+    await page.goto('/configuracion/areas')
     await page.getByRole('tab', { name: 'Impresoras' }).click()
 
     await fila(page, /Cocina caliente/)
@@ -61,6 +61,6 @@ test.describe('Configuración del negocio', () => {
       .click()
     await drawer(page).getByRole('button', { name: 'Eliminar' }).click()
 
-    await expect(page.getByText(/la usan las estaciones/)).toBeVisible()
+    await expect(page.getByText(/la usan las áreas/)).toBeVisible()
   })
 })

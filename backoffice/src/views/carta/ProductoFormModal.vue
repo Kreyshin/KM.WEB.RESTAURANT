@@ -10,14 +10,15 @@ import KmModal from '@/components/ui/KmModal.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmUploadImagen from '@/components/ui/KmUploadImagen.vue'
 import { canalesService } from '@/services/comercial.service'
-import { estacionesService } from '@/services/produccion.service'
+import { areasService, recibeProducto } from '@/services/produccion.service'
+import { useLocales } from '@/composables/useLocales'
 import { useUiStore } from '@/stores/ui.store'
 import type {
   Alergeno,
   ApiError,
   CanalVenta,
   Categoria,
-  EstacionProduccion,
+  Area,
   NuevoProducto,
   Producto,
 } from '@/types'
@@ -45,25 +46,28 @@ const vacio = (): NuevoProducto => ({
   variantes: [],
   gruposModificadores: [],
   preciosCanal: [],
-  estacionId: undefined,
   imagen: undefined,
 })
 
 const ui = useUiStore()
 const canales = shallowRef<CanalVenta[]>([])
-const estaciones = shallowRef<EstacionProduccion[]>([])
+const areas = shallowRef<Area[]>([])
+const { nombreLocal } = useLocales()
 
 onMounted(async () => {
-  ;[canales.value, estaciones.value] = await Promise.all([
-    canalesService.todos(),
-    estacionesService.todos(),
-  ])
+  ;[canales.value, areas.value] = await Promise.all([canalesService.todos(), areasService.todos()])
 })
 
-const opcionesEstacion = computed<OpcionSelect[]>(() => [
-  { valor: '', etiqueta: 'Sin estación' },
-  ...estaciones.value.filter((e) => e.activo).map((e) => ({ valor: e.id, etiqueta: e.nombre })),
-])
+/** A qué áreas llega la comanda de este producto, por local. Se decide en Áreas. */
+const destinos = computed(() => {
+  const producto = { id: props.producto?.id ?? '', categoriaId: form.value.categoriaId }
+  const porLocal = new Map<string, string[]>()
+  for (const a of areas.value) {
+    if (!recibeProducto(a, producto)) continue
+    porLocal.set(a.localId, [...(porLocal.get(a.localId) ?? []), a.nombre])
+  }
+  return [...porLocal.entries()].map(([localId, nombres]) => ({ localId, nombres }))
+})
 
 /** Precio por canal: vacío significa «usa el precio base». */
 function precioCanal(canalId: string) {
@@ -219,7 +223,6 @@ function enviar() {
         ...f,
         precio: Number(f.precio),
         tiempoPreparacionMin: f.tiempoPreparacionMin ? Number(f.tiempoPreparacionMin) : undefined,
-        estacionId: f.estacionId || undefined,
         variantes: f.variantes.map((v) => ({ ...v, precio: Number(v.precio) })),
         gruposModificadores: f.gruposModificadores.map((g) => ({
           ...g,
@@ -311,26 +314,28 @@ defineExpose({ mostrarError })
         </div>
       </div>
 
-      <!-- Imagen y estación -->
+      <!-- Imagen y áreas de comanda -->
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
           <span class="text-sm font-semibold text-tinta">Foto</span>
           <KmUploadImagen v-model="form.imagen" etiqueta="Foto del plato" @error="ui.error" />
         </div>
-        <KmField
-          v-slot="{ id, invalido }"
-          label="Estación de producción"
-          ayuda="Donde se imprime o muestra la comanda de este producto."
-          :error="errores.estacionId"
-        >
-          <KmSelect
-            :id="id"
-            :model-value="form.estacionId ?? ''"
-            :opciones="opcionesEstacion"
-            :invalido="invalido"
-            @update:model-value="form.estacionId = ($event as string) || undefined"
-          />
-        </KmField>
+        <div class="flex flex-col gap-2">
+          <span class="text-sm font-semibold text-tinta">Se comanda en</span>
+          <ul v-if="destinos.length" class="flex flex-col gap-1 text-sm">
+            <li v-for="d in destinos" :key="d.localId">
+              <span class="text-tenue">{{ nombreLocal(d.localId) }}:</span>
+              <span class="text-tinta">{{ d.nombres.join(', ') }}</span>
+            </li>
+          </ul>
+          <p v-else class="text-sm font-medium text-vino">Ningún área recibe esta categoría.</p>
+          <RouterLink
+            :to="{ name: 'config-areas' }"
+            class="self-start text-xs font-semibold text-verde hover:underline"
+          >
+            Cambiar en Áreas
+          </RouterLink>
+        </div>
       </div>
 
       <!-- Precios por canal -->

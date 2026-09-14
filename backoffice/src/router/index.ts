@@ -131,10 +131,10 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Canales de venta', roles: ['admin'] },
       },
       {
-        path: 'configuracion/produccion',
-        name: 'config-produccion',
-        component: () => import('@/views/configuracion/ProduccionView.vue'),
-        meta: { titulo: 'Estaciones e impresoras', roles: ['admin'] },
+        path: 'configuracion/areas',
+        name: 'config-areas',
+        component: () => import('@/views/configuracion/AreasView.vue'),
+        meta: { titulo: 'Áreas e impresoras', roles: ['admin'] },
       },
       {
         path: 'configuracion/motivos',

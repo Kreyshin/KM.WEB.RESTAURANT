@@ -3,9 +3,6 @@ import { db, latencia, nuevoId, persistir } from './mock/db'
 import { errorCampo } from './mock/reglas'
 
 function validarProducto(datos: Partial<NuevoProducto>) {
-  if (datos.estacionId && !db.estaciones.some((e) => e.id === datos.estacionId)) {
-    throw errorCampo('estacionId', 'La estación elegida ya no existe.')
-  }
   for (const pc of datos.preciosCanal ?? []) {
     if (!db.canales.some((c) => c.id === pc.canalId)) {
       throw errorCampo('preciosCanal', 'Hay un precio para un canal que ya no existe.')

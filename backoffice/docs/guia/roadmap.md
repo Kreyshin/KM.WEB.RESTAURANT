@@ -70,7 +70,7 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 - [x] Configuración por local según los locales a los que accede el usuario (sin parámetros aún)
 - [x] Permisos por rol del ERP (sin permisos aún)
 - [x] Excepciones por usuario (sin permisos aún)
-- [ ] Estaciones de producción se convierten en **Áreas** _(F4.2)_
+- [x] Estaciones de producción se convierten en **Áreas** _(F4.2)_
 
 ## F3 · Sala y carta
 
@@ -79,7 +79,7 @@ F0 → F1 → F2 ─┬→ F3 ─┬→ F4 ─┐
 - [x] Combos y menú del día, con precio suelto y ahorro
 - [x] Precio por canal de venta
 - [x] Horario de disponibilidad por categoría
-- [x] Estación de producción por producto _(pasa a área en F4.2)_
+- [x] Estación de producción por producto _(reemplazada en F4.2: el área define qué productos recibe)_
 
 ## F4 · Abastecimiento
 
@@ -88,7 +88,7 @@ Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede ava
 | Subfase                                       | Qué entrega                                                                                           | Depende de | Estado    |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------- | --------- |
 | **F4.1 · Límite con el ERP**                  | Retiros, maestros del ERP en solo lectura, artículos y proveedores de consulta                        | —          | ✅ Hecha  |
-| **F4.2 · Áreas**                              | Maestro de áreas y a qué área se comanda cada producto                                                | F4.1       | Pendiente |
+| **F4.2 · Áreas**                              | Maestro de áreas y a qué área se comanda cada producto                                                | F4.1       | ✅ Hecha  |
 | **F4.3 · Insumos y reglas de abastecimiento** | Insumo de la vertical, conversión directa y transformación, parámetros, ubicaciones y stock detallado | F4.1       | Pendiente |
 | **F4.4 · Solicitudes y requerimientos**       | Solicitud por área, requerimiento por local y su seguimiento                                          | F4.2, F4.3 | Pendiente |
 | **F4.5 · Recepción y transformación**         | Recepción con y sin OC, lotes, ubicación y artículos por procesar                                     | F4.3, F4.4 | Pendiente |
@@ -122,10 +122,10 @@ Rehecha según [D-004](./decisiones.md) y [D-005](./decisiones.md). Se puede ava
 
 ### F4.2 · Áreas
 
-- [ ] Maestro de áreas por local: nombre, tipo, piso o sala, impresora; admite varias del mismo tipo
-- [ ] Comanda: «Todos los productos» (por defecto con una sola área) o «Seleccionados» por categoría o producto
-- [ ] Aviso de productos sin área y de productos en más de un área
-- [ ] Migrar estaciones de producción existentes a áreas
+- [x] Maestro de áreas por local: nombre, tipo, piso o sala, impresora; admite varias del mismo tipo
+- [x] Comanda: «Todos los productos» (por defecto con una sola área) o «Seleccionados» por categoría o producto
+- [x] Aviso de productos sin área y de productos en más de un área _(panel «Revisión de comandas» por local)_
+- [x] Migrar estaciones de producción existentes a áreas; el producto ya no guarda su estación y muestra «Se comanda en»
 
 ### F4.3 · Insumos y reglas de abastecimiento
 

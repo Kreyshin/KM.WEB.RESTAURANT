@@ -68,12 +68,12 @@ export const localesService = {
   async eliminar(id: string): Promise<void> {
     const enUso =
       db.series.some((s) => s.localId === id) ||
-      db.estaciones.some((e) => e.localId === id) ||
+      db.areas.some((a) => a.localId === id) ||
       db.impresoras.some((i) => i.localId === id)
     if (enUso) {
       throw {
         mensaje:
-          'No se puede eliminar: el local tiene series, estaciones o impresoras. Desactívalo en su lugar.',
+          'No se puede eliminar: el local tiene series, áreas o impresoras. Desactívalo en su lugar.',
       }
     }
     validar({ activo: false }, id)

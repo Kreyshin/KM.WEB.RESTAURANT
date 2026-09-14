@@ -143,8 +143,6 @@ export interface Producto {
   gruposModificadores: GrupoModificador[]
   /** Data URL en mock; URL del archivo con backend. */
   imagen?: string
-  /** Estación que recibe la comanda del producto. */
-  estacionId?: string
   /** Precios por canal. Un canal sin entrada usa el precio base. */
   preciosCanal: PrecioCanal[]
 }
@@ -322,7 +320,7 @@ export type NuevoMovimiento = Omit<Movimiento, 'id' | 'fecha' | 'almacenId'> & {
 export type NuevoLocal = Omit<Local, 'id'>
 export type NuevoMedioPago = Omit<MedioPago, 'id'>
 export type NuevoCanalVenta = Omit<CanalVenta, 'id'>
-export type NuevaEstacion = Omit<EstacionProduccion, 'id'>
+export type NuevaArea = Omit<Area, 'id'>
 export type NuevaImpresora = Omit<Impresora, 'id'>
 export type NuevoMotivo = Omit<Motivo, 'id'>
 export type NuevaSerie = Omit<SerieComprobante, 'id'>
@@ -439,12 +437,31 @@ export interface CanalVenta {
   activo: boolean
 }
 
-export interface EstacionProduccion {
+/** Qué productos recibe un área: todos, o los de ciertas categorías y productos. */
+export type ModoComanda = 'todos' | 'seleccionados'
+
+export interface ComandaArea {
+  modo: ModoComanda
+  categoriaIds: string[]
+  /** Productos sueltos además de los de sus categorías. */
+  productoIds: string[]
+}
+
+/**
+ * Área del local (D-004): cocina caliente, barra, recepción… Maestro
+ * configurable; puede haber varias del mismo tipo, por piso o sala.
+ */
+export interface Area {
   id: string
   nombre: string
   localId: string
-  /** Impresora donde salen las comandas de esta estación. */
+  /** Piso, sala o zona, para distinguir áreas iguales. */
+  ubicacion?: string
+  /** Impresora donde salen sus comandas. */
   impresoraId?: string
+  /** Recepción o almacén no reciben comandas: solo solicitan. */
+  recibeComandas: boolean
+  comanda: ComandaArea
   activo: boolean
 }
 
