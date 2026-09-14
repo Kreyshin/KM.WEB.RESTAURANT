@@ -1,40 +1,30 @@
 <script setup lang="ts">
-import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmEstado from '@/components/ui/KmEstado.vue'
 import KmField from '@/components/ui/KmField.vue'
+import KmOrigenErp from '@/components/ui/KmOrigenErp.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
-import KmSwitch from '@/components/ui/KmSwitch.vue'
 import { canalesService } from '@/services/comercial.service'
 import { impuestosService } from '@/services/empresa.service'
-import { useUiStore } from '@/stores/ui.store'
 import type { ApiError, CanalVenta, ConfigImpuestos } from '@/types'
 import { desglosarTicket } from '@/utils/impuestos'
 import { formatearSoles } from '@/utils/formato'
 
-const ui = useUiStore()
+/** Impuestos: vienen del ERP y aquí solo se consultan (D-005). */
 
-const original = ref<ConfigImpuestos | null>(null)
 const form = ref<ConfigImpuestos | null>(null)
 const canales = shallowRef<CanalVenta[]>([])
-const errores = ref<Record<string, string>>({})
 const cargando = ref(true)
 const errorCarga = ref<string | null>(null)
-const guardando = ref(false)
-
-const cambios = computed(
-  () => !!form.value && JSON.stringify(form.value) !== JSON.stringify(original.value),
-)
 
 async function cargar() {
   cargando.value = true
   errorCarga.value = null
   try {
     const [config, lista] = await Promise.all([impuestosService.obtener(), canalesService.todos()])
-    original.value = config
-    form.value = copiar(config)
+    form.value = config
     canales.value = lista.filter((c) => c.activo)
   } catch (e) {
     errorCarga.value = (e as ApiError).mensaje ?? 'No se pudo cargar la configuración.'
@@ -46,35 +36,6 @@ async function cargar() {
 onMounted(cargar)
 
 const canalesConRecargo = computed(() => canales.value.filter((c) => c.aplicaRecargoConsumo))
-
-async function guardar() {
-  if (!form.value) return
-  guardando.value = true
-  errores.value = {}
-  try {
-    const datos = {
-      ...form.value,
-      igvPorcentaje: Number(form.value.igvPorcentaje),
-      recargoConsumoPorcentaje: Number(form.value.recargoConsumoPorcentaje),
-      icbperMonto: Number(form.value.icbperMonto),
-    }
-    const guardada = await impuestosService.guardar(datos)
-    original.value = guardada
-    form.value = copiar(guardada)
-    ui.exito('Impuestos y cargos guardados.')
-  } catch (e) {
-    const err = e as ApiError
-    errores.value = err.campos ?? {}
-    ui.error(err.mensaje ?? 'No se pudo guardar.')
-  } finally {
-    guardando.value = false
-  }
-}
-
-function descartar() {
-  form.value = copiar(original.value)
-  errores.value = {}
-}
 
 /** Ticket de ejemplo que se recalcula con cada ajuste. */
 const consumoEjemplo = ref(120)
@@ -101,125 +62,77 @@ const ejemplo = computed(() =>
       </KmEstado>
     </KmCard>
 
-    <form
-      v-else-if="form"
-      class="grid gap-6 lg:grid-cols-[1fr_20rem]"
-      novalidate
-      @submit.prevent="guardar"
-    >
+    <div v-else-if="form" class="grid gap-6 lg:grid-cols-[1fr_20rem]">
       <div class="flex flex-col gap-6">
+        <KmOrigenErp detalle>
+          Tasas y cargos se administran en el módulo de ventas del ERP. Qué canal cobra el recargo
+          al consumo sí se decide aquí, en Canales de venta.
+        </KmOrigenErp>
+
         <KmCard
           titulo="IGV"
           subtitulo="Impuesto General a las Ventas aplicado en los comprobantes."
         >
-          <div class="flex flex-col gap-5">
-            <KmField
-              v-slot="{ id, invalido }"
-              label="Tasa de IGV (%)"
-              ayuda="18 % general. Los restaurantes MYPE acogidos a la Ley 31556 aplican una tasa reducida."
-              :error="errores.igvPorcentaje"
-            >
-              <div class="w-48">
-                <KmNumero
-                  :id="id"
-                  v-model="form.igvPorcentaje"
-                  :min="0"
-                  :max="30"
-                  :invalido="invalido"
-                  sufijo="%"
-                  :decimales="2"
-                />
-              </div>
-            </KmField>
-            <KmSwitch
-              v-model="form.preciosIncluyenIgv"
-              etiqueta="Los precios de la carta incluyen IGV"
-              descripcion="Si lo desactivas, el IGV se suma al precio al cobrar."
-            />
-          </div>
+          <dl class="rs-ficha">
+            <div>
+              <dt>Tasa</dt>
+              <dd class="tabular-nums">{{ form.igvPorcentaje }} %</dd>
+            </div>
+            <div>
+              <dt>Precios de la carta</dt>
+              <dd>{{ form.preciosIncluyenIgv ? 'Incluyen IGV' : 'Sin IGV: se suma al cobrar' }}</dd>
+            </div>
+          </dl>
         </KmCard>
 
         <KmCard
           titulo="Recargo al consumo"
           subtitulo="Cargo por servicio que se suma a la cuenta. La ley lo limita al 13 %."
         >
-          <div class="flex flex-col gap-5">
-            <KmSwitch
-              v-model="form.recargoConsumoActivo"
-              etiqueta="Cobrar recargo al consumo"
-              descripcion="Se muestra como una línea aparte en la precuenta y el comprobante."
-            />
-
-            <template v-if="form.recargoConsumoActivo">
-              <KmField
-                v-slot="{ id, invalido }"
-                label="Porcentaje (%)"
-                :error="errores.recargoConsumoPorcentaje"
+          <dl class="rs-ficha">
+            <div>
+              <dt>Estado</dt>
+              <dd>{{ form.recargoConsumoActivo ? 'Se cobra' : 'No se cobra' }}</dd>
+            </div>
+            <div v-if="form.recargoConsumoActivo">
+              <dt>Porcentaje</dt>
+              <dd class="tabular-nums">{{ form.recargoConsumoPorcentaje }} %</dd>
+            </div>
+          </dl>
+          <div v-if="form.recargoConsumoActivo" class="mt-5 flex flex-col gap-2">
+            <p class="rs-etiqueta text-tenue">Se cobra en</p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="c in canalesConRecargo"
+                :key="c.id"
+                class="rounded-full border border-linea px-3 py-1 text-sm text-tinta"
               >
-                <div class="w-48">
-                  <KmNumero
-                    :id="id"
-                    v-model="form.recargoConsumoPorcentaje"
-                    :min="0"
-                    :max="13"
-                    :invalido="invalido"
-                    sufijo="%"
-                    :decimales="2"
-                    :step="0.5"
-                  />
-                </div>
-              </KmField>
-
-              <div class="flex flex-col gap-2">
-                <p class="text-sm font-semibold text-tinta">Se cobra en</p>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-for="c in canalesConRecargo"
-                    :key="c.id"
-                    class="rounded-full border border-linea px-3 py-1 text-sm text-tinta"
-                  >
-                    {{ c.nombre }}
-                  </span>
-                  <span v-if="canalesConRecargo.length === 0" class="text-sm text-vino">
-                    Ningún canal lo cobra todavía.
-                  </span>
-                </div>
-                <p class="text-xs text-tenue">
-                  Se decide en cada canal.
-                  <RouterLink
-                    :to="{ name: 'config-canales' }"
-                    class="font-semibold text-verde hover:underline"
-                  >
-                    Ir a Canales de venta
-                  </RouterLink>
-                </p>
-              </div>
-            </template>
+                {{ c.nombre }}
+              </span>
+              <span v-if="canalesConRecargo.length === 0" class="text-sm text-vino">
+                Ningún canal lo cobra todavía.
+              </span>
+            </div>
+            <RouterLink
+              :to="{ name: 'config-canales' }"
+              class="self-start text-xs font-semibold text-verde hover:underline"
+            >
+              Cambiar en Canales de venta
+            </RouterLink>
           </div>
         </KmCard>
 
         <KmCard titulo="ICBPER" subtitulo="Impuesto al consumo de bolsas de plástico.">
-          <KmField
-            v-slot="{ id, invalido }"
-            label="Monto por bolsa (S/)"
-            :error="errores.icbperMonto"
-          >
-            <div class="w-48">
-              <KmNumero
-                :id="id"
-                v-model="form.icbperMonto"
-                :min="0"
-                :invalido="invalido"
-                prefijo="S/"
-                :decimales="2"
-                :step="0.1"
-              />
+          <dl class="rs-ficha">
+            <div>
+              <dt>Monto por bolsa</dt>
+              <dd class="tabular-nums">{{ formatearSoles(form.icbperMonto) }}</dd>
             </div>
-          </KmField>
+          </dl>
         </KmCard>
       </div>
 
-      <!-- Ticket de ejemplo: muestra el efecto de la configuración antes de guardarla. -->
+      <!-- Ticket de ejemplo: muestra el efecto de la configuración vigente. -->
       <aside
         class="flex flex-col gap-4 lg:sticky lg:top-0 lg:self-start"
         aria-label="Ticket de ejemplo"
@@ -265,16 +178,28 @@ const ejemplo = computed(() =>
             </p>
           </div>
         </KmCard>
-
-        <div class="flex justify-end gap-2">
-          <KmButton variante="secundario" :disabled="!cambios || guardando" @click="descartar">
-            Descartar
-          </KmButton>
-          <KmButton type="submit" :disabled="!cambios" :cargando="guardando">
-            Guardar cambios
-          </KmButton>
-        </div>
       </aside>
-    </form>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.rs-ficha {
+  display: grid;
+  gap: 1rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin: 0;
+}
+.rs-ficha dt {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-tenue);
+}
+.rs-ficha dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.9375rem;
+  color: var(--color-tinta);
+}
+</style>

@@ -1,106 +1,56 @@
-import { drawer, expect, fila, test } from './fixtures'
+﻿import { drawer, expect, fila, test } from './fixtures'
 
 test.describe('Configuración del negocio', () => {
   test.beforeEach(async ({ entrar }) => {
     await entrar()
   })
 
-  test.describe('Series de comprobantes', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/configuracion/series')
-      await expect(fila(page, 'B001')).toBeVisible()
+  test.describe('Datos del ERP en solo lectura', () => {
+    for (const { ruta, fila: nombre } of [
+      { ruta: '/configuracion/locales', fila: 'Barranco' },
+      { ruta: '/configuracion/medios-pago', fila: 'Efectivo' },
+      { ruta: '/configuracion/series', fila: 'B001' },
+    ]) {
+      test(`${ruta}: se consulta pero no se crea, edita ni elimina`, async ({ page }) => {
+        await page.goto(ruta)
+        await expect(fila(page, nombre)).toBeVisible()
+        await expect(page.getByText('Sincronizado desde ERP').first()).toBeVisible()
+        await expect(page.getByRole('button', { name: /^(Nuevo|Nueva) / })).toHaveCount(0)
+        await expect(
+          page.locator('main tbody').getByRole('button', { name: /^Editar / }),
+        ).toHaveCount(0)
+        await expect(
+          page.locator('main tbody').getByRole('button', { name: /^Eliminar / }),
+        ).toHaveCount(0)
+
+        await fila(page, nombre).getByRole('button', { name: /^Ver / }).click()
+        const d = drawer(page)
+        await expect(d).toContainText('Sincronizado desde el ERP')
+        await expect(d.getByRole('button', { name: /Guardar|Crear/ })).toHaveCount(0)
+        await expect(d.locator('input, select, textarea').first()).toBeDisabled()
+        await d.getByRole('button', { name: 'Cerrar' }).last().click()
+        await expect(page.getByRole('dialog')).toHaveCount(0)
+      })
+    }
+
+    test('empresa se muestra como ficha sin campos editables', async ({ page }) => {
+      await page.goto('/configuracion/empresa')
+      await expect(page.getByText('Sincronizado desde el ERP')).toBeVisible()
+      await expect(page.getByText('Razón social', { exact: true })).toBeVisible()
+      await expect(page.locator('main input')).toHaveCount(0)
+      await expect(page.getByRole('button', { name: 'Guardar cambios' })).toHaveCount(0)
     })
 
-    test('rechaza una serie con la letra de otro comprobante', async ({ page }) => {
-      await page.getByRole('button', { name: 'Nueva serie' }).click()
-      await drawer(page).getByLabel('Comprobante').selectOption('boleta')
-      await drawer(page).getByLabel('Serie').fill('F050')
-      await drawer(page).getByRole('button', { name: 'Crear serie' }).click()
-
-      await expect(drawer(page).getByText(/Formato no válido/)).toBeVisible()
-    })
-
-    test('rechaza una serie que ya existe en otro local', async ({ page }) => {
-      await page.getByRole('button', { name: 'Nueva serie' }).click()
-      await drawer(page).getByLabel('Local').selectOption({ label: 'San Isidro' })
-      await drawer(page).getByLabel('Serie').fill('B001')
-      await drawer(page).getByRole('button', { name: 'Crear serie' }).click()
-
-      await expect(drawer(page).getByText('Duplicada')).toBeVisible()
-    })
-
-    test('el correlativo no puede retroceder', async ({ page }) => {
-      await fila(page, 'B001').getByRole('button', { name: 'Editar' }).click()
-      await expect(drawer(page).getByLabel('Serie')).toBeDisabled()
-
-      await drawer(page).getByLabel('Último número emitido').fill('10')
-      await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click()
-
-      await expect(drawer(page).getByText('No puede retroceder')).toBeVisible()
-    })
-
-    test('crea una serie y muestra el siguiente número', async ({ page }) => {
-      await page.getByRole('button', { name: 'Nueva serie' }).click()
-      await drawer(page).getByLabel('Comprobante').selectOption('factura')
-      await drawer(page).getByLabel('Serie').fill('f003')
-      await expect(drawer(page).getByText('F003-00000001')).toBeVisible()
-      await drawer(page).getByRole('button', { name: 'Crear serie' }).click()
-
-      await expect(fila(page, 'F003')).toContainText('F003-00000001')
-    })
-  })
-
-  test('el horario de un local se guarda y se mantiene al recargar', async ({ page }) => {
-    await page.goto('/configuracion/locales')
-    await expect(fila(page, 'San Isidro')).toContainText('cierra Dom')
-
-    await fila(page, 'San Isidro').getByRole('button', { name: 'Editar' }).click()
-    await drawer(page).getByRole('button', { name: 'Copiar a todos' }).click()
-    await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click()
-
-    await expect(fila(page, 'San Isidro')).toContainText('Todos los días')
-    await page.reload()
-    await expect(fila(page, 'San Isidro')).toContainText('Todos los días')
-  })
-
-  test('desactivar un local explica qué se ve afectado antes de guardar', async ({ page }) => {
-    await page.goto('/configuracion/locales')
-    const miraflores = fila(page, 'Miraflores')
-
-    // En la tabla el estado solo se lee.
-    await expect(miraflores.getByRole('button', { name: /Activo/ })).toHaveCount(0)
-
-    await miraflores.getByRole('button', { name: 'Editar Miraflores' }).click()
-    await drawer(page).getByRole('switch', { name: 'Activo' }).click()
-    await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click()
-
-    const confirmacion = page.getByRole('dialog').filter({ hasText: 'Desactivar «Miraflores»' })
-    await expect(confirmacion).toContainText('4 series activas no podrán emitir comprobantes.')
-    await expect(confirmacion).toContainText('3 estaciones dejarán de recibir comandas.')
-
-    await confirmacion.getByRole('button', { name: 'Desactivar y guardar' }).click()
-    await expect(miraflores).toContainText('Inactivo')
-  })
-
-  test.describe('Impuestos y cargos', () => {
-    test.beforeEach(async ({ page }) => {
+    test('impuestos se consultan y el ticket de ejemplo sigue calculando', async ({ page }) => {
       await page.goto('/configuracion/impuestos')
-    })
+      await expect(page.getByText('Sincronizado desde el ERP')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Guardar cambios' })).toHaveCount(0)
 
-    test('el ticket de ejemplo se recalcula al cambiar el recargo', async ({ page }) => {
       const ticket = page.getByRole('complementary', { name: 'Ticket de ejemplo' })
-      await page.getByLabel('Consumo de la mesa (S/)').fill('118')
-      await expect(ticket).toContainText('S/ 128.00')
-
-      await page.getByLabel('Porcentaje (%)').fill('5')
-      await expect(ticket).toContainText('S/ 123.00')
-    })
-
-    test('no acepta un recargo al consumo mayor al 13 %', async ({ page }) => {
-      await page.getByLabel('Porcentaje (%)').fill('15')
-      await page.getByRole('button', { name: 'Guardar cambios' }).click()
-
-      await expect(page.getByText('Máximo 13 %')).toBeVisible()
+      const total = ticket.locator('dd').last()
+      const antes = await total.textContent()
+      await ticket.getByLabel('Consumo de la mesa (S/)').fill('200')
+      await expect(total).not.toHaveText(antes!)
     })
   })
 

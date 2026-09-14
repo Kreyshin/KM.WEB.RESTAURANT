@@ -11,6 +11,7 @@ import KmConfirm from './KmConfirm.vue'
 import KmConfirmarEstado from './KmConfirmarEstado.vue'
 import KmDrawer from './KmDrawer.vue'
 import KmExportar from './KmExportar.vue'
+import KmOrigenErp from './KmOrigenErp.vue'
 import KmPaginacion from './KmPaginacion.vue'
 import KmSelect from './KmSelect.vue'
 import KmCampoEstado from './KmCampoEstado.vue'
@@ -64,8 +65,10 @@ const props = withDefaults(
      * Sin ella se muestra un texto genérico.
      */
     consecuenciasEstado?: (id: string, activar: boolean) => Promise<string[]>
+    /** Datos del ERP: se consultan pero no se crean, editan ni eliminan. */
+    soloLectura?: boolean
   }>(),
-  { femenino: false, anchoDrawer: 'md', sinTarjeta: false },
+  { femenino: false, anchoDrawer: 'md', sinTarjeta: false, soloLectura: false },
 )
 
 defineSlots<{
@@ -160,6 +163,7 @@ const activoBorrador = computed({
 })
 
 async function guardar() {
+  if (props.soloLectura) return
   errores.value = props.validar?.(borrador.value) ?? {}
   if (Object.keys(errores.value).length) return
 
@@ -280,8 +284,11 @@ defineExpose({ recargar, abrirNuevo })
   >
     <template v-if="!sinTarjeta" #acciones>
       <slot name="acciones" />
+      <KmOrigenErp v-if="soloLectura" />
       <KmExportar v-if="exportacion" :disabled="total === 0" @exportar="exportar" />
-      <KmButton tamano="sm" @click="abrirNuevo">{{ nuevoTxt }} {{ entidad }}</KmButton>
+      <KmButton v-if="!soloLectura" tamano="sm" @click="abrirNuevo">
+        {{ nuevoTxt }} {{ entidad }}
+      </KmButton>
     </template>
 
     <div class="flex flex-wrap items-center gap-3 border-b border-linea px-6 py-3">
@@ -293,8 +300,11 @@ defineExpose({ recargar, abrirNuevo })
       <KmCambioVista v-if="slots.tarjeta" v-model="vista" :clave="entidad" class="ml-auto" />
       <template v-if="sinTarjeta">
         <div class="flex-1" />
+        <KmOrigenErp v-if="soloLectura" />
         <KmExportar v-if="exportacion" :disabled="total === 0" @exportar="exportar" />
-        <KmButton tamano="sm" @click="abrirNuevo">{{ nuevoTxt }} {{ entidad }}</KmButton>
+        <KmButton v-if="!soloLectura" tamano="sm" @click="abrirNuevo">
+          {{ nuevoTxt }} {{ entidad }}
+        </KmButton>
       </template>
     </div>
 
@@ -331,7 +341,9 @@ defineExpose({ recargar, abrirNuevo })
       :mensaje-vacio="
         hayCriterios
           ? `Ningún registro coincide con la búsqueda o el filtro.`
-          : `Aún no hay registros. Crea ${femenino ? 'la primera' : 'el primero'} con «${nuevoTxt} ${entidad}».`
+          : soloLectura
+            ? 'Aún no llegan registros desde el ERP.'
+            : `Aún no hay registros. Crea ${femenino ? 'la primera' : 'el primero'} con «${nuevoTxt} ${entidad}».`
       "
       @reintentar="recargar"
     >
@@ -352,13 +364,21 @@ defineExpose({ recargar, abrirNuevo })
         <div class="flex justify-end gap-0.5">
           <slot name="acciones-fila" :fila="fila" />
           <KmBotonIcono
+            v-if="soloLectura"
+            icono="ver"
+            etiqueta="Ver"
+            :contexto="nombreDe(fila)"
+            @click="abrirEdicion(fila)"
+          />
+          <KmBotonIcono
+            v-else
             icono="editar"
             etiqueta="Editar"
             :contexto="nombreDe(fila)"
             @click="abrirEdicion(fila)"
           />
           <KmBotonIcono
-            v-if="servicio.eliminar"
+            v-if="servicio.eliminar && !soloLectura"
             icono="eliminar"
             tono="peligro"
             etiqueta="Eliminar"
@@ -378,7 +398,13 @@ defineExpose({ recargar, abrirNuevo })
 
     <KmDrawer
       v-model="drawerAbierto"
-      :titulo="editandoId ? `Editar ${entidad}` : `${nuevoTxt} ${entidad}`"
+      :titulo="
+        soloLectura
+          ? `Detalle de ${entidad}`
+          : editandoId
+            ? `Editar ${entidad}`
+            : `${nuevoTxt} ${entidad}`
+      "
       :ancho="anchoDrawer"
     >
       <form
@@ -387,10 +413,18 @@ defineExpose({ recargar, abrirNuevo })
         novalidate
         @submit.prevent="guardar"
       >
-        <slot name="formulario" :borrador="borrador" :errores="errores" :editando="!!editandoId" />
+        <KmOrigenErp v-if="soloLectura" detalle />
+        <fieldset :disabled="soloLectura" class="m-0 flex min-w-0 flex-col gap-4 border-0 p-0">
+          <slot
+            name="formulario"
+            :borrador="borrador"
+            :errores="errores"
+            :editando="!!editandoId"
+          />
+        </fieldset>
 
         <KmCampoEstado
-          v-if="editandoId"
+          v-if="editandoId && !soloLectura"
           v-model="activoBorrador"
           :original="activoOriginal"
           :texto-activo="femenino ? 'Activa' : 'Activo'"
@@ -398,12 +432,17 @@ defineExpose({ recargar, abrirNuevo })
         />
       </form>
       <template #footer>
-        <KmButton variante="secundario" :disabled="guardando" @click="drawerAbierto = false">
-          Cancelar
+        <KmButton v-if="soloLectura" variante="secundario" @click="drawerAbierto = false">
+          Cerrar
         </KmButton>
-        <KmButton type="submit" :form="`form-${entidad}`" :cargando="guardando">
-          {{ editandoId ? 'Guardar cambios' : `Crear ${entidad}` }}
-        </KmButton>
+        <template v-else>
+          <KmButton variante="secundario" :disabled="guardando" @click="drawerAbierto = false">
+            Cancelar
+          </KmButton>
+          <KmButton type="submit" :form="`form-${entidad}`" :cargando="guardando">
+            {{ editandoId ? 'Guardar cambios' : `Crear ${entidad}` }}
+          </KmButton>
+        </template>
       </template>
     </KmDrawer>
 
@@ -427,3 +466,10 @@ defineExpose({ recargar, abrirNuevo })
     />
   </component>
 </template>
+
+<style scoped>
+/* En solo lectura no tiene sentido marcar campos obligatorios. */
+fieldset:disabled :deep(label > span.text-vino) {
+  display: none;
+}
+</style>

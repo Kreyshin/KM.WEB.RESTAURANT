@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import EditorHorario from './EditorHorario.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
@@ -72,6 +72,7 @@ function alCambiar() {
 <template>
   <div class="mx-auto flex max-w-5xl flex-col gap-6">
     <KmCatalogo
+      solo-lectura
       titulo="Locales"
       subtitulo="Sucursales del negocio, su horario y su código de establecimiento ante SUNAT."
       entidad="local"

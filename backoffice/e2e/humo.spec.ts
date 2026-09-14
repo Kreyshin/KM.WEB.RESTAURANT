@@ -35,12 +35,9 @@ const catalogos = [
   { ruta: '/inventario/almacenes', nuevo: 'Nuevo almacén' },
   { ruta: '/compras/proveedores', nuevo: 'Nuevo proveedor' },
   { ruta: '/compras/ordenes', nuevo: 'Nueva orden' },
-  { ruta: '/configuracion/locales', nuevo: 'Nuevo local' },
-  { ruta: '/configuracion/medios-pago', nuevo: 'Nuevo medio de pago' },
   { ruta: '/configuracion/canales', nuevo: 'Nuevo canal' },
   { ruta: '/configuracion/produccion', nuevo: 'Nueva estación' },
   { ruta: '/configuracion/motivos', nuevo: 'Nuevo motivo' },
-  { ruta: '/configuracion/series', nuevo: 'Nueva serie' },
 ]
 
 test.describe('Humo: botones de cada pantalla', () => {
@@ -96,11 +93,6 @@ test.describe('Humo: botones de cada pantalla', () => {
       await page.goto(ruta)
       await expect(page.locator('main')).not.toBeEmpty()
     }
-
-    await page.goto('/configuracion/empresa')
-    await page.getByLabel('Nombre comercial').fill('Mesa · Cocina Limeña y Bar')
-    await page.getByRole('button', { name: 'Descartar' }).click()
-    await expect(page.getByLabel('Nombre comercial')).toHaveValue('Mesa · Cocina Limeña')
 
     await page.goto('/inventario/recetas')
     await page.getByRole('button', { name: 'Editar receta Lomo saltado' }).click()

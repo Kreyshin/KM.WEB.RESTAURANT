@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
@@ -64,6 +64,7 @@ function filtrar(consulta: Consulta, campo: string, valor: string | number | und
 <template>
   <div class="mx-auto flex max-w-5xl flex-col gap-6">
     <KmCatalogo
+      solo-lectura
       titulo="Series de comprobantes"
       subtitulo="Numeración de boletas, facturas y notas por local. Una serie no se repite en todo el RUC."
       entidad="serie"

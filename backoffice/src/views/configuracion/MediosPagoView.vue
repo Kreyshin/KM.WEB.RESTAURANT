@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
@@ -43,6 +43,7 @@ function validar(m: NuevoMedioPago) {
 <template>
   <div class="mx-auto flex max-w-5xl flex-col gap-6">
     <KmCatalogo
+      solo-lectura
       titulo="Medios de pago"
       subtitulo="Formas de cobro disponibles en caja. El orden define cómo aparecen al cobrar."
       entidad="medio de pago"

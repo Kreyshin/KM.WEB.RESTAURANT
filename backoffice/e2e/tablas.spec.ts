@@ -8,9 +8,9 @@ test.describe('Acciones de fila en tablas', () => {
   test('el tooltip muestra solo la acción, dentro de la ventana y sin crear scroll', async ({
     page,
   }) => {
-    await page.goto('/configuracion/locales')
+    await page.goto('/salones')
     const contenedor = page.locator('main table').locator('..')
-    const eliminar = fila(page, 'Barranco').getByRole('button', { name: 'Eliminar Barranco' })
+    const eliminar = fila(page, 'Terraza').getByRole('button', { name: 'Eliminar Terraza' })
 
     const anchoAntes = await contenedor.evaluate((e) => e.scrollWidth)
     await eliminar.hover()
