@@ -203,18 +203,35 @@ export type CategoriaInsumo =
   | 'preparaciones'
 
 /**
- * Subreceta: un insumo que se elabora en cocina a partir de otros (salsa
- * huancaína, leche de tigre). Su costo sale de sus ingredientes.
+ * Cómo llega el insumo desde lo que compra el ERP ([D-004](../../docs/guia/decisiones.md)):
+ *
+ * - `directa`: un factor fijo convierte la unidad de compra en unidad de uso
+ *   (1 caja x12 → 12 u.). Se aplica sola al recepcionar.
+ * - `transformacion`: hace falta procesar el artículo antes de usarlo
+ *   (10 kg de pescado → 6 kg de filete + 1.5 kg de cabeza + merma).
  */
-export interface Preparacion {
-  /** Cantidad de la preparación que rinde la receta, en su unidad. */
-  rendimiento: number
-  ingredientes: IngredienteReceta[]
+export type TipoAbastecimiento = 'directa' | 'transformacion'
+
+/**
+ * Artículo del ERP que abastece a un insumo. Varios artículos vinculados al
+ * mismo insumo son sus **alternos**: sirven indistintamente para reponerlo.
+ */
+export interface VinculoArticulo {
+  /** → Articulo. */
+  articuloId: string
+  /**
+   * Unidades de uso del insumo que rinde una unidad de compra del artículo.
+   * Un saco de 50 kg de papa con el insumo en kg tiene factor 50.
+   */
+  factor: number
+  /** El artículo que se propone al pedir. Exactamente uno por insumo. */
+  porDefecto: boolean
 }
 
 export interface Insumo {
   id: string
   nombre: string
+  /** Unidad de uso, la de la receta. La de compra la pone el artículo. */
   unidad: UnidadMedida
   categoria: CategoriaInsumo
   /** Stock total: suma de las existencias de todos los almacenes. */
@@ -222,11 +239,134 @@ export interface Insumo {
   existencias: Existencia[]
   /** Umbral por debajo del cual el insumo se marca como bajo. */
   stockMinimo: number
-  /** Costo promedio ponderado, sin IGV. */
+  /** Costo promedio ponderado, sin IGV. En las salidas de una transformación, calculado. */
   costoUnitario: number
-  proveedorId?: string
-  preparacion?: Preparacion
+  abastecimiento: TipoAbastecimiento
+  /** Artículos del ERP que lo abastecen. Vacío: aún no se compra. */
+  articulos: VinculoArticulo[]
+  /** Parámetros fijados en el propio insumo; el resto se hereda. */
+  parametros?: Partial<ParametrosAbastecimiento>
   activo: boolean
+}
+
+// ── Transformación ───────────────────────────────────────────────────────────
+
+/**
+ * Lo que sale de una transformación: otro insumo (filete, salsa) o la merma
+ * esperada del proceso (cáscara, hueso, evaporación).
+ */
+export interface SalidaTransformacion {
+  id: string
+  tipo: 'insumo' | 'merma'
+  /** → Insumo. Sin valor cuando la salida es merma. */
+  insumoId?: string
+  /** Cantidad esperada, en la unidad del insumo de salida. */
+  cantidad: number
+  /**
+   * Porcentaje del costo de las entradas que absorbe esta salida. La merma no
+   * absorbe costo: lo reparten las demás, que deben sumar 100.
+   */
+  reparto: number
+  descripcion?: string
+}
+
+/**
+ * Receta de proceso: qué entra y qué sale. Cubre tanto el **despiece**
+ * (1 entrada, varias salidas) como la **preparación** o subreceta
+ * (varias entradas, una salida). El registro de lo que salió realmente
+ * llega en F4.5; aquí se define lo esperado.
+ */
+export interface Transformacion {
+  id: string
+  nombre: string
+  /** Insumos que se consumen, en su unidad de uso. */
+  entradas: IngredienteReceta[]
+  salidas: SalidaTransformacion[]
+  activo: boolean
+}
+
+// ── Parámetros de abastecimiento ─────────────────────────────────────────────
+
+/**
+ * Cómo se controla un insumo al recepcionarlo y al guardarlo. Se fija en
+ * cualquier nivel y el más específico gana ([D-004](../../docs/guia/decisiones.md)).
+ */
+export interface ParametrosAbastecimiento {
+  /** Exige lote al recepcionar y lo arrastra en el stock detallado. */
+  controlaLote: boolean
+  /** Exige fecha de vencimiento en el lote. */
+  controlaVencimiento: boolean
+  /** Propone primero el lote que vence antes (First Expired, First Out). */
+  fefo: boolean
+  /** Días antes del vencimiento en que se avisa. */
+  diasAlerta: number
+  /** Impide sacar stock de un lote vencido. */
+  bloquearVencidos: boolean
+  /** Exige ubicación al recepcionar y al mover. */
+  controlaUbicacion: boolean
+  /** `total`: se recepciona la línea entera. `detalle`: lote a lote y ubicación a ubicación. */
+  tipoRecepcion: 'total' | 'detalle'
+}
+
+/** Del más general al más específico: el último que fije un valor manda. */
+export type NivelParametros = 'cadena' | 'local' | 'almacen' | 'categoria' | 'insumo'
+
+/** Valores fijados en un nivel. Lo que no se fija se hereda del nivel anterior. */
+export interface AjusteParametros {
+  id: string
+  nivel: NivelParametros
+  /** `localId`, `almacenId`, `CategoriaInsumo` o `insumoId`. Sin valor en `cadena`. */
+  referencia?: string
+  valores: Partial<ParametrosAbastecimiento>
+}
+
+/** Cada parámetro con el nivel del que acabó saliendo, para explicarlo en pantalla. */
+export type ParametrosResueltos = {
+  [K in keyof ParametrosAbastecimiento]: {
+    valor: ParametrosAbastecimiento[K]
+    nivel: NivelParametros
+  }
+}
+
+// ── Ubicaciones, lotes y stock detallado ─────────────────────────────────────
+
+/** Dónde se guarda físicamente dentro de un almacén. */
+export interface Ubicacion {
+  id: string
+  almacenId: string
+  pasillo: string
+  estante: string
+  fila: string
+  columna: string
+  /** Ubicación que propone la recepción. Como mucho una por almacén. */
+  porDefecto: boolean
+  activo: boolean
+}
+
+/** Lote de un insumo. Si el ERP lo envía se respeta; si no, lo crea el local. */
+export interface Lote {
+  id: string
+  insumoId: string
+  /** Código del proveedor o del ERP; único por insumo. */
+  codigo: string
+  /** `YYYY-MM-DD`. Obligatorio si el insumo controla vencimiento. */
+  vencimiento?: string
+  /** Fecha de entrada, ISO 8601. */
+  recepcion: string
+}
+
+/**
+ * Stock detallado: insumo × almacén × lote × ubicación. Solo existe para los
+ * insumos que controlan lote o ubicación; lote y ubicación son independientes.
+ * La suma por insumo y almacén debe cuadrar con el stock principal.
+ */
+export interface StockDetalle {
+  id: string
+  insumoId: string
+  almacenId: string
+  loteId?: string
+  ubicacionId?: string
+  cantidad: number
 }
 
 export type TipoMovimiento =
@@ -326,6 +466,9 @@ export type NuevaArea = Omit<Area, 'id'>
 export type NuevaImpresora = Omit<Impresora, 'id'>
 export type NuevoMotivo = Omit<Motivo, 'id'>
 export type NuevaSerie = Omit<SerieComprobante, 'id'>
+export type NuevaUbicacion = Omit<Ubicacion, 'id'>
+export type NuevaTransformacion = Omit<Transformacion, 'id'>
+export type NuevoLote = Omit<Lote, 'id' | 'recepcion'> & { recepcion?: string }
 
 export interface Paginado<T> {
   items: T[]

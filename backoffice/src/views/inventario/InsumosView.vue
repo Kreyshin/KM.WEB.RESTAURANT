@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed, ref } from 'vue'
+import VinculosArticulo from './VinculosArticulo.vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmCatalogo, { type ServicioCatalogo } from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
@@ -8,7 +9,7 @@ import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import { useCatalogos } from '@/composables/useCatalogos'
 import { estadoStock, inventarioService } from '@/services/inventario.service'
-import type { CategoriaInsumo, Consulta, Insumo } from '@/types'
+import type { CategoriaInsumo, Consulta, Insumo, TipoAbastecimiento } from '@/types'
 import type { ColumnaTabla, OpcionSelect } from '@/types/ui'
 import {
   etiquetaCategoriaInsumo,
@@ -18,8 +19,14 @@ import {
   unidadesMedida,
 } from '@/utils/formato'
 
-const catalogos = useCatalogos(['almacenes', 'proveedores', 'insumos', 'locales'])
-const { opcionesProveedor, nombreProveedor } = catalogos
+const catalogos = useCatalogos(['almacenes', 'insumos', 'locales', 'articulos'])
+const { articulo } = catalogos
+
+/** Artículo que se propone al pedir: el marcado por defecto, o el primero. */
+function articuloPorDefecto(i: Insumo) {
+  const vinculo = i.articulos.find((v) => v.porDefecto) ?? i.articulos[0]
+  return vinculo ? articulo(vinculo.articuloId) : undefined
+}
 
 /** Adaptador: la ficha no toca el stock; el alta carga el stock inicial como entrada. */
 const servicio: ServicioCatalogo<Insumo> = {
@@ -50,6 +57,14 @@ const opcionesUnidad: OpcionSelect[] = unidadesMedida.map((u) => ({
 const opcionesCategoria: OpcionSelect[] = (
   Object.keys(etiquetaCategoriaInsumo) as CategoriaInsumo[]
 ).map((c) => ({ valor: c, etiqueta: etiquetaCategoriaInsumo[c] }))
+const opcionesAbastecimiento: OpcionSelect[] = [
+  { valor: 'directa', etiqueta: 'Conversión directa desde el artículo' },
+  { valor: 'transformacion', etiqueta: 'Sale de una transformación' },
+]
+const etiquetaAbastecimiento: Record<TipoAbastecimiento, string> = {
+  directa: 'Conversión directa',
+  transformacion: 'Transformación',
+}
 const opcionesAlmacenFiltro = computed<OpcionSelect[]>(() => [
   { valor: '', etiqueta: 'Todos los almacenes' },
   ...catalogos.opcionesAlmacen.value,
@@ -65,7 +80,8 @@ function nuevo(): Omit<Insumo, 'id'> {
     existencias: [],
     stockMinimo: 0,
     costoUnitario: 0,
-    proveedorId: undefined,
+    abastecimiento: 'directa',
+    articulos: [],
     activo: true,
   }
 }
@@ -75,7 +91,13 @@ function validar(i: Omit<Insumo, 'id'>): Record<string, string> {
   if (!i.nombre.trim()) e.nombre = 'El nombre es obligatorio.'
   if (!(Number(i.stockMinimo) >= 0)) e.stockMinimo = 'No puede ser negativo.'
   if (!(Number(i.costoUnitario) >= 0)) e.costoUnitario = 'No puede ser negativo.'
-  i.proveedorId = i.proveedorId || undefined
+  if (i.abastecimiento === 'transformacion' && i.articulos.length > 0) {
+    e.articulos = 'Lo que sale de una transformación no se compra: quita sus artículos.'
+  }
+  if (i.articulos.some((v) => !v.articuloId)) e.articulos = 'Elige el artículo de cada fila.'
+  if (i.articulos.some((v) => !(Number(v.factor) > 0))) {
+    e.articulos = 'El factor de conversión debe ser mayor que cero.'
+  }
   return e
 }
 
@@ -127,7 +149,15 @@ const alertas = computed(() =>
           etiqueta: 'Valorizado',
           valor: (i: Insumo) => Math.round(i.stock * i.costoUnitario * 100) / 100,
         },
-        { etiqueta: 'Proveedor', valor: (i: Insumo) => nombreProveedor(i.proveedorId) },
+        {
+          etiqueta: 'Abastecimiento',
+          valor: (i: Insumo) => etiquetaAbastecimiento[i.abastecimiento],
+        },
+        {
+          etiqueta: 'Artículo por defecto',
+          valor: (i: Insumo) => articuloPorDefecto(i)?.nombre ?? '',
+        },
+        { etiqueta: 'Artículos alternos', valor: (i: Insumo) => i.articulos.length },
       ]"
       archivo="insumos"
       @cambio="catalogos.recargar"
@@ -160,7 +190,14 @@ const alertas = computed(() =>
         <p class="font-medium text-tinta">{{ fila.nombre }}</p>
         <p class="text-xs text-tenue">
           {{ etiquetaCategoriaInsumo[fila.categoria] }}
-          <template v-if="fila.proveedorId"> · {{ nombreProveedor(fila.proveedorId) }}</template>
+          <template v-if="fila.abastecimiento === 'transformacion'"> · Transformación</template>
+          <template v-else-if="articuloPorDefecto(fila)">
+            · {{ articuloPorDefecto(fila)!.codigo }}
+            <template v-if="fila.articulos.length > 1">
+              (+{{ fila.articulos.length - 1 }} alterno{{ fila.articulos.length > 2 ? 's' : '' }})
+            </template>
+          </template>
+          <template v-else> · Sin artículo</template>
         </p>
       </template>
       <template #col-stock="{ fila }">
@@ -221,7 +258,11 @@ const alertas = computed(() =>
             v-slot="{ id, invalido }"
             label="Costo unitario"
             :error="errores.costoUnitario"
-            :ayuda="borrador.preparacion ? 'Se calcula con su receta.' : 'Sin IGV.'"
+            :ayuda="
+              borrador.abastecimiento === 'transformacion'
+                ? 'Lo calcula su transformación.'
+                : 'Sin IGV.'
+            "
           >
             <KmNumero
               :id="id"
@@ -229,19 +270,32 @@ const alertas = computed(() =>
               :min="0"
               :decimales="2"
               prefijo="S/"
-              :disabled="!!borrador.preparacion"
+              :disabled="borrador.abastecimiento === 'transformacion'"
               :invalido="invalido"
             />
           </KmField>
         </div>
-        <KmField v-slot="{ id }" label="Proveedor habitual">
-          <KmSelect
-            :id="id"
-            :model-value="borrador.proveedorId ?? ''"
-            :opciones="[{ valor: '', etiqueta: 'Sin proveedor' }, ...opcionesProveedor]"
-            @update:model-value="borrador.proveedorId = ($event as string) || undefined"
-          />
+
+        <KmField
+          v-slot="{ id }"
+          label="Cómo se abastece"
+          ayuda="Cómo se llega desde lo que compra el ERP hasta la unidad de uso."
+        >
+          <KmSelect :id="id" v-model="borrador.abastecimiento" :opciones="opcionesAbastecimiento" />
         </KmField>
+
+        <VinculosArticulo
+          v-if="borrador.abastecimiento === 'directa'"
+          v-model="borrador.articulos"
+          :articulos="catalogos.articulos.value"
+          :opciones="catalogos.opcionesArticulo.value"
+          :unidad="borrador.unidad"
+          :error="errores.articulos"
+        />
+        <p v-else class="rounded-card border border-dashed border-linea p-4 text-sm text-tenue">
+          Este insumo no se compra: sale de una transformación (despiece o preparación). Su receta y
+          su costo se definen en <strong class="text-tinta">Transformaciones</strong>.
+        </p>
 
         <div
           v-if="!editando"

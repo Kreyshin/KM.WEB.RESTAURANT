@@ -2,7 +2,6 @@
 import { copiar } from '@/utils/copiar'
 import { computed, onMounted, ref, shallowRef } from 'vue'
 import EditorIngredientes from './EditorIngredientes.vue'
-import MovimientoModal from './MovimientoModal.vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmBusqueda from '@/components/ui/KmBusqueda.vue'
@@ -10,18 +9,15 @@ import KmButton from '@/components/ui/KmButton.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmDrawer from '@/components/ui/KmDrawer.vue'
 import KmExportar from '@/components/ui/KmExportar.vue'
-import KmField from '@/components/ui/KmField.vue'
-import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmTable from '@/components/ui/KmTable.vue'
-import KmTabs from '@/components/ui/KmTabs.vue'
 import { cartaService } from '@/services/carta.service'
-import { almacenesService, inventarioService } from '@/services/inventario.service'
+import { inventarioService } from '@/services/inventario.service'
 import { useUiStore } from '@/stores/ui.store'
-import type { Almacen, ApiError, IngredienteReceta, Insumo, Producto, Receta } from '@/types'
-import type { ColumnaTabla, Pestana } from '@/types/ui'
+import type { ApiError, IngredienteReceta, Insumo, Producto, Receta } from '@/types'
+import type { ColumnaTabla } from '@/types/ui'
 import { exportarCsv, exportarExcel } from '@/utils/exportar'
-import { etiquetaUnidad, formatearCantidad, formatearSoles } from '@/utils/formato'
+import { formatearSoles } from '@/utils/formato'
 
 const ui = useUiStore()
 
@@ -32,16 +28,9 @@ const ui = useUiStore()
 const FOOD_COST_OBJETIVO = 30
 const FOOD_COST_ALERTA = 35
 
-const pestana = ref('platos')
-const pestanas: Pestana[] = [
-  { valor: 'platos', etiqueta: 'Costo por plato' },
-  { valor: 'preparaciones', etiqueta: 'Preparaciones' },
-]
-
 const productos = shallowRef<Producto[]>([])
 const recetas = shallowRef<Receta[]>([])
 const insumos = shallowRef<Insumo[]>([])
-const almacenes = shallowRef<Almacen[]>([])
 const cargando = ref(true)
 const busqueda = ref('')
 const filtro = ref<'' | 'sin' | 'alto'>('')
@@ -49,11 +38,10 @@ const filtro = ref<'' | 'sin' | 'alto'>('')
 async function cargar() {
   cargando.value = true
   try {
-    ;[productos.value, recetas.value, insumos.value, almacenes.value] = await Promise.all([
+    ;[productos.value, recetas.value, insumos.value] = await Promise.all([
       cartaService.listarProductos(),
       inventarioService.listarRecetas(),
       inventarioService.listarInsumos(),
-      almacenesService.todos(),
     ])
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudieron cargar las recetas.')
@@ -164,59 +152,6 @@ async function guardarReceta() {
   }
 }
 
-// ── Preparaciones ──
-const preparaciones = computed(() => insumos.value.filter((i) => i.preparacion))
-const prepAbierto = ref(false)
-const prepInsumoId = ref('')
-const prepRendimiento = ref<number | null>(1)
-const prepIngredientes = ref<IngredienteReceta[]>([])
-const prepErrores = ref<Record<string, string>>({})
-
-const opcionesInsumoPrep = computed(() =>
-  insumos.value
-    .filter((i) => i.activo)
-    .map((i) => ({ valor: i.id, etiqueta: `${i.nombre} (${etiquetaUnidad[i.unidad]})` })),
-)
-
-function editarPreparacion(i?: Insumo) {
-  prepErrores.value = {}
-  prepInsumoId.value = i?.id ?? ''
-  prepRendimiento.value = i?.preparacion?.rendimiento ?? 1
-  prepIngredientes.value = copiar(i?.preparacion?.ingredientes ?? [{ insumoId: '', cantidad: 0 }])
-  prepAbierto.value = true
-}
-
-async function guardarPreparacion() {
-  prepErrores.value = {}
-  if (!prepInsumoId.value) {
-    prepErrores.value.insumo = 'Elige el insumo que se prepara.'
-    return
-  }
-  guardando.value = true
-  try {
-    await inventarioService.guardarPreparacion(prepInsumoId.value, {
-      rendimiento: Number(prepRendimiento.value),
-      ingredientes: prepIngredientes.value,
-    })
-    ui.exito('Preparación guardada. Su costo se recalcula con los ingredientes.')
-    prepAbierto.value = false
-    await cargar()
-  } catch (e) {
-    const err = e as ApiError
-    prepErrores.value = err.campos ?? {}
-    ui.error(err.mensaje ?? 'No se pudo guardar la preparación.')
-  } finally {
-    guardando.value = false
-  }
-}
-
-const producirAbierto = ref(false)
-const aProducir = shallowRef<Insumo | null>(null)
-function producir(i: Insumo) {
-  aProducir.value = i
-  producirAbierto.value = true
-}
-
 function exportar(formato: 'csv' | 'excel') {
   const columnasExport = [
     { etiqueta: 'Plato', valor: (f: FilaPlato) => f.producto.nombre },
@@ -264,127 +199,67 @@ function exportar(formato: 'csv' | 'excel') {
       titulo="Recetas y costos"
       subtitulo="Qué consume cada plato, cuánto cuesta prepararlo y cuánto deja."
     >
-      <KmTabs v-model="pestana" :pestanas="pestanas" etiqueta="Recetas">
-        <template v-if="pestana === 'platos'">
-          <div class="mb-3 flex flex-wrap items-center gap-3">
-            <KmBusqueda v-model="busqueda" placeholder="Buscar plato" />
-            <div class="w-full sm:w-48">
-              <KmSelect
-                v-model="filtro"
-                :opciones="[
-                  { valor: '', etiqueta: 'Todos los platos' },
-                  { valor: 'sin', etiqueta: 'Sin receta' },
-                  { valor: 'alto', etiqueta: `Food cost > ${FOOD_COST_ALERTA} %` },
-                ]"
-                etiqueta="Filtrar platos"
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <KmBusqueda v-model="busqueda" placeholder="Buscar plato" />
+        <div class="w-full sm:w-48">
+          <KmSelect
+            v-model="filtro"
+            :opciones="[
+              { valor: '', etiqueta: 'Todos los platos' },
+              { valor: 'sin', etiqueta: 'Sin receta' },
+              { valor: 'alto', etiqueta: `Food cost > ${FOOD_COST_ALERTA} %` },
+            ]"
+            etiqueta="Filtrar platos"
+          />
+        </div>
+        <div class="flex-1" />
+        <KmExportar :disabled="filas.length === 0" @exportar="exportar" />
+      </div>
+
+      <div class="overflow-hidden rounded-card border border-linea">
+        <KmTable
+          :columnas="columnas"
+          :filas="filas"
+          :cargando="cargando"
+          mensaje-vacio="Ningún plato coincide."
+        >
+          <template #col-producto="{ fila }">
+            <p class="font-medium text-tinta">{{ fila.producto.nombre }}</p>
+            <p class="text-xs text-tenue">
+              {{ fila.receta ? `${fila.receta.ingredientes.length} ingredientes` : 'Sin receta' }}
+            </p>
+          </template>
+          <template #col-precio="{ fila }">
+            <span class="tabular-nums">{{ formatearSoles(fila.producto.precio) }}</span>
+          </template>
+          <template #col-costo="{ fila }">
+            <span class="tabular-nums" :class="fila.receta ? 'text-tinta' : 'text-tenue'">
+              {{ fila.receta ? formatearSoles(fila.costo) : '—' }}
+            </span>
+          </template>
+          <template #col-margen="{ fila }">
+            <span class="font-medium tabular-nums">{{
+              fila.receta ? formatearSoles(fila.margen) : '—'
+            }}</span>
+          </template>
+          <template #col-foodCost="{ fila }">
+            <KmBadge v-if="fila.foodCost !== null" :tono="tonoFoodCost(fila.foodCost)" punto>
+              {{ fila.foodCost.toFixed(1) }} %
+            </KmBadge>
+            <span v-else class="text-tenue">—</span>
+          </template>
+          <template #col-acciones="{ fila }">
+            <div class="flex justify-end">
+              <KmBotonIcono
+                icono="editar"
+                etiqueta="Editar receta"
+                :contexto="fila.producto.nombre"
+                @click="editar(fila)"
               />
             </div>
-            <div class="flex-1" />
-            <KmExportar :disabled="filas.length === 0" @exportar="exportar" />
-          </div>
-
-          <div class="overflow-hidden rounded-card border border-linea">
-            <KmTable
-              :columnas="columnas"
-              :filas="filas"
-              :cargando="cargando"
-              mensaje-vacio="Ningún plato coincide."
-            >
-              <template #col-producto="{ fila }">
-                <p class="font-medium text-tinta">{{ fila.producto.nombre }}</p>
-                <p class="text-xs text-tenue">
-                  {{
-                    fila.receta ? `${fila.receta.ingredientes.length} ingredientes` : 'Sin receta'
-                  }}
-                </p>
-              </template>
-              <template #col-precio="{ fila }">
-                <span class="tabular-nums">{{ formatearSoles(fila.producto.precio) }}</span>
-              </template>
-              <template #col-costo="{ fila }">
-                <span class="tabular-nums" :class="fila.receta ? 'text-tinta' : 'text-tenue'">
-                  {{ fila.receta ? formatearSoles(fila.costo) : '—' }}
-                </span>
-              </template>
-              <template #col-margen="{ fila }">
-                <span class="font-medium tabular-nums">{{
-                  fila.receta ? formatearSoles(fila.margen) : '—'
-                }}</span>
-              </template>
-              <template #col-foodCost="{ fila }">
-                <KmBadge v-if="fila.foodCost !== null" :tono="tonoFoodCost(fila.foodCost)" punto>
-                  {{ fila.foodCost.toFixed(1) }} %
-                </KmBadge>
-                <span v-else class="text-tenue">—</span>
-              </template>
-              <template #col-acciones="{ fila }">
-                <div class="flex justify-end">
-                  <KmBotonIcono
-                    icono="editar"
-                    etiqueta="Editar receta"
-                    :contexto="fila.producto.nombre"
-                    @click="editar(fila)"
-                  />
-                </div>
-              </template>
-            </KmTable>
-          </div>
-        </template>
-
-        <template v-else>
-          <div class="mb-3 flex items-center justify-between gap-3">
-            <p class="max-w-2xl text-sm text-tenue">
-              Subrecetas que se elaboran en cocina (salsas, bases, masas). Su costo por unidad sale
-              de sus ingredientes y se usan dentro de otras recetas como un insumo más.
-            </p>
-            <KmButton tamano="sm" @click="editarPreparacion()">Nueva preparación</KmButton>
-          </div>
-
-          <ul class="grid gap-3 md:grid-cols-2">
-            <li
-              v-for="p in preparaciones"
-              :key="p.id"
-              class="flex flex-col gap-2 rounded-card border border-linea bg-panel p-4"
-            >
-              <div class="flex items-start justify-between gap-2">
-                <div>
-                  <p class="font-medium text-tinta">{{ p.nombre }}</p>
-                  <p class="text-xs text-tenue">
-                    Rinde {{ formatearCantidad(p.preparacion!.rendimiento, p.unidad) }} ·
-                    {{ formatearSoles(p.costoUnitario) }} por {{ etiquetaUnidad[p.unidad] }}
-                  </p>
-                </div>
-                <div class="flex gap-0.5">
-                  <KmBotonIcono
-                    icono="movimiento"
-                    etiqueta="Producir"
-                    :contexto="p.nombre"
-                    @click="producir(p)"
-                  />
-                  <KmBotonIcono
-                    icono="editar"
-                    etiqueta="Editar"
-                    :contexto="p.nombre"
-                    @click="editarPreparacion(p)"
-                  />
-                </div>
-              </div>
-              <p class="text-xs text-tenue">
-                {{
-                  p.preparacion!.ingredientes.map((g) => insumoPor(g.insumoId)?.nombre).join(' · ')
-                }}
-              </p>
-              <p class="text-xs">
-                Stock:
-                <strong class="tabular-nums">{{ formatearCantidad(p.stock, p.unidad) }}</strong>
-              </p>
-            </li>
-            <li v-if="!cargando && preparaciones.length === 0" class="text-sm text-tenue">
-              Aún no hay preparaciones.
-            </li>
-          </ul>
-        </template>
-      </KmTabs>
+          </template>
+        </KmTable>
+      </div>
     </KmCard>
 
     <KmDrawer
@@ -434,78 +309,5 @@ function exportar(formato: 'csv' | 'excel') {
         <KmButton :cargando="guardando" @click="guardarReceta">Guardar receta</KmButton>
       </template>
     </KmDrawer>
-
-    <KmDrawer
-      v-model="prepAbierto"
-      titulo="Preparación"
-      subtitulo="Receta de un insumo elaborado en cocina."
-      ancho="lg"
-    >
-      <div class="flex flex-col gap-4">
-        <div class="grid grid-cols-2 gap-4">
-          <KmField
-            v-slot="{ id, invalido }"
-            label="Insumo que se prepara"
-            requerido
-            :error="prepErrores.insumo"
-          >
-            <KmSelect
-              :id="id"
-              v-model="prepInsumoId"
-              placeholder="Elige un insumo"
-              :opciones="opcionesInsumoPrep"
-              :invalido="invalido"
-            />
-          </KmField>
-          <KmField
-            v-slot="{ id, invalido }"
-            label="Rinde"
-            :error="prepErrores.rendimiento"
-            ayuda="Cantidad que sale de esta receta."
-          >
-            <KmNumero
-              :id="id"
-              v-model="prepRendimiento"
-              :min="0"
-              :decimales="3"
-              :sufijo="
-                insumoPor(prepInsumoId) ? etiquetaUnidad[insumoPor(prepInsumoId)!.unidad] : ''
-              "
-              :invalido="invalido"
-            />
-          </KmField>
-        </div>
-        <p v-if="prepErrores.ingredientes" class="text-xs font-medium text-vino">
-          {{ prepErrores.ingredientes }}
-        </p>
-        <EditorIngredientes v-model="prepIngredientes" :insumos="insumos" :excluir="prepInsumoId" />
-        <p v-if="prepRendimiento" class="text-sm text-tenue">
-          Costo por
-          {{
-            insumoPor(prepInsumoId) ? etiquetaUnidad[insumoPor(prepInsumoId)!.unidad] : 'unidad'
-          }}:
-          <strong class="text-tinta tabular-nums">{{
-            formatearSoles(
-              costo(prepIngredientes.filter((g) => g.insumoId)) / Number(prepRendimiento),
-            )
-          }}</strong>
-        </p>
-      </div>
-      <template #footer>
-        <KmButton variante="secundario" :disabled="guardando" @click="prepAbierto = false"
-          >Cancelar</KmButton
-        >
-        <KmButton :cargando="guardando" @click="guardarPreparacion">Guardar preparación</KmButton>
-      </template>
-    </KmDrawer>
-
-    <MovimientoModal
-      v-model="producirAbierto"
-      :insumo="aProducir"
-      :almacenes="almacenes"
-      :insumos="insumos"
-      modo="produccion"
-      @guardado="cargar"
-    />
   </div>
 </template>

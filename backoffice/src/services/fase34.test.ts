@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { transformacionesService } from './abastecimiento.service'
 import { combosService, precioSueltos } from './combos.service'
 import { inventarioService } from './inventario.service'
 import { mesasService } from './mesas.service'
@@ -6,7 +7,7 @@ import { db, reiniciarMock } from './mock/db'
 
 /**
  * Reglas de F3 y F4 donde un error cuesta dinero o descuadra el stock:
- * existencias por almacén, costo promedio, traslados, preparaciones y combos.
+ * existencias por almacén, costo promedio, traslados, transformaciones y combos.
  */
 
 beforeEach(() => {
@@ -103,30 +104,40 @@ describe('traslados', () => {
   })
 })
 
-describe('preparaciones y recetas', () => {
-  it('el costo de una preparación sale de sus ingredientes y rendimiento', async () => {
-    await inventarioService.guardarPreparacion('i16', {
-      rendimiento: 2,
-      ingredientes: [{ insumoId: 'i6', cantidad: 1 }],
+describe('transformaciones y recetas', () => {
+  it('el costo de una salida sale de las entradas, su reparto y su cantidad', async () => {
+    await transformacionesService.actualizar('tf2', {
+      entradas: [{ insumoId: 'i6', cantidad: 1 }],
+      salidas: [{ id: 'tf2-s1', tipo: 'insumo', insumoId: 'i16', cantidad: 2, reparto: 100 }],
     })
     expect(insumo('i16').costoUnitario).toBe(
       Math.round((insumo('i6').costoUnitario / 2) * 100) / 100,
     )
   })
 
-  it('una preparación no puede usarse a sí misma', async () => {
+  it('un insumo no puede entrar y salir de la misma transformación', async () => {
     await expect(
-      inventarioService.guardarPreparacion('i16', {
-        rendimiento: 1,
-        ingredientes: [{ insumoId: 'i16', cantidad: 1 }],
+      transformacionesService.actualizar('tf2', {
+        entradas: [{ insumoId: 'i16', cantidad: 1 }],
       }),
     ).rejects.toBeTruthy()
   })
 
-  it('producir descuenta ingredientes y suma lo producido en el mismo almacén', async () => {
-    await inventarioService.guardarPreparacion('i16', {
-      rendimiento: 1,
-      ingredientes: [{ insumoId: 'i2', cantidad: 0.5 }],
+  it('el reparto del costo entre las salidas debe sumar 100 %', async () => {
+    await expect(
+      transformacionesService.actualizar('tf1', {
+        salidas: [
+          { id: 'tf1-s1', tipo: 'insumo', insumoId: 'i17', cantidad: 6, reparto: 50 },
+          { id: 'tf1-s2', tipo: 'insumo', insumoId: 'i18', cantidad: 1.5, reparto: 20 },
+        ],
+      }),
+    ).rejects.toMatchObject({ campos: { salidas: expect.any(String) } })
+  })
+
+  it('producir descuenta las entradas y suma lo producido en el mismo almacén', async () => {
+    await transformacionesService.actualizar('tf2', {
+      entradas: [{ insumoId: 'i2', cantidad: 0.5 }],
+      salidas: [{ id: 'tf2-s1', tipo: 'insumo', insumoId: 'i16', cantidad: 1, reparto: 100 }],
     })
     const [pescado, leche] = [enAlmacen('i2', 'al2'), enAlmacen('i16', 'al2')]
     await inventarioService.producir({
@@ -137,6 +148,32 @@ describe('preparaciones y recetas', () => {
     })
     expect(enAlmacen('i2', 'al2')).toBeCloseTo(pescado - 1)
     expect(enAlmacen('i16', 'al2')).toBeCloseTo(leche + 2)
+  })
+
+  it('un despiece reparte el costo entre sus salidas y la merma lo encarece', async () => {
+    // 10 kg de lenguado → 6 kg de filete (88 %) + 1.5 kg de espinazo (12 %) + 2.5 de merma.
+    const entrada = insumo('i2').costoUnitario * 10
+    expect(insumo('i17').costoUnitario).toBe(Math.round(((entrada * 0.88) / 6) * 100) / 100)
+    expect(insumo('i18').costoUnitario).toBe(Math.round(((entrada * 0.12) / 1.5) * 100) / 100)
+    // Lo que se pierde en la merma lo pagan las salidas: el filete cuesta más que el pescado entero.
+    expect(insumo('i17').costoUnitario).toBeGreaterThan(insumo('i2').costoUnitario)
+  })
+
+  it('la transformación consume las entradas y da de alta todas las salidas', async () => {
+    const antes = {
+      pescado: enAlmacen('i2', 'al2'),
+      filete: enAlmacen('i17', 'al2'),
+      espinazo: enAlmacen('i18', 'al2'),
+    }
+    await inventarioService.transformar({
+      transformacionId: 'tf1',
+      almacenId: 'al2',
+      veces: 0.5,
+      usuarioId: 'u1',
+    })
+    expect(enAlmacen('i2', 'al2')).toBeCloseTo(antes.pescado - 5)
+    expect(enAlmacen('i17', 'al2')).toBeCloseTo(antes.filete + 3)
+    expect(enAlmacen('i18', 'al2')).toBeCloseTo(antes.espinazo + 0.75)
   })
 })
 

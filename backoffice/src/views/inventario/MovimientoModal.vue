@@ -33,8 +33,13 @@ const pestana = ref('movimiento')
 const pestanas = computed<Pestana[]>(() => [
   { valor: 'movimiento', etiqueta: 'Entrada o salida' },
   { valor: 'traslado', etiqueta: 'Traslado' },
-  ...(props.insumo?.preparacion ? [{ valor: 'produccion', etiqueta: 'Producir' }] : []),
+  ...(transformacion.value ? [{ valor: 'produccion', etiqueta: 'Producir' }] : []),
 ])
+
+/** Transformación activa de la que sale este insumo, si la hay (F4.3). */
+const transformacion = computed(() =>
+  props.insumo ? inventarioService.transformacionDe(props.insumo.id) : undefined,
+)
 
 const tipo = ref<TipoMovimiento>('entrada')
 const almacenId = ref('')
@@ -84,12 +89,12 @@ const unidad = computed(() => (props.insumo ? etiquetaUnidad[props.insumo.unidad
 
 /** Lo que consumirá una producción, para verlo antes de confirmar. */
 const consumos = computed(() => {
-  const p = props.insumo?.preparacion
-  if (!p || !cantidad.value) return []
-  return p.ingredientes.map((g) => ({
-    ...g,
-    cantidad: (g.cantidad * cantidad.value!) / p.rendimiento,
-  }))
+  const t = transformacion.value
+  if (!t || !cantidad.value) return []
+  const salida = t.salidas.find((sa) => sa.insumoId === props.insumo?.id)
+  if (!salida || salida.cantidad <= 0) return []
+  const veces = cantidad.value / salida.cantidad
+  return t.entradas.map((e) => ({ ...e, cantidad: e.cantidad * veces }))
 })
 
 async function guardar() {

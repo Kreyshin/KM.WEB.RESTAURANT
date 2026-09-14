@@ -1,13 +1,13 @@
 import { computed, onMounted, shallowRef } from 'vue'
 import { cartaService } from '@/services/carta.service'
-import { proveedoresService } from '@/services/erp.service'
+import { articulosService, proveedoresService } from '@/services/erp.service'
 import { almacenesService, inventarioService } from '@/services/inventario.service'
 import { localesService } from '@/services/locales.service'
-import type { Almacen, Insumo, Local, Producto, Proveedor } from '@/types'
+import type { Almacen, Articulo, Insumo, Local, Producto, Proveedor } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
 import { etiquetaUnidad } from '@/utils/formato'
 
-type Catalogo = 'almacenes' | 'insumos' | 'proveedores' | 'productos' | 'locales'
+type Catalogo = 'almacenes' | 'insumos' | 'proveedores' | 'productos' | 'locales' | 'articulos'
 
 /**
  * Listas de referencia para selects y para mostrar nombres en tablas.
@@ -19,6 +19,7 @@ export function useCatalogos(pedidos: Catalogo[]) {
   const proveedores = shallowRef<Proveedor[]>([])
   const productos = shallowRef<Producto[]>([])
   const locales = shallowRef<Local[]>([])
+  const articulos = shallowRef<Articulo[]>([])
 
   async function recargar() {
     await Promise.all([
@@ -30,6 +31,7 @@ export function useCatalogos(pedidos: Catalogo[]) {
       pedidos.includes('productos') &&
         cartaService.listarProductos().then((l) => (productos.value = l)),
       pedidos.includes('locales') && localesService.todos().then((l) => (locales.value = l)),
+      pedidos.includes('articulos') && articulosService.todos().then((l) => (articulos.value = l)),
     ])
   }
 
@@ -41,6 +43,8 @@ export function useCatalogos(pedidos: Catalogo[]) {
     proveedores.value.find((p) => p.id === id)?.razonSocial ?? '—'
   const insumo = (id?: string) => insumos.value.find((i) => i.id === id)
   const producto = (id?: string) => productos.value.find((p) => p.id === id)
+  const articulo = (id?: string) => articulos.value.find((a) => a.id === id)
+  const nombreArticulo = (id?: string) => articulo(id)?.nombre ?? '—'
 
   const opcionesAlmacen = computed<OpcionSelect[]>(() =>
     almacenes.value
@@ -63,6 +67,11 @@ export function useCatalogos(pedidos: Catalogo[]) {
   const opcionesLocal = computed<OpcionSelect[]>(() =>
     locales.value.map((l) => ({ valor: l.id, etiqueta: l.nombre })),
   )
+  const opcionesArticulo = computed<OpcionSelect[]>(() =>
+    articulos.value
+      .filter((a) => a.activo)
+      .map((a) => ({ valor: a.id, etiqueta: `${a.codigo} · ${a.nombre} (${a.unidadCompra})` })),
+  )
 
   return {
     almacenes,
@@ -70,12 +79,16 @@ export function useCatalogos(pedidos: Catalogo[]) {
     proveedores,
     productos,
     locales,
+    articulos,
     recargar,
     nombreLocal,
     nombreAlmacen,
     nombreProveedor,
     insumo,
     producto,
+    articulo,
+    nombreArticulo,
+    opcionesArticulo,
     opcionesAlmacen,
     opcionesProveedor,
     opcionesInsumo,

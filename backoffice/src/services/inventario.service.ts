@@ -5,9 +5,10 @@ import type {
   NuevoInsumo,
   NuevoMovimiento,
   Paginado,
-  Preparacion,
   Receta,
+  Transformacion,
 } from '@/types'
+import { recalcularCostosTransformados, transformacionQueProduce } from './abastecimiento.service'
 import { signoNumerico } from '@/utils/formato'
 import { aplicarConsulta } from './mock/consulta'
 import { db, latencia, nuevoId, persistir } from './mock/db'
@@ -109,7 +110,7 @@ function transaccion<T>(fn: () => T): T {
   const copia = clonar({ insumos: db.insumos, movimientos: db.movimientos })
   try {
     const r = fn()
-    recalcularPreparaciones()
+    recalcularCostosTransformados()
     persistir()
     return r
   } catch (e) {
@@ -124,16 +125,6 @@ function costeIngredientes(ingredientes: { insumoId: string; cantidad: number }[
     const insumo = db.insumos.find((i) => i.id === g.insumoId)
     return total + (insumo ? insumo.costoUnitario * g.cantidad : 0)
   }, 0)
-}
-
-/** El costo de una preparación depende de sus ingredientes: se actualiza al cambiar estos. */
-function recalcularPreparaciones() {
-  for (const insumo of db.insumos) {
-    if (!insumo.preparacion || insumo.preparacion.rendimiento <= 0) continue
-    insumo.costoUnitario = r2(
-      costeIngredientes(insumo.preparacion.ingredientes) / insumo.preparacion.rendimiento,
-    )
-  }
 }
 
 // ── Almacenes ────────────────────────────────────────────────────────────────
@@ -247,20 +238,31 @@ export const inventarioService = {
     delete resto.stock
     delete resto.existencias
     Object.assign(insumo, resto, nombre ? { nombre } : {})
-    recalcularPreparaciones()
+    recalcularCostosTransformados()
     persistir()
     return latencia(insumo)
   },
 
   async eliminarInsumo(id: string): Promise<void> {
-    const enReceta =
-      db.recetas.some((r) => r.ingredientes.some((g) => g.insumoId === id)) ||
-      db.insumos.some((i) => i.preparacion?.ingredientes.some((g) => g.insumoId === id))
-    if (enReceta) {
+    if (db.recetas.some((r) => r.ingredientes.some((g) => g.insumoId === id))) {
       throw { mensaje: 'No se puede eliminar: el insumo forma parte de al menos una receta.' }
+    }
+    const enTransformacion = db.transformaciones.find(
+      (t) =>
+        t.entradas.some((e) => e.insumoId === id) || t.salidas.some((sa) => sa.insumoId === id),
+    )
+    if (enTransformacion) {
+      throw {
+        mensaje: `No se puede eliminar: el insumo entra o sale de «${enTransformacion.nombre}».`,
+      }
+    }
+    if (db.stockDetalle.some((sd) => sd.insumoId === id && sd.cantidad > 0)) {
+      throw { mensaje: 'No se puede eliminar: todavía tiene stock detallado en algún almacén.' }
     }
     db.insumos = db.insumos.filter((i) => i.id !== id)
     db.movimientos = db.movimientos.filter((m) => m.insumoId !== id)
+    db.lotes = db.lotes.filter((l) => l.insumoId !== id)
+    db.stockDetalle = db.stockDetalle.filter((sd) => sd.insumoId !== id)
     persistir()
     await latencia(null)
   },
@@ -360,35 +362,66 @@ export const inventarioService = {
     return latencia(movimientos)
   },
 
-  // ── Preparaciones (subrecetas) ─────────────────────────────────────────────
+  // ── Transformación (F4.3) ──────────────────────────────────────────────────
 
-  async guardarPreparacion(insumoId: string, preparacion: Preparacion | null): Promise<Insumo> {
-    const insumo = insumoOError(insumoId)
-    if (preparacion) {
-      if (!(preparacion.rendimiento > 0)) {
-        throw errorCampo('rendimiento', 'El rendimiento debe ser mayor que cero.')
-      }
-      const ingredientes = preparacion.ingredientes.filter((g) => g.insumoId && g.cantidad > 0)
-      if (ingredientes.length === 0) {
-        throw errorCampo('ingredientes', 'Añade al menos un ingrediente con cantidad.')
-      }
-      if (ingredientes.some((g) => g.insumoId === insumoId)) {
-        throw errorCampo('ingredientes', 'Una preparación no puede usarse a sí misma.')
-      }
-      insumo.preparacion = {
-        rendimiento: preparacion.rendimiento,
-        ingredientes: clonar(ingredientes),
-      }
-      insumo.categoria = 'preparaciones'
-    } else {
-      delete insumo.preparacion
+  /**
+   * Ejecuta una transformación en un almacén: consume sus entradas y da de
+   * alta lo que sale. `veces` es cuántas tandas de la receta se procesan
+   * (0.5 = media tanda). La merma esperada no genera stock: es lo que se
+   * pierde entre lo que entra y lo que sale.
+   *
+   * El registro de lo que salió **realmente**, con su ajuste y su motivo,
+   * llega en F4.5; aquí se aplica el rendimiento esperado.
+   */
+  async transformar(datos: {
+    transformacionId: string
+    almacenId: string
+    veces: number
+    usuarioId: string
+  }): Promise<Movimiento[]> {
+    const transformacion = db.transformaciones.find((t) => t.id === datos.transformacionId)
+    if (!transformacion) throw { mensaje: 'Transformación no encontrada.' }
+    if (!transformacion.activo) {
+      throw { mensaje: `«${transformacion.nombre}» está inactiva.` }
     }
-    recalcularPreparaciones()
-    persistir()
-    return latencia(insumo)
+    const veces = Number(datos.veces)
+    if (!Number.isFinite(veces) || veces <= 0) {
+      throw errorCampo('veces', 'Indica cuántas tandas se procesan.', 'Cantidad inválida')
+    }
+    const referencia = `TF-${Date.now().toString(36).toUpperCase()}`
+    const movimientos = transaccion(() => [
+      ...transformacion.entradas.map((e) =>
+        aplicar({
+          insumoId: e.insumoId,
+          almacenId: datos.almacenId,
+          tipo: 'consumoProduccion',
+          cantidad: r3(e.cantidad * veces),
+          motivo: transformacion.nombre,
+          referencia,
+          usuarioId: datos.usuarioId,
+        }),
+      ),
+      ...transformacion.salidas
+        .filter((sa) => sa.tipo === 'insumo' && sa.insumoId)
+        .map((sa) =>
+          aplicar({
+            insumoId: sa.insumoId!,
+            almacenId: datos.almacenId,
+            tipo: 'produccion',
+            cantidad: r3(sa.cantidad * veces),
+            motivo: transformacion.nombre,
+            referencia,
+            usuarioId: datos.usuarioId,
+          }),
+        ),
+    ])
+    return latencia(movimientos)
   },
 
-  /** Elabora una preparación: descuenta sus ingredientes y suma lo producido. */
+  /**
+   * Atajo para la pantalla de movimientos: produce una cantidad concreta de un
+   * insumo buscando la transformación que lo genera.
+   */
   async producir(datos: {
     insumoId: string
     almacenId: string
@@ -396,32 +429,22 @@ export const inventarioService = {
     usuarioId: string
   }): Promise<Movimiento[]> {
     const insumo = insumoOError(datos.insumoId)
-    if (!insumo.preparacion) throw { mensaje: `${insumo.nombre} no tiene receta de preparación.` }
-    const factor = datos.cantidad / insumo.preparacion.rendimiento
-    const referencia = `PR-${Date.now().toString(36).toUpperCase()}`
-    const movimientos = transaccion(() => [
-      ...insumo.preparacion!.ingredientes.map((g) =>
-        aplicar({
-          insumoId: g.insumoId,
-          almacenId: datos.almacenId,
-          tipo: 'consumoProduccion',
-          cantidad: r3(g.cantidad * factor),
-          motivo: `Producción de ${insumo.nombre}`,
-          referencia,
-          usuarioId: datos.usuarioId,
-        }),
-      ),
-      aplicar({
-        insumoId: insumo.id,
-        almacenId: datos.almacenId,
-        tipo: 'produccion',
-        cantidad: datos.cantidad,
-        motivo: 'Producción en cocina',
-        referencia,
-        usuarioId: datos.usuarioId,
-      }),
-    ])
-    return latencia(movimientos)
+    const transformacion = transformacionQueProduce(datos.insumoId)
+    if (!transformacion) {
+      throw { mensaje: `${insumo.nombre} no sale de ninguna transformación activa.` }
+    }
+    const salida = transformacion.salidas.find((sa) => sa.insumoId === datos.insumoId)!
+    return this.transformar({
+      transformacionId: transformacion.id,
+      almacenId: datos.almacenId,
+      veces: datos.cantidad / salida.cantidad,
+      usuarioId: datos.usuarioId,
+    })
+  },
+
+  /** Transformación activa de la que sale un insumo, para la ficha y el modal. */
+  transformacionDe(insumoId: string): Transformacion | undefined {
+    return transformacionQueProduce(insumoId)
   },
 
   // ── Recetas ────────────────────────────────────────────────────────────────

@@ -30,6 +30,12 @@ import type {
   Usuario,
   Articulo,
   Marca,
+  Ubicacion,
+  Lote,
+  StockDetalle,
+  Transformacion,
+  AjusteParametros,
+  VinculoArticulo,
 } from '@/types'
 import { ilustracionCombo, imagenPlato } from './ilustraciones'
 import { simularRed } from './red'
@@ -38,7 +44,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v17'
+const CLAVE = 'km.restaurante.mock.v18'
 
 export interface Esquema {
   combos: Combo[]
@@ -63,6 +69,11 @@ export interface Esquema {
   insumos: Insumo[]
   movimientos: Movimiento[]
   recetas: Receta[]
+  ubicaciones: Ubicacion[]
+  lotes: Lote[]
+  stockDetalle: StockDetalle[]
+  transformaciones: Transformacion[]
+  ajustesParametros: AjusteParametros[]
 }
 
 /** Horario semanal con el mismo turno todos los días, salvo los cerrados. */
@@ -861,159 +872,144 @@ function semilla(): Esquema {
     },
   ]
 
-  const insumosBase: (Omit<Insumo, 'existencias' | 'proveedorId' | 'categoria'> & {
-    proveedor?: string
-  })[] = [
-    {
-      id: 'i1',
-      nombre: 'Lomo fino de res',
-      unidad: 'kg',
-      stock: 8.4,
-      stockMinimo: 10,
-      costoUnitario: 52,
-      proveedor: 'Carnes del Sur',
-      activo: true,
-    },
-    {
-      id: 'i2',
-      nombre: 'Pescado del día (lenguado)',
-      unidad: 'kg',
-      stock: 14,
-      stockMinimo: 8,
-      costoUnitario: 45,
-      proveedor: 'Pesquera Villa',
-      activo: true,
-    },
-    {
-      id: 'i3',
-      nombre: 'Papa amarilla',
-      unidad: 'kg',
-      stock: 32,
-      stockMinimo: 20,
-      costoUnitario: 4.5,
-      proveedor: 'Mercado Mayorista',
-      activo: true,
-    },
-    {
-      id: 'i4',
-      nombre: 'Papa blanca',
-      unidad: 'kg',
-      stock: 45,
-      stockMinimo: 25,
-      costoUnitario: 3.2,
-      proveedor: 'Mercado Mayorista',
-      activo: true,
-    },
-    {
-      id: 'i5',
-      nombre: 'Cebolla roja',
-      unidad: 'kg',
-      stock: 18,
-      stockMinimo: 15,
-      costoUnitario: 3.8,
-      proveedor: 'Mercado Mayorista',
-      activo: true,
-    },
-    {
-      id: 'i6',
-      nombre: 'Limón',
-      unidad: 'kg',
-      stock: 6,
-      stockMinimo: 12,
-      costoUnitario: 7.5,
-      proveedor: 'Mercado Mayorista',
-      activo: true,
-    },
-    {
-      id: 'i7',
-      nombre: 'Ají amarillo',
-      unidad: 'kg',
-      stock: 4.2,
-      stockMinimo: 3,
-      costoUnitario: 9,
-      proveedor: 'Mercado Mayorista',
-      activo: true,
-    },
-    {
-      id: 'i8',
-      nombre: 'Arroz extra',
-      unidad: 'kg',
-      stock: 60,
-      stockMinimo: 30,
-      costoUnitario: 4.1,
-      proveedor: 'Distribuidora Central',
-      activo: true,
-    },
-    {
-      id: 'i9',
-      nombre: 'Aceite vegetal',
-      unidad: 'l',
-      stock: 22,
-      stockMinimo: 15,
-      costoUnitario: 8.9,
-      proveedor: 'Distribuidora Central',
-      activo: true,
-    },
-    {
-      id: 'i10',
-      nombre: 'Leche evaporada',
-      unidad: 'unidad',
-      stock: 40,
-      stockMinimo: 24,
-      costoUnitario: 4.3,
-      proveedor: 'Distribuidora Central',
-      activo: true,
-    },
-    {
-      id: 'i11',
-      nombre: 'Huevo',
-      unidad: 'unidad',
-      stock: 120,
-      stockMinimo: 60,
-      costoUnitario: 0.6,
-      proveedor: 'Granja San Pedro',
-      activo: true,
-    },
-    {
-      id: 'i12',
-      nombre: 'Calamar',
-      unidad: 'kg',
-      stock: 5.5,
-      stockMinimo: 6,
-      costoUnitario: 38,
-      proveedor: 'Pesquera Villa',
-      activo: true,
-    },
-    {
-      id: 'i13',
-      nombre: 'Maíz morado',
-      unidad: 'kg',
-      stock: 9,
-      stockMinimo: 5,
-      costoUnitario: 11,
-      proveedor: 'Mercado Mayorista',
-      activo: true,
-    },
-    {
-      id: 'i14',
-      nombre: 'Pisco quebranta',
-      unidad: 'l',
-      stock: 7,
-      stockMinimo: 4,
-      costoUnitario: 42,
-      proveedor: 'Bodega Ica',
-      activo: true,
-    },
-    {
-      id: 'i15',
-      nombre: 'Servilletas (paquete)',
-      unidad: 'paquete',
-      stock: 12,
-      stockMinimo: 10,
-      costoUnitario: 6.5,
-      activo: false,
-    },
-  ]
+  const insumosBase: Omit<Insumo, 'existencias' | 'categoria' | 'abastecimiento' | 'articulos'>[] =
+    [
+      {
+        id: 'i1',
+        nombre: 'Lomo fino de res',
+        unidad: 'kg',
+        stock: 8.4,
+        stockMinimo: 10,
+        costoUnitario: 52,
+        activo: true,
+      },
+      {
+        id: 'i2',
+        nombre: 'Pescado del día (lenguado)',
+        unidad: 'kg',
+        stock: 14,
+        stockMinimo: 8,
+        costoUnitario: 45,
+        activo: true,
+      },
+      {
+        id: 'i3',
+        nombre: 'Papa amarilla',
+        unidad: 'kg',
+        stock: 32,
+        stockMinimo: 20,
+        costoUnitario: 4.5,
+        activo: true,
+      },
+      {
+        id: 'i4',
+        nombre: 'Papa blanca',
+        unidad: 'kg',
+        stock: 45,
+        stockMinimo: 25,
+        costoUnitario: 3.2,
+        activo: true,
+      },
+      {
+        id: 'i5',
+        nombre: 'Cebolla roja',
+        unidad: 'kg',
+        stock: 18,
+        stockMinimo: 15,
+        costoUnitario: 3.8,
+        activo: true,
+      },
+      {
+        id: 'i6',
+        nombre: 'Limón',
+        unidad: 'kg',
+        stock: 6,
+        stockMinimo: 12,
+        costoUnitario: 7.5,
+        activo: true,
+      },
+      {
+        id: 'i7',
+        nombre: 'Ají amarillo',
+        unidad: 'kg',
+        stock: 4.2,
+        stockMinimo: 3,
+        costoUnitario: 9,
+        activo: true,
+      },
+      {
+        id: 'i8',
+        nombre: 'Arroz extra',
+        unidad: 'kg',
+        stock: 60,
+        stockMinimo: 30,
+        costoUnitario: 4.1,
+        activo: true,
+      },
+      {
+        id: 'i9',
+        nombre: 'Aceite vegetal',
+        unidad: 'l',
+        stock: 22,
+        stockMinimo: 15,
+        costoUnitario: 8.9,
+        activo: true,
+      },
+      {
+        id: 'i10',
+        nombre: 'Leche evaporada',
+        unidad: 'unidad',
+        stock: 40,
+        stockMinimo: 24,
+        costoUnitario: 4.3,
+        activo: true,
+      },
+      {
+        id: 'i11',
+        nombre: 'Huevo',
+        unidad: 'unidad',
+        stock: 120,
+        stockMinimo: 60,
+        costoUnitario: 0.6,
+        activo: true,
+      },
+      {
+        id: 'i12',
+        nombre: 'Calamar',
+        unidad: 'kg',
+        stock: 5.5,
+        stockMinimo: 6,
+        costoUnitario: 38,
+        activo: true,
+      },
+      {
+        id: 'i13',
+        nombre: 'Maíz morado',
+        unidad: 'kg',
+        stock: 9,
+        stockMinimo: 5,
+        costoUnitario: 11,
+        activo: true,
+      },
+      {
+        id: 'i14',
+        nombre: 'Pisco quebranta',
+        unidad: 'l',
+        stock: 7,
+        stockMinimo: 4,
+        costoUnitario: 42,
+        activo: true,
+      },
+      {
+        id: 'i15',
+        nombre: 'Servilletas (paquete)',
+        unidad: 'paquete',
+        stock: 12,
+        stockMinimo: 10,
+        costoUnitario: 6.5,
+        activo: false,
+      },
+    ]
 
   const recetas: Receta[] = [
     {
@@ -1243,14 +1239,6 @@ function semilla(): Esquema {
       activo: false,
     },
   ]
-  const proveedorPorNombre: Record<string, string> = {
-    'Carnes del Sur': 'pv1',
-    'Pesquera Villa': 'pv2',
-    'Mercado Mayorista': 'pv3',
-    'Distribuidora Central': 'pv4',
-    'Granja San Pedro': 'pv5',
-    'Bodega Ica': 'pv6',
-  }
   const categoriaPorInsumo: Record<string, CategoriaInsumo> = {
     i1: 'carnes',
     i2: 'pescados',
@@ -1280,7 +1268,35 @@ function semilla(): Esquema {
     bebidas: 'al3',
   }
 
-  const insumos: Insumo[] = insumosBase.map(({ proveedor, ...i }) => {
+  /**
+   * Artículos del ERP que abastecen a cada insumo (D-004). El `factor` convierte
+   * la unidad de compra en unidad de uso: un saco de 50 kg de papa rinde 50 kg.
+   * Varios artículos en un insumo son sus alternos.
+   */
+  const articulosPorInsumo: Record<string, VinculoArticulo[]> = {
+    i1: [{ articuloId: 'ar1', factor: 1, porDefecto: true }],
+    i2: [
+      { articuloId: 'ar2', factor: 1, porDefecto: true },
+      { articuloId: 'ar3', factor: 1, porDefecto: false },
+    ],
+    i3: [{ articuloId: 'ar5', factor: 50, porDefecto: true }],
+    i4: [{ articuloId: 'ar6', factor: 50, porDefecto: true }],
+    i5: [{ articuloId: 'ar7', factor: 20, porDefecto: true }],
+    i6: [{ articuloId: 'ar8', factor: 20, porDefecto: true }],
+    i7: [{ articuloId: 'ar9', factor: 1, porDefecto: true }],
+    i8: [{ articuloId: 'ar10', factor: 50, porDefecto: true }],
+    // Mismo aceite en dos presentaciones: la marca no cambia lo que se cocina.
+    i9: [
+      { articuloId: 'ar11', factor: 5, porDefecto: true },
+      { articuloId: 'ar12', factor: 12, porDefecto: false },
+    ],
+    i10: [{ articuloId: 'ar13', factor: 24, porDefecto: true }],
+    i11: [{ articuloId: 'ar14', factor: 30, porDefecto: true }],
+    i12: [{ articuloId: 'ar4', factor: 1, porDefecto: true }],
+    i13: [{ articuloId: 'ar16', factor: 1, porDefecto: true }],
+  }
+
+  const insumos: Insumo[] = insumosBase.map((i) => {
     const categoria = categoriaPorInsumo[i.id] ?? 'abarrotes'
     const almacenId = almacenPorCategoria[categoria]
     // Una quinta parte del stock está en San Isidro para que el traslado tenga sentido.
@@ -1288,7 +1304,8 @@ function semilla(): Esquema {
     return {
       ...i,
       categoria,
-      proveedorId: proveedor ? proveedorPorNombre[proveedor] : undefined,
+      abastecimiento: 'directa' as const,
+      articulos: articulosPorInsumo[i.id] ?? [],
       existencias: [
         { almacenId, cantidad: Math.round((i.stock - enSanIsidro) * 1000) / 1000 },
         { almacenId: 'al4', cantidad: enSanIsidro },
@@ -1296,35 +1313,271 @@ function semilla(): Esquema {
     }
   })
 
-  // Subreceta: leche de tigre, que usan los cebiches.
-  insumos.push({
-    id: 'i16',
-    nombre: 'Leche de tigre (base)',
-    unidad: 'l',
-    categoria: 'preparaciones',
-    stock: 1.5,
-    existencias: [{ almacenId: 'al2', cantidad: 1.5 }],
-    stockMinimo: 1,
-    costoUnitario: 0,
-    preparacion: {
-      rendimiento: 1,
-      ingredientes: [
+  // Salen de una transformación, no se compran: su costo lo calcula la receta.
+  insumos.push(
+    {
+      id: 'i16',
+      nombre: 'Leche de tigre (base)',
+      unidad: 'l',
+      categoria: 'preparaciones',
+      stock: 1.5,
+      existencias: [{ almacenId: 'al2', cantidad: 1.5 }],
+      stockMinimo: 1,
+      costoUnitario: 0,
+      abastecimiento: 'transformacion',
+      articulos: [],
+      activo: true,
+    },
+    {
+      id: 'i17',
+      nombre: 'Filete de lenguado',
+      unidad: 'kg',
+      categoria: 'pescados',
+      stock: 4.2,
+      existencias: [{ almacenId: 'al2', cantidad: 4.2 }],
+      stockMinimo: 4,
+      costoUnitario: 0,
+      abastecimiento: 'transformacion',
+      articulos: [],
+      activo: true,
+    },
+    {
+      id: 'i18',
+      nombre: 'Cabeza y espinazo de pescado',
+      unidad: 'kg',
+      categoria: 'pescados',
+      stock: 1.1,
+      existencias: [{ almacenId: 'al2', cantidad: 1.1 }],
+      stockMinimo: 0,
+      costoUnitario: 0,
+      abastecimiento: 'transformacion',
+      articulos: [],
+      activo: true,
+    },
+  )
+
+  /**
+   * Transformaciones (D-004). Cubren los dos casos: el despiece, que de una
+   * entrada saca varias salidas y merma, y la preparación, que junta varios
+   * insumos en uno. `reparto` es el % del costo de las entradas que absorbe
+   * cada salida; la merma no absorbe nada, así que encarece el resto.
+   */
+  const transformaciones: Transformacion[] = [
+    {
+      id: 'tf1',
+      nombre: 'Despiece de lenguado',
+      entradas: [{ insumoId: 'i2', cantidad: 10 }],
+      salidas: [
+        { id: 'tf1-s1', tipo: 'insumo', insumoId: 'i17', cantidad: 6, reparto: 88 },
+        { id: 'tf1-s2', tipo: 'insumo', insumoId: 'i18', cantidad: 1.5, reparto: 12 },
+        {
+          id: 'tf1-s3',
+          tipo: 'merma',
+          cantidad: 2.5,
+          reparto: 0,
+          descripcion: 'Vísceras, piel y escamas',
+        },
+      ],
+      activo: true,
+    },
+    {
+      id: 'tf2',
+      nombre: 'Leche de tigre',
+      entradas: [
         { insumoId: 'i6', cantidad: 0.6 },
         { insumoId: 'i2', cantidad: 0.15 },
         { insumoId: 'i5', cantidad: 0.1 },
         { insumoId: 'i7', cantidad: 0.05 },
       ],
+      salidas: [{ id: 'tf2-s1', tipo: 'insumo', insumoId: 'i16', cantidad: 1, reparto: 100 }],
+      activo: true,
     },
-    activo: true,
-  })
-  const i16 = insumos.at(-1)!
-  i16.costoUnitario =
-    Math.round(
-      i16.preparacion!.ingredientes.reduce(
-        (t, g) => t + (insumos.find((x) => x.id === g.insumoId)?.costoUnitario ?? 0) * g.cantidad,
-        0,
-      ) * 100,
-    ) / 100
+  ]
+
+  // El costo de lo transformado sale de sus entradas, igual que en el servicio.
+  for (const t of transformaciones) {
+    const costo = t.entradas.reduce(
+      (total, e) =>
+        total + (insumos.find((x) => x.id === e.insumoId)?.costoUnitario ?? 0) * e.cantidad,
+      0,
+    )
+    for (const salida of t.salidas) {
+      if (salida.tipo !== 'insumo' || !salida.insumoId) continue
+      const insumo = insumos.find((x) => x.id === salida.insumoId)
+      if (insumo) {
+        insumo.costoUnitario =
+          Math.round(((costo * salida.reparto) / 100 / salida.cantidad) * 100) / 100
+      }
+    }
+  }
+
+  /**
+   * Parámetros de abastecimiento heredados: Cadena → Local → Almacén →
+   * Categoría → Insumo, y gana el más específico (D-004). La semilla muestra
+   * los cuatro niveles en uso sobre el pescado de la cámara de frío.
+   */
+  const ajustesParametros: AjusteParametros[] = [
+    {
+      id: 'pa1',
+      nivel: 'cadena',
+      valores: {
+        controlaLote: false,
+        controlaVencimiento: false,
+        fefo: false,
+        diasAlerta: 7,
+        bloquearVencidos: true,
+        controlaUbicacion: false,
+        tipoRecepcion: 'total',
+      },
+    },
+    // La cámara de frío sí lleva lote y ubicación: dentro no se distingue a ojo.
+    {
+      id: 'pa2',
+      nivel: 'almacen',
+      referencia: 'al2',
+      valores: { controlaLote: true, controlaUbicacion: true, tipoRecepcion: 'detalle' },
+    },
+    // El pescado caduca en días: vencimiento, FEFO y aviso más corto.
+    {
+      id: 'pa3',
+      nivel: 'categoria',
+      referencia: 'pescados',
+      valores: { controlaVencimiento: true, fefo: true, diasAlerta: 2 },
+    },
+  ]
+
+  const ubicaciones: Ubicacion[] = [
+    {
+      id: 'ub1',
+      almacenId: 'al1',
+      pasillo: 'P1',
+      estante: 'A',
+      fila: '1',
+      columna: '1',
+      porDefecto: true,
+      activo: true,
+    },
+    {
+      id: 'ub2',
+      almacenId: 'al1',
+      pasillo: 'P1',
+      estante: 'A',
+      fila: '2',
+      columna: '1',
+      porDefecto: false,
+      activo: true,
+    },
+    {
+      id: 'ub3',
+      almacenId: 'al1',
+      pasillo: 'P2',
+      estante: 'B',
+      fila: '1',
+      columna: '1',
+      porDefecto: false,
+      activo: true,
+    },
+    {
+      id: 'ub4',
+      almacenId: 'al2',
+      pasillo: 'Cámara',
+      estante: 'Rack 1',
+      fila: '1',
+      columna: '1',
+      porDefecto: true,
+      activo: true,
+    },
+    {
+      id: 'ub5',
+      almacenId: 'al2',
+      pasillo: 'Cámara',
+      estante: 'Rack 2',
+      fila: '1',
+      columna: '1',
+      porDefecto: false,
+      activo: true,
+    },
+    {
+      id: 'ub6',
+      almacenId: 'al3',
+      pasillo: 'Barra',
+      estante: 'Bajo mostrador',
+      fila: '1',
+      columna: '1',
+      porDefecto: true,
+      activo: true,
+    },
+  ]
+
+  const dia = (dias: number) => new Date(ahora + dias * 86_400_000).toLocaleDateString('sv-SE')
+
+  const lotes: Lote[] = [
+    { id: 'lt1', insumoId: 'i2', codigo: 'LEN-2409A', vencimiento: dia(1), recepcion: hace(48) },
+    { id: 'lt2', insumoId: 'i2', codigo: 'LEN-2409B', vencimiento: dia(4), recepcion: hace(12) },
+    { id: 'lt3', insumoId: 'i1', codigo: 'RES-0912', vencimiento: dia(9), recepcion: hace(30) },
+    { id: 'lt4', insumoId: 'i12', codigo: 'CAL-0913', vencimiento: dia(-1), recepcion: hace(72) },
+    { id: 'lt5', insumoId: 'i17', codigo: 'FIL-0914', vencimiento: dia(2), recepcion: hace(6) },
+    { id: 'lt6', insumoId: 'i10', codigo: 'GLO-2611', vencimiento: dia(240), recepcion: hace(60) },
+    { id: 'lt7', insumoId: 'i11', codigo: 'HUE-0910', vencimiento: dia(18), recepcion: hace(36) },
+  ]
+
+  /**
+   * Stock detallado de la cámara de frío: cuadra con el principal de al2.
+   * El resto de almacenes no controla lote ni ubicación, así que no lleva detalle.
+   */
+  const stockDetalle: StockDetalle[] = [
+    { id: 'sd1', insumoId: 'i2', almacenId: 'al2', loteId: 'lt1', ubicacionId: 'ub4', cantidad: 4 },
+    {
+      id: 'sd2',
+      insumoId: 'i2',
+      almacenId: 'al2',
+      loteId: 'lt2',
+      ubicacionId: 'ub5',
+      cantidad: 7.2,
+    },
+    {
+      id: 'sd3',
+      insumoId: 'i1',
+      almacenId: 'al2',
+      loteId: 'lt3',
+      ubicacionId: 'ub4',
+      cantidad: 6.7,
+    },
+    {
+      id: 'sd4',
+      insumoId: 'i12',
+      almacenId: 'al2',
+      loteId: 'lt4',
+      ubicacionId: 'ub5',
+      cantidad: 4.4,
+    },
+    {
+      id: 'sd5',
+      insumoId: 'i17',
+      almacenId: 'al2',
+      loteId: 'lt5',
+      ubicacionId: 'ub4',
+      cantidad: 4.2,
+    },
+    { id: 'sd6', insumoId: 'i16', almacenId: 'al2', ubicacionId: 'ub4', cantidad: 1.5 },
+    { id: 'sd7', insumoId: 'i18', almacenId: 'al2', ubicacionId: 'ub5', cantidad: 1.1 },
+    {
+      id: 'sd8',
+      insumoId: 'i10',
+      almacenId: 'al2',
+      loteId: 'lt6',
+      ubicacionId: 'ub5',
+      cantidad: 32,
+    },
+    {
+      id: 'sd9',
+      insumoId: 'i11',
+      almacenId: 'al2',
+      loteId: 'lt7',
+      ubicacionId: 'ub4',
+      cantidad: 96,
+    },
+  ]
 
   const movimientos: Movimiento[] = movimientosBase.map((m) => ({
     ...m,
@@ -1510,6 +1763,11 @@ function semilla(): Esquema {
     insumos,
     movimientos,
     recetas,
+    ubicaciones,
+    lotes,
+    stockDetalle,
+    transformaciones,
+    ajustesParametros,
   }
 }
 
