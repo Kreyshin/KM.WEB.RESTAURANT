@@ -9,6 +9,12 @@ import KmCard from '@/components/ui/KmCard.vue'
 import KmConfirm from '@/components/ui/KmConfirm.vue'
 import KmConfirmarEstado from '@/components/ui/KmConfirmarEstado.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmSelect from '@/components/ui/KmSelect.vue'
+import { useLocales } from '@/composables/useLocales'
+import { canalesService } from '@/services/comercial.service'
+import { categoriaOfrecida, productoOfrecido } from '@/services/carta.service'
+import type { CanalVenta } from '@/types'
+import type { OpcionSelect } from '@/types/ui'
 import KmTable from '@/components/ui/KmTable.vue'
 import CategoriaFormModal from './CategoriaFormModal.vue'
 import ProductoFormModal from './ProductoFormModal.vue'
@@ -64,10 +70,43 @@ const columnasCategoria: ColumnaTabla[] = [
 
 const ordenSugerido = computed(() => Math.max(0, ...categorias.value.map((c) => c.orden)) + 1)
 
+const { locales, nombreLocal } = useLocales()
+const canales = ref<CanalVenta[]>([])
+const ofrecidoLocal = ref('')
+const ofrecidoCanal = ref('')
+const opcionesLocalFiltro = computed<OpcionSelect[]>(() => [
+  { valor: '', etiqueta: 'Todos los locales' },
+  ...locales.value.map((l) => ({ valor: l.id, etiqueta: l.nombre })),
+])
+const opcionesCanalFiltro = computed<OpcionSelect[]>(() => [
+  { valor: '', etiqueta: 'Todos los canales' },
+  ...canales.value.map((c) => ({ valor: c.id, etiqueta: c.nombre })),
+])
+const nombreCanal = (id: string) => canales.value.find((c) => c.id === id)?.nombre ?? id
+
+/** Secciones primero y sus categorías debajo, cada grupo en su orden. */
+const categoriasOrdenadas = computed(() => {
+  const porOrden = [...categorias.value].sort((a, b) => a.orden - b.orden)
+  return porOrden
+    .filter((c) => !c.seccionId)
+    .flatMap((c) => [c, ...porOrden.filter((h) => h.seccionId === c.id)])
+})
+
 const productosFiltrados = computed(() => {
   const texto = busqueda.value.trim().toLowerCase()
+  void categorias.value
   return productos.value.filter((p) => {
-    if (filtroCategoria.value && p.categoriaId !== filtroCategoria.value) return false
+    if (
+      (ofrecidoLocal.value || ofrecidoCanal.value) &&
+      !productoOfrecido(p.id, ofrecidoLocal.value || undefined, ofrecidoCanal.value || undefined)
+    )
+      return false
+    if (
+      filtroCategoria.value &&
+      p.categoriaId !== filtroCategoria.value &&
+      categorias.value.find((c) => c.id === p.categoriaId)?.seccionId !== filtroCategoria.value
+    )
+      return false
     if (texto && !p.nombre.toLowerCase().includes(texto)) return false
     return true
   })
@@ -96,9 +135,10 @@ function precioMostrado(p: Producto) {
 async function cargar() {
   cargando.value = true
   try {
-    ;[categorias.value, productos.value] = await Promise.all([
+    ;[categorias.value, productos.value, canales.value] = await Promise.all([
       cartaService.listarCategorias(),
       cartaService.listarProductos(),
+      canalesService.todos(),
     ])
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudo cargar la carta.')
@@ -217,7 +257,7 @@ async function eliminar() {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-7xl flex-col gap-5">
+  <div class="flex w-full flex-col gap-5">
     <!-- Cambio de vista y acción principal -->
     <div class="flex flex-wrap items-center gap-3">
       <div class="flex gap-1 rounded-control border border-linea bg-panel p-1">
@@ -279,6 +319,20 @@ async function eliminar() {
 
       <KmCard titulo="Productos" sin-padding>
         <template #acciones>
+          <div class="w-44">
+            <KmSelect
+              v-model="ofrecidoLocal"
+              :opciones="opcionesLocalFiltro"
+              etiqueta="Qué se ofrece en el local"
+            />
+          </div>
+          <div class="w-44">
+            <KmSelect
+              v-model="ofrecidoCanal"
+              :opciones="opcionesCanalFiltro"
+              etiqueta="Qué se ofrece en el canal"
+            />
+          </div>
           <KmCambioVista v-model="vistaProductos" clave="producto" />
           <KmInput v-model="busqueda" placeholder="Buscar producto…" class="!w-48" />
         </template>
@@ -397,7 +451,7 @@ async function eliminar() {
     >
       <KmTable
         :columnas="columnasCategoria"
-        :filas="categorias"
+        :filas="categoriasOrdenadas"
         :cargando="cargando"
         mensaje-vacio="Aún no hay categorías. Crea la primera para poder añadir productos."
       >
@@ -420,7 +474,30 @@ async function eliminar() {
         </template>
 
         <template #col-nombre="{ fila }">
-          <p class="font-semibold text-tinta">{{ fila.nombre }}</p>
+          <p class="font-semibold text-tinta" :class="fila.seccionId ? 'pl-5' : ''">
+            <span v-if="fila.seccionId" class="mr-1 text-tenue">↳</span>{{ fila.nombre }}
+            <KmBadge
+              v-if="categorias.some((c) => c.seccionId === fila.id)"
+              tono="pizarra"
+              class="ml-1"
+            >
+              Sección
+            </KmBadge>
+          </p>
+          <p
+            class="flex flex-wrap gap-x-3 text-xs text-tenue"
+            :class="fila.seccionId ? 'pl-5' : ''"
+          >
+            <span v-if="fila.localIds?.length"
+              >Solo en {{ fila.localIds.map(nombreLocal).join(', ') }}</span
+            >
+            <span v-if="fila.canalIds?.length"
+              >Canales: {{ fila.canalIds.map(nombreCanal).join(', ') }}</span
+            >
+            <span v-if="fila.foodCostObjetivo !== undefined"
+              >Objetivo food cost {{ fila.foodCostObjetivo }} %</span
+            >
+          </p>
           <p v-if="fila.disponibilidad" class="text-xs text-laton-texto">
             {{
               fila.disponibilidad.dias.length === 7
@@ -434,6 +511,15 @@ async function eliminar() {
 
         <template #col-productos="{ fila }">
           <span class="tabular-nums">{{ productosDe(fila.id) }}</span>
+          <p
+            v-if="
+              (ofrecidoLocal || ofrecidoCanal) &&
+              !categoriaOfrecida(fila.id, ofrecidoLocal || undefined, ofrecidoCanal || undefined)
+            "
+            class="text-[11px] text-vino"
+          >
+            No se ofrece
+          </p>
         </template>
 
         <template #col-estado="{ fila }">
@@ -476,6 +562,7 @@ async function eliminar() {
       v-model="modalCategoria"
       :categoria="categoriaEnEdicion"
       :orden-sugerido="ordenSugerido"
+      :categorias="categorias"
       @guardado="guardarCategoria"
     />
 

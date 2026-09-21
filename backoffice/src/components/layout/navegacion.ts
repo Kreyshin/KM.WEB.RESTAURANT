@@ -57,6 +57,26 @@ export const modulos: ModuloNav[] = [
     ],
   },
   {
+    id: 'clientes',
+    etiqueta: 'Clientes',
+    icono:
+      'M16 19a4 4 0 0 0-8 0M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 21h16a1 1 0 0 0 1-1V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v14a1 1 0 0 0 1 1z',
+    secciones: [
+      {
+        nombreRuta: 'clientes',
+        etiqueta: 'Clientes',
+        descripcion: 'Ficha de sala sobre el cliente del ERP',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'reservas',
+        etiqueta: 'Reservas',
+        descripcion: 'Agenda del día, mesas y cupo',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
     id: 'carta',
     etiqueta: 'Carta',
     icono: 'M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4zM8 8h7M8 12h7',
@@ -64,7 +84,13 @@ export const modulos: ModuloNav[] = [
       {
         nombreRuta: 'carta',
         etiqueta: 'Carta y menú',
-        descripcion: 'Productos, categorías y precios',
+        descripcion: 'Productos, categorías y precio de carta',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'listas-precios',
+        etiqueta: 'Listas de precios',
+        descripcion: 'Por local, canal y temporada',
         roles: ['admin'],
       },
       {
@@ -99,6 +125,12 @@ export const modulos: ModuloNav[] = [
         roles: ['admin'],
       },
       {
+        nombreRuta: 'inv-produccion',
+        etiqueta: 'Producción',
+        descripcion: 'Por procesar y partes de producción',
+        roles: ['admin'],
+      },
+      {
         nombreRuta: 'inv-transformaciones',
         etiqueta: 'Transformaciones',
         descripcion: 'Despiece y preparaciones con su merma',
@@ -106,8 +138,8 @@ export const modulos: ModuloNav[] = [
       },
       {
         nombreRuta: 'inv-stock-detalle',
-        etiqueta: 'Lotes y stock detallado',
-        descripcion: 'Qué lote hay y dónde está',
+        etiqueta: 'Stock',
+        descripcion: 'Por insumo, lote y ubicación',
         roles: ['admin'],
       },
       {
@@ -123,9 +155,9 @@ export const modulos: ModuloNav[] = [
         roles: ['admin'],
       },
       {
-        nombreRuta: 'inv-almacenes',
-        etiqueta: 'Almacenes',
-        descripcion: 'Dónde se guarda por local · ERP',
+        nombreRuta: 'inv-zonas',
+        etiqueta: 'Almacén y zonas',
+        descripcion: 'Cámara, barra, despensa y quién las gestiona',
         roles: ['admin'],
       },
     ],
@@ -136,6 +168,24 @@ export const modulos: ModuloNav[] = [
     icono:
       'M3 4h2l2.4 11h11.2L21 8H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
     secciones: [
+      {
+        nombreRuta: 'compras-solicitudes',
+        etiqueta: 'Solicitudes de compra',
+        descripcion: 'Lo que pide cada área, en insumos',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-requerimientos',
+        etiqueta: 'Requerimientos de compra',
+        descripcion: 'Lo que el local envía al ERP y su seguimiento',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-recepcion',
+        etiqueta: 'Recepción',
+        descripcion: 'Lo que llega contra OC y los ingresos sin OC',
+        roles: ['admin'],
+      },
       {
         nombreRuta: 'compras-articulos',
         etiqueta: 'Artículos',
@@ -209,6 +259,24 @@ export const modulos: ModuloNav[] = [
         nombreRuta: 'config-excepciones',
         etiqueta: 'Excepciones por usuario',
         descripcion: 'Ajustes a los permisos de una persona',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-cadenas',
+        etiqueta: 'Cadenas',
+        descripcion: 'Locales agrupados por concepto (opcional)',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'personal-turnos',
+        etiqueta: 'Turnos',
+        descripcion: 'Quién trabaja en cada franja del local',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'personal-bitacora',
+        etiqueta: 'Bitácora',
+        descripcion: 'Quién hizo cada acción sensible',
         roles: ['admin'],
       },
       {

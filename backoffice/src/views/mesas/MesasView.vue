@@ -263,7 +263,7 @@ async function eliminar() {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-7xl flex-col gap-4">
+  <div class="flex w-full flex-col gap-4">
     <!-- Selector de salón + acciones -->
     <div class="flex flex-wrap items-center gap-3">
       <div class="flex flex-wrap gap-1 rounded-control bg-panel p-1 border border-linea">

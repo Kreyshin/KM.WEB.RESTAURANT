@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Modelo de dominio de KM.Restaurante (back office).
  * Estas interfaces son el contrato entre las vistas y la capa de servicios.
  * Cuando exista el backend real solo cambia la implementación de `services/`,
@@ -18,6 +18,30 @@ export interface Usuario {
   avatarUrl?: string
   /** Locales a los que tiene acceso (dato del ERP). Sin valor: todos. */
   localIds?: string[]
+  /**
+   * Almacenes a los que tiene acceso y con qué nivel. Dato del ERP: se asigna
+   * y se bloquea allí, la vertical solo lo respeta. Sin valor: ve y gestiona todos.
+   */
+  almacenes?: AccesoAlmacen[]
+}
+
+/** `ver`: consulta de stock y movimientos. `gestionar`: además, registrar movimientos. */
+export type NivelAcceso = 'ver' | 'gestionar'
+
+export interface AccesoAlmacen {
+  almacenId: string
+  nivel: NivelAcceso
+}
+
+/**
+ * Restricción de la vertical sobre una zona para un usuario (D-009): el
+ * bartender solo gestiona la barra. Sin registro, la zona hereda el nivel
+ * que el ERP da sobre su almacén; nunca lo amplía.
+ */
+export interface AccesoZona {
+  usuarioId: string
+  zonaId: string
+  nivel: NivelAcceso | 'ninguno'
 }
 
 export interface Sesion {
@@ -75,6 +99,17 @@ export type Alergeno =
 export interface Categoria {
   id: string
   nombre: string
+  /** Objetivo de food cost de la categoría, en %. Sin valor: el de su sección o la configuración. */
+  foodCostObjetivo?: number
+  /**
+   * Sección que la agrupa (un solo nivel): «Fondos» agrupa criollos y marinos.
+   * Una sección no pertenece a otra.
+   */
+  seccionId?: string
+  /** Locales donde se ofrece. Vacío o sin valor: todos. */
+  localIds?: string[]
+  /** Canales donde se ofrece, incluidas apps externas. Vacío o sin valor: todos. */
+  canalIds?: string[]
   descripcion?: string
   /** Orden de aparición en la carta y en la toma de comanda. */
   orden: number
@@ -91,12 +126,6 @@ export interface DisponibilidadHoraria {
   hasta: string
 }
 
-/** Precio distinto al base para un canal (apps de delivery suelen ir más caras). */
-export interface PrecioCanal {
-  canalId: string
-  precio: number
-}
-
 /**
  * Presentación alternativa de un producto (personal, fuente, media...).
  * `precio` es el precio FINAL de esa presentación, no un recargo sobre el base:
@@ -104,6 +133,8 @@ export interface PrecioCanal {
  */
 export interface Variante {
   id: string
+  /** Código de producto vendible (D-010). */
+  codigo?: string
   nombre: string
   precio: number
   activa: boolean
@@ -112,10 +143,21 @@ export interface Variante {
 /** Opción concreta dentro de un grupo: «sin cebolla», «término medio». */
 export interface Modificador {
   id: string
+  /** Código de producto vendible cuando tiene recargo (D-010). */
+  codigo?: string
+  /** Insumos que suma o quita al pedirlo (D-007). Sin efectos ni recargo es una nota. */
+  efectos?: EfectoModificador[]
   nombre: string
   /** Recargo sobre el precio. 0 cuando la opción no cuesta. */
   recargo: number
   activo: boolean
+}
+
+export interface EfectoModificador {
+  insumoId: string
+  cantidad: number
+  unidad: UnidadMedida
+  efecto: 'suma' | 'quita'
 }
 
 /**
@@ -133,6 +175,7 @@ export interface GrupoModificador {
 
 export interface Producto {
   id: string
+  codigo?: string
   categoriaId: string
   nombre: string
   descripcion?: string
@@ -145,8 +188,94 @@ export interface Producto {
   gruposModificadores: GrupoModificador[]
   /** Data URL en mock; URL del archivo con backend. */
   imagen?: string
-  /** Precios por canal. Un canal sin entrada usa el precio base. */
-  preciosCanal: PrecioCanal[]
+  /** Indicaciones a cocina que no cambian insumos ni precio: «sin sal», «bien cocido». */
+  notasRapidas?: string[]
+  /** Locales donde no se ofrece aunque su categoría sí. El precio por local va en la lista. */
+  noOfrecidoEn?: string[]
+}
+
+// ── Lista de precios (D-010) ─────────────────────────────────────────────────
+
+/**
+ * Lo que se vende y se cobra con código propio. El producto de carta con
+ * presentaciones solo las agrupa; los adicionales con recargo también se venden.
+ */
+export type TipoVendible = 'producto' | 'presentacion' | 'adicional' | 'combo'
+
+export interface ProductoVendible {
+  /** Clave estable: p:<producto>, v:<presentación>, m:<adicional>, c:<combo>. */
+  id: string
+  codigo: string
+  nombre: string
+  tipo: TipoVendible
+  productoId?: string
+  categoriaId?: string
+  /** Precio que se define en la carta; lo toma la lista cuando no tiene uno propio. */
+  precioReferencia: number
+  activo: boolean
+}
+
+export type TipoLista = 'base' | 'temporada'
+
+/** Descuento en una línea de la lista, solo dentro de su vigencia (fechas AAAA-MM-DD). */
+export interface DescuentoLinea {
+  porcentaje: number
+  desde: string
+  hasta: string
+}
+
+export interface PrecioLista {
+  vendibleId: string
+  precio?: number
+  descuento?: DescuentoLinea
+}
+
+/**
+ * Lista de precios de un local para uno o varios canales. Hay una base por
+ * local y canal; las de temporada la reemplazan en su vigencia sin solaparse.
+ * Una lista derivada toma los precios de otra con un ajuste en %.
+ */
+export interface ListaPrecios {
+  id: string
+  codigo: string
+  nombre: string
+  tipo: TipoLista
+  localId: string
+  canalIds: string[]
+  derivadaDe?: string
+  ajustePorcentaje?: number
+  /** Sin valor usa lo configurado para la empresa en Impuestos. */
+  igvIncluido?: boolean
+  desde?: string
+  hasta?: string
+  precios: PrecioLista[]
+  activa: boolean
+}
+
+export type NuevaListaPrecios = Omit<ListaPrecios, 'id'>
+
+export type OrigenPrecio = 'lista' | 'derivada' | 'base' | 'referencia'
+
+export interface PrecioVigente {
+  vendibleId: string
+  listaId?: string
+  listaNombre?: string
+  origen: OrigenPrecio
+  precioLista: number
+  descuentoPorcentaje: number
+  /** Lo que se cobra: precio de lista menos descuento. */
+  precio: number
+  igvIncluido: boolean
+  tasaIgv: number
+  valorVenta: number
+  igv: number
+}
+
+export interface RepartoCombo {
+  vendibleId: string
+  nombre: string
+  precioVigente: number
+  asignado: number
 }
 
 export type TipoCombo = 'combo' | 'menuDia'
@@ -163,6 +292,7 @@ export interface GrupoCombo {
 
 export interface Combo {
   id: string
+  codigo?: string
   tipo: TipoCombo
   nombre: string
   descripcion?: string
@@ -179,16 +309,86 @@ export interface Combo {
 
 export type UnidadMedida = 'kg' | 'g' | 'l' | 'ml' | 'unidad' | 'paquete'
 
+/**
+ * Almacén del local (D-009): uno por local y es lo que conoce Inventarios del
+ * ERP. Dentro, la vertical organiza la mercadería en zonas.
+ */
 export interface Almacen {
   id: string
   nombre: string
   localId: string
+  activo: boolean
+}
+
+/** Espacio del restaurante dentro del almacén: cámara de frío, barra, despensa. */
+export interface Zona {
+  id: string
+  nombre: string
+  localId: string
+  /** → Almacen del local. */
+  almacenId: string
   descripcion?: string
   activo: boolean
 }
 
+/**
+ * Agrupa locales por concepto de negocio (D-008): cevicherías, hamburgueserías.
+ * Opcional; un local pertenece como mucho a una cadena.
+ */
+export interface Cadena {
+  id: string
+  nombre: string
+  localIds: string[]
+  activo: boolean
+}
+
+/** Qué usuarios configuran cada cadena (acceso de la vertical). Sin registros: los administradores. */
+export interface AccesoCadena {
+  usuarioId: string
+  cadenaId: string
+}
+
+// ── Integración con el ERP (D-009) ───────────────────────────────────────────
+
+export type CapacidadIntegracion =
+  'inventario' | 'compras' | 'precios' | 'ventas' | 'contabilidad' | 'asistencia'
+
+/**
+ * `autonomo`: la vertical registra y decide. `sincronizado`: registra y
+ * homologa con el ERP, que decide en conflicto. `delegado`: opera el ERP.
+ */
+export type ModoIntegracion = 'autonomo' | 'sincronizado' | 'delegado'
+
+export interface CambioModoIntegracion {
+  capacidad: CapacidadIntegracion
+  localId?: string
+  anterior: ModoIntegracion
+  nuevo: ModoIntegracion
+  motivo: string
+  autor: string
+  fecha: string
+}
+
+/** Lo configura Karma desde su consola, no el cliente. */
+export interface ConfigIntegracion {
+  empresa: Partial<Record<CapacidadIntegracion, ModoIntegracion>>
+  locales: Record<string, Partial<Record<CapacidadIntegracion, ModoIntegracion>>>
+  historial: CambioModoIntegracion[]
+}
+
+/** Enlace entre un registro de la vertical y su par en el ERP. */
+export interface VinculoErp {
+  id: string
+  entidad: 'almacen' | 'local' | 'insumo' | 'producto' | 'listaPrecios'
+  idVertical: string
+  idExterno: string
+  estado: 'sincronizado' | 'pendiente' | 'error'
+  version: number
+  actualizado: string
+}
+
 export interface Existencia {
-  almacenId: string
+  zonaId: string
   cantidad: number
 }
 
@@ -209,8 +409,9 @@ export type CategoriaInsumo =
  *   (1 caja x12 → 12 u.). Se aplica sola al recepcionar.
  * - `transformacion`: hace falta procesar el artículo antes de usarlo
  *   (10 kg de pescado → 6 kg de filete + 1.5 kg de cabeza + merma).
+ * - `ambos`: se compra y también se produce (salsa comprada cuando no da el tiempo).
  */
-export type TipoAbastecimiento = 'directa' | 'transformacion'
+export type TipoAbastecimiento = 'directa' | 'transformacion' | 'ambos'
 
 /**
  * Artículo del ERP que abastece a un insumo. Varios artículos vinculados al
@@ -226,6 +427,8 @@ export interface VinculoArticulo {
   factor: number
   /** El artículo que se propone al pedir. Exactamente uno por insumo. */
   porDefecto: boolean
+  /** Al recepcionarlo queda «por procesar»: hay que transformarlo antes de usarlo. */
+  procesar?: boolean
 }
 
 export interface Insumo {
@@ -234,7 +437,7 @@ export interface Insumo {
   /** Unidad de uso, la de la receta. La de compra la pone el artículo. */
   unidad: UnidadMedida
   categoria: CategoriaInsumo
-  /** Stock total: suma de las existencias de todos los almacenes. */
+  /** Stock total: suma de las existencias de todas las zonas. */
   stock: number
   existencias: Existencia[]
   /** Umbral por debajo del cual el insumo se marca como bajo. */
@@ -246,6 +449,14 @@ export interface Insumo {
   articulos: VinculoArticulo[]
   /** Parámetros fijados en el propio insumo; el resto se hereda. */
   parametros?: Partial<ParametrosAbastecimiento>
+  /** Alérgenos que aporta: la receta los suma desde sus insumos. */
+  alergenos?: Alergeno[]
+  /** Rendimiento % al acondicionar (pelar, limpiar). Solo con el parámetro activo. */
+  rendimientoPorcentaje?: number
+  /** Días que dura lo producido desde que se elabora. Sin valor: se indica en cada parte. */
+  vidaUtilDias?: number
+  /** Quién validó la vida útil (modo «validada»); vacío en modo simple. */
+  vidaUtilAprobadaPor?: string
   activo: boolean
 }
 
@@ -305,17 +516,17 @@ export interface ParametrosAbastecimiento {
   /** Exige ubicación al recepcionar y al mover. */
   controlaUbicacion: boolean
   /** `total`: se recepciona la línea entera. `detalle`: lote a lote y ubicación a ubicación. */
-  tipoRecepcion: 'total' | 'detalle'
+  tipoRecepcion: 'total' | 'detalle' | 'ambos'
 }
 
 /** Del más general al más específico: el último que fije un valor manda. */
-export type NivelParametros = 'cadena' | 'local' | 'almacen' | 'categoria' | 'insumo'
+export type NivelParametros = 'empresa' | 'cadena' | 'local' | 'zona' | 'categoria' | 'insumo'
 
 /** Valores fijados en un nivel. Lo que no se fija se hereda del nivel anterior. */
 export interface AjusteParametros {
   id: string
   nivel: NivelParametros
-  /** `localId`, `almacenId`, `CategoriaInsumo` o `insumoId`. Sin valor en `cadena`. */
+  /** `cadenaId`, `localId`, `zonaId`, `CategoriaInsumo` o `insumoId`. Sin valor en `empresa`. */
   referencia?: string
   valores: Partial<ParametrosAbastecimiento>
 }
@@ -330,15 +541,15 @@ export type ParametrosResueltos = {
 
 // ── Ubicaciones, lotes y stock detallado ─────────────────────────────────────
 
-/** Dónde se guarda físicamente dentro de un almacén. */
+/** Dónde se guarda físicamente dentro de una zona. */
 export interface Ubicacion {
   id: string
-  almacenId: string
+  zonaId: string
   pasillo: string
   estante: string
   fila: string
   columna: string
-  /** Ubicación que propone la recepción. Como mucho una por almacén. */
+  /** Ubicación que propone la recepción. Como mucho una por zona. */
   porDefecto: boolean
   activo: boolean
 }
@@ -353,17 +564,21 @@ export interface Lote {
   vencimiento?: string
   /** Fecha de entrada, ISO 8601. */
   recepcion: string
+  /** De dónde salió: una compra recepcionada o una parte de producción. */
+  origen?: 'compra' | 'produccion'
+  /** N.° de recepción o de parte que lo creó. */
+  referencia?: string
 }
 
 /**
- * Stock detallado: insumo × almacén × lote × ubicación. Solo existe para los
+ * Stock detallado: insumo × zona × lote × ubicación. Solo existe para los
  * insumos que controlan lote o ubicación; lote y ubicación son independientes.
- * La suma por insumo y almacén debe cuadrar con el stock principal.
+ * La suma por insumo y zona debe cuadrar con el stock principal.
  */
 export interface StockDetalle {
   id: string
   insumoId: string
-  almacenId: string
+  zonaId: string
   loteId?: string
   ubicacionId?: string
   cantidad: number
@@ -382,7 +597,7 @@ export type TipoMovimiento =
 export interface Movimiento {
   id: string
   insumoId: string
-  almacenId: string
+  zonaId: string
   tipo: TipoMovimiento
   /** Siempre positiva: el tipo determina el signo aplicado al stock. */
   cantidad: number
@@ -431,15 +646,340 @@ export interface Proveedor {
   activo: boolean
 }
 
+// ── Solicitudes y requerimientos de compra (F4.4) ────────────────────────────
+
+export type EstadoSolicitud = 'borrador' | 'enviada' | 'atendida' | 'rechazada'
+
+/** Lo que pide un área, en insumos. La marca es una preferencia, no un artículo. */
+export interface LineaSolicitud {
+  id: string
+  insumoId: string
+  /** En la unidad de uso del insumo. */
+  cantidad: number
+  /** Solo marcas de los artículos vinculados al insumo. */
+  marcaId?: string
+  nota?: string
+}
+
+export interface SolicitudCompra {
+  id: string
+  /** Correlativo legible: SOL-000123. */
+  numero: string
+  localId: string
+  areaId: string
+  estado: EstadoSolicitud
+  /** ISO 8601. */
+  fecha: string
+  usuarioId: string
+  nota?: string
+  lineas: LineaSolicitud[]
+  /** Requerimiento que la consolidó. Mientras esté en borrador, la reserva. */
+  requerimientoId?: string
+  motivoRechazo?: string
+}
+
+/**
+ * Estados del requerimiento. La vertical lo lleva hasta `enviado`; aprobar,
+ * convertir en OC y despachar lo decide el ERP; `recepcionado` llega con F4.5.
+ */
+export type EstadoRequerimiento =
+  'borrador' | 'enviado' | 'aprobado' | 'convertido' | 'despachado' | 'recepcionado' | 'anulado'
+
+/** Una línea por artículo: la traducción de insumos a lo que compra el ERP. */
+export interface LineaRequerimiento {
+  id: string
+  insumoId: string
+  articuloId: string
+  /** En la unidad de compra del artículo (sacos, cajas). */
+  cantidad: number
+  /** Lo que se pidió en unidad de uso, antes de redondear a unidades de compra. */
+  cantidadInsumo: number
+  /** Sugerido desde el proveedor habitual del artículo; se puede cambiar. */
+  proveedorId?: string
+  /** Líneas de solicitud consolidadas aquí. Vacío: línea creada directamente. */
+  origen: { solicitudId: string; lineaId: string }[]
+  /** El ERP avisa que el artículo no se puede comprar; se reemplaza por un alterno. */
+  noDisponible?: boolean
+  /** Artículo original cuando se reemplazó por un alterno. */
+  reemplazoDe?: string
+  /** Cuánto convirtió el ERP en orden de compra. */
+  cantidadConvertida?: number
+  /** Precio neto (sin IGV) por unidad de compra que fija la OC del ERP. */
+  precioNeto?: number
+  /** Unidades de compra ya recepcionadas contra esta línea. */
+  cantidadRecibida?: number
+}
+
+export interface EventoRequerimiento {
+  estado: EstadoRequerimiento
+  fecha: string
+  /** Usuario de la vertical, o «ERP» cuando el cambio llega de allí. */
+  autor: string
+  nota?: string
+}
+
+export interface RequerimientoCompra {
+  id: string
+  /** Correlativo legible: REQ-000045. */
+  numero: string
+  localId: string
+  estado: EstadoRequerimiento
+  fecha: string
+  usuarioId: string
+  nota?: string
+  lineas: LineaRequerimiento[]
+  /** N.° de orden de compra que asigna el ERP al convertir. */
+  ordenCompra?: string
+  historial: EventoRequerimiento[]
+}
+
+// ── Recepción y producción (F4.5) ────────────────────────────────────────────
+
+/**
+ * Una parte de lo recibido: con lote y ubicación cuando el insumo los
+ * controla. Una recepción «total» tiene una sola parte por línea; «a detalle»
+ * admite varias (dos lotes, dos racks).
+ */
+export interface ParteRecepcion {
+  /** En la unidad del insumo. */
+  cantidad: number
+  loteCodigo?: string
+  /** `YYYY-MM-DD`. */
+  vencimiento?: string
+  ubicacionId?: string
+}
+
+export interface LineaRecepcion {
+  id: string
+  insumoId: string
+  articuloId?: string
+  /** Línea del requerimiento que se recibe. Sin valor: ingreso sin OC. */
+  lineaRequerimientoId?: string
+  /** Unidades de compra recibidas (sacos, cajas). */
+  cantidadCompra?: number
+  /** Unidades del insumo que rinde cada unidad de compra. */
+  factor: number
+  /** Costo neto por unidad del insumo. */
+  costoUnitario: number
+  modo: 'total' | 'detalle'
+  partes: ParteRecepcion[]
+  /** Quedó pendiente de transformar. */
+  porProcesar: boolean
+}
+
+export type TipoComprobanteIngreso = 'factura' | 'boleta' | 'ticket' | 'recibo'
+
+export interface ComprobanteIngreso {
+  tipo: TipoComprobanteIngreso
+  serie: string
+  numero: string
+  /** Total del comprobante con impuestos, en soles. */
+  monto: number
+  /** Proveedor del ERP; sin valor, proveedor ocasional (mercado). */
+  proveedorId?: string
+  proveedorOcasional?: string
+}
+
+export type EstadoRecepcion = 'registrada' | 'pendienteRegularizar' | 'regularizada'
+
+export interface Recepcion {
+  id: string
+  /** REC-000001. */
+  numero: string
+  localId: string
+  zonaId: string
+  requerimientoId?: string
+  ordenCompra?: string
+  /** Solo en un ingreso sin OC. */
+  comprobante?: ComprobanteIngreso
+  motivo?: string
+  estado: EstadoRecepcion
+  fecha: string
+  usuarioId: string
+  lineas: LineaRecepcion[]
+  regularizadaPor?: string
+}
+
+/** Lo recepcionado que todavía hay que transformar (pescado entero por despiezar). */
+export interface PorProcesar {
+  id: string
+  recepcionId: string
+  insumoId: string
+  zonaId: string
+  cantidad: number
+  pendiente: number
+  fecha: string
+}
+
+export type EstadoParte = 'enProceso' | 'terminada' | 'rechazada'
+
+export interface EntradaParte {
+  insumoId: string
+  esperada: number
+  real: number
+}
+
+export interface SalidaParte {
+  /** → SalidaTransformacion.id */
+  salidaId: string
+  tipo: 'insumo' | 'merma'
+  insumoId?: string
+  esperada: number
+  real: number
+  /** Lote creado para lo producido, si el insumo controla lote. */
+  loteId?: string
+}
+
+/** Registro real de una transformación: lo que entró, lo que salió y por qué difiere. */
+export interface ParteProduccion {
+  id: string
+  /** PP-000001. */
+  numero: string
+  localId: string
+  zonaId: string
+  transformacionId: string
+  /** Tandas de la receta: 2 = el doble de lo definido. */
+  factor: number
+  estado: EstadoParte
+  entradas: EntradaParte[]
+  salidas: SalidaParte[]
+  /** Diferencia entre entrada y salidas enviada a merma, con su motivo. */
+  mermaAdicional?: number
+  motivoDiferencia?: string
+  motivoRechazo?: string
+  /** `YYYY-MM-DD` de lo producido. */
+  vencimiento?: string
+  /** Costo real de las entradas, en soles, al terminar. */
+  costoReal?: number
+  responsableId: string
+  fecha: string
+  terminadaEn?: string
+}
+
+/** Valores de la configuración de la vertical: base de la cadena y excepciones por local. */
+/** Configuración de la vertical: base de la empresa, excepciones por cadena y por local. */
+export interface ValoresConfiguracion {
+  vertical: Record<string, string | number | boolean>
+  cadenas: Record<string, Record<string, string | number | boolean>>
+  locales: Record<string, Record<string, string | number | boolean>>
+}
+
+export type NuevaSolicitud = Pick<SolicitudCompra, 'localId' | 'areaId' | 'nota' | 'lineas'>
+export type NuevoRequerimiento = Pick<RequerimientoCompra, 'localId' | 'nota' | 'lineas'>
+
 export interface IngredienteReceta {
   insumoId: string
   cantidad: number
 }
 
-/** Escandallo de un producto: qué insumos consume y en qué cantidad. */
-export interface Receta {
-  productoId: string
-  ingredientes: IngredienteReceta[]
+// ── Receta estandarizada (D-007) ─────────────────────────────────────────────
+
+/** Neta: lo que queda en el plato. Bruta: lo que sale del almacén. */
+export type TipoCantidad = 'neta' | 'bruta'
+
+/**
+ * Línea de receta. Un consumible (táper, bolsa, servilleta) suma al costo
+ * variable y puede aplicar solo en ciertos canales.
+ */
+export interface LineaReceta {
+  id: string
+  tipo: 'ingrediente' | 'consumible'
+  insumoId: string
+  cantidad: number
+  /** Unidad de uso: convertible con la del insumo solo en la misma dimensión. */
+  unidad: UnidadMedida
+  /** Solo con «cantidad bruta o neta» activo. Sin valor: bruta. */
+  cantidadTipo?: TipoCantidad
+  /** Consumible: canales donde aplica. Vacío: todos. */
+  canalIds?: string[]
+}
+
+export interface PasoFicha {
+  id: string
+  descripcion: string
+  tiempoMin?: number
+  temperaturaC?: number
+  equipo?: string
+}
+
+/** Ficha técnica (opcional por configuración). */
+export interface FichaTecnica {
+  /** Porciones que rinde la receta tal como está escrita. */
+  porciones?: number
+  pasos: PasoFicha[]
+  conservacion?: string
+  /** Data URL en mock. */
+  fotoEmplatado?: string
+  /** Variación de peso aceptada al emplatar, en %. */
+  toleranciaPesoPorcentaje?: number
+}
+
+export type EstadoVersion = 'borrador' | 'aprobada'
+
+export interface VersionReceta {
+  id: string
+  numero: number
+  /** Con aprobación activa, un borrador no rige aunque llegue su fecha. Sin valor: aprobada. */
+  estado?: EstadoVersion
+  aprobadaPor?: string
+  aprobada?: string
+  ficha?: FichaTecnica
+  /** AAAA-MM-DD. Manda la última versión que ya empezó. */
+  vigenteDesde: string
+  lineas: LineaReceta[]
+  nota?: string
+  autor: string
+  creada: string
+  /** Costo unitario de cada insumo al guardar: detecta costos desactualizados. */
+  costosAlGuardar: Record<string, number>
+}
+
+/** Receta de un producto vendible: producto sin presentaciones o una presentación. */
+export interface RecetaEstandar {
+  id: string
+  /** p:<producto> o v:<presentación>, igual que en la lista de precios. */
+  vendibleId: string
+  /** Objetivo de food cost propio de la presentación, en %. */
+  foodCostObjetivo?: number
+  /** Reventa: se vende tal como se compra y su receta es 1 unidad de este insumo. */
+  reventaInsumoId?: string
+  versiones: VersionReceta[]
+}
+
+export type EstadoCosto = 'completo' | 'parcial' | 'desactualizado' | 'sinReceta'
+export type ClaseAbc = 'A' | 'B' | 'C'
+
+export interface CostoLinea {
+  lineaId: string
+  insumoId: string
+  nombre: string
+  tipo: LineaReceta['tipo']
+  /** Cantidad en la unidad del insumo, ajustada por rendimiento. */
+  cantidadInsumo: number
+  costo: number
+  sinCosto: boolean
+  desactualizado: boolean
+  /** % del costo de ingredientes. Consumibles: 0. */
+  participacion: number
+  clase?: ClaseAbc
+}
+
+export interface CostoReceta {
+  vendibleId: string
+  estado: EstadoCosto
+  version?: number
+  lineas: CostoLinea[]
+  costoIngredientes: number
+  costoConsumibles: number
+  /** Precio neto (sin IGV) de la lista vigente. */
+  precioNeto: number
+  precioConIgv: number
+  comision: number
+  foodCost: number | null
+  /** Precio neto − ingredientes − consumibles − comisión del canal. */
+  margenContribucion: number
+  objetivo: number
+  origenObjetivo: 'presentacion' | 'categoria' | 'configuracion'
 }
 
 // ── Utilidades de API ────────────────────────────────────────────────────────
@@ -448,16 +988,17 @@ export interface Receta {
 export type NuevoSalon = Omit<Salon, 'id'>
 export type NuevaMesa = Omit<Mesa, 'id'>
 export type NuevoCombo = Omit<Combo, 'id'>
-export type NuevoAlmacen = Omit<Almacen, 'id'>
+export type NuevaZona = Omit<Zona, 'id'>
+export type NuevaCadena = Omit<Cadena, 'id'>
 
 export type NuevaCategoria = Omit<Categoria, 'id'>
 export type NuevoProducto = Omit<Producto, 'id'>
 /** Stock y existencias no se editan desde la ficha: cambian con movimientos. */
 export type NuevoInsumo = Omit<Insumo, 'id' | 'stock' | 'existencias'> & { stockInicial?: number }
 export type NuevoUsuario = Omit<Usuario, 'id'>
-/** Sin `almacenId` se usa el almacén donde el insumo tiene más stock. */
-export type NuevoMovimiento = Omit<Movimiento, 'id' | 'fecha' | 'almacenId'> & {
-  almacenId?: string
+/** Sin `zonaId` se usa la zona donde el insumo tiene más stock. */
+export type NuevoMovimiento = Omit<Movimiento, 'id' | 'fecha' | 'zonaId'> & {
+  zonaId?: string
 }
 export type NuevoLocal = Omit<Local, 'id'>
 export type NuevoMedioPago = Omit<MedioPago, 'id'>
@@ -600,11 +1141,11 @@ export interface Area {
   id: string
   nombre: string
   localId: string
-  /** Salón donde está el área. Sin valor: fuera de los salones (recepción, almacén). */
+  /** Salón donde está el área. Sin valor: fuera de los salones (recepción, zona). */
   salonId?: string
   /** Impresora donde salen sus comandas. */
   impresoraId?: string
-  /** Recepción o almacén no reciben comandas: solo solicitan. */
+  /** Recepción o zona no reciben comandas: solo solicitan. */
   recibeComandas: boolean
   comanda: ComandaArea
   activo: boolean
@@ -671,9 +1212,116 @@ export interface DefinicionParametro {
 }
 
 /** Acción de la vertical que se concede a un rol del ERP o a un usuario. */
+// ── Clientes y reservas (F6.1) ───────────────────────────────────────────────
+
+export type TipoDocumento = 'dni' | 'ruc' | 'ce' | 'pasaporte'
+
+/** Cliente del ERP: la vertical lo consulta y le agrega su ficha de sala. */
+export interface Cliente {
+  id: string
+  tipoDocumento: TipoDocumento
+  documento: string
+  nombre: string
+  telefono?: string
+  email?: string
+  direccion?: string
+  distrito?: string
+  activo: boolean
+}
+
+/** Lo que la sala sabe del cliente y el ERP no necesita saber. */
+export interface FichaCliente {
+  clienteId: string
+  alergenos: Alergeno[]
+  /** «Frecuente», «Celebra aniversario», «Prensa»… */
+  etiquetas: string[]
+  notas?: string
+  salonPreferidoId?: string
+}
+
+export type EstadoReserva = 'pendiente' | 'confirmada' | 'sentada' | 'noShow' | 'cancelada'
+export type CanalReserva = 'telefono' | 'web' | 'mostrador' | 'app'
+
+export interface Reserva {
+  id: string
+  localId: string
+  /** → Cliente del ERP. Sin valor: reserva a nombre de quien llamó. */
+  clienteId?: string
+  nombreContacto: string
+  telefono?: string
+  personas: number
+  /** AAAA-MM-DD y HH:mm. */
+  fecha: string
+  hora: string
+  duracionMin: number
+  /** Mesas reservadas; su capacidad sumada debe alcanzar para las personas. */
+  mesaIds: string[]
+  canal: CanalReserva
+  estado: EstadoReserva
+  nota?: string
+  creada: string
+  usuarioId?: string
+  /** Por qué se canceló o no vino. */
+  motivo?: string
+}
+
+export type NuevaReserva = Omit<Reserva, 'id' | 'creada' | 'estado' | 'usuarioId' | 'motivo'>
+
 export interface PermisoVertical {
   clave: string
   etiqueta: string
   modulo: string
   descripcion?: string
+}
+
+/**
+ * Ajuste al permiso de una persona sobre lo que da su rol del ERP (F5):
+ * `concedido` lo suma, y `false` lo quita aunque el rol lo tenga.
+ */
+export interface ExcepcionPermiso {
+  usuarioId: string
+  clave: string
+  concedido: boolean
+}
+
+/**
+ * Turno de trabajo de un local (F5). La vertical lo usa para saber quién
+ * debería estar; las marcaciones son de la capacidad «asistencia».
+ */
+export interface Turno {
+  id: string
+  nombre: string
+  localId: string
+  /** `HH:mm`. Un turno que cruza medianoche tiene `hasta` menor que `desde`. */
+  desde: string
+  hasta: string
+  dias: DiaSemana[]
+  usuarioIds: string[]
+  activo: boolean
+}
+
+export type NuevoTurno = Omit<Turno, 'id'>
+
+export type ModuloAuditoria =
+  | 'Permisos'
+  | 'Turnos'
+  | 'Integración'
+  | 'Recetas'
+  | 'Precios'
+  | 'Compras'
+  | 'Inventario'
+  | 'Reservas'
+
+/** Anotación de una acción sensible: quién, cuándo, qué y sobre qué (F5). */
+export interface RegistroAuditoria {
+  id: string
+  /** ISO 8601. */
+  fecha: string
+  usuarioId?: string
+  autor: string
+  modulo: ModuloAuditoria
+  accion: string
+  detalle: string
+  /** Local al que afecta, cuando aplica. */
+  localId?: string
 }

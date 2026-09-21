@@ -10,13 +10,13 @@ import KmTabs from '@/components/ui/KmTabs.vue'
 import { inventarioService } from '@/services/inventario.service'
 import { useAuthStore } from '@/stores/auth.store'
 import { useUiStore } from '@/stores/ui.store'
-import type { Almacen, ApiError, Insumo, TipoMovimiento } from '@/types'
+import type { Zona, ApiError, Insumo, TipoMovimiento } from '@/types'
 import type { OpcionSelect, Pestana } from '@/types/ui'
 import { etiquetaMovimiento, etiquetaUnidad, formatearSoles } from '@/utils/formato'
 
 const props = defineProps<{
   insumo: Insumo | null
-  almacenes: Almacen[]
+  zonas: Zona[]
   /** Para mostrar los ingredientes que consume una producción. */
   insumos: Insumo[]
   /** Pestaña con la que se abre. */
@@ -42,7 +42,7 @@ const transformacion = computed(() =>
 )
 
 const tipo = ref<TipoMovimiento>('entrada')
-const almacenId = ref('')
+const zonaId = ref('')
 const destinoId = ref('')
 const cantidad = ref<number | null>(null)
 const costo = ref<number | null>(null)
@@ -55,7 +55,7 @@ watch(abierto, (esta) => {
   pestana.value = props.modo ?? 'movimiento'
   tipo.value = 'entrada'
   const principal = [...props.insumo.existencias].sort((a, b) => b.cantidad - a.cantidad)[0]
-  almacenId.value = principal?.almacenId ?? props.almacenes.find((a) => a.activo)?.id ?? ''
+  zonaId.value = principal?.zonaId ?? props.zonas.find((a) => a.activo)?.id ?? ''
   destinoId.value = ''
   cantidad.value = null
   costo.value = props.insumo.costoUnitario
@@ -74,15 +74,15 @@ const ayudaTipo: Record<string, string> = {
   entrada: 'Mercadería que llega sin orden de compra (compra al paso, donación).',
   salida: 'Consumo de cocina que no se descuenta por venta.',
   merma: 'Producto vencido, dañado o desperdiciado. Resta del stock.',
-  ajuste: 'Corrección puntual que suma. Para contar todo un almacén usa la toma de inventario.',
+  ajuste: 'Corrección puntual que suma. Para contar todo una zona usa la toma de inventario.',
 }
 
-const opcionesAlmacen = computed<OpcionSelect[]>(() =>
-  props.almacenes.filter((a) => a.activo).map((a) => ({ valor: a.id, etiqueta: a.nombre })),
+const opcionesZona = computed<OpcionSelect[]>(() =>
+  props.zonas.filter((a) => a.activo).map((a) => ({ valor: a.id, etiqueta: a.nombre })),
 )
 
 const disponible = computed(
-  () => props.insumo?.existencias.find((e) => e.almacenId === almacenId.value)?.cantidad ?? 0,
+  () => props.insumo?.existencias.find((e) => e.zonaId === zonaId.value)?.cantidad ?? 0,
 )
 
 const unidad = computed(() => (props.insumo ? etiquetaUnidad[props.insumo.unidad] : ''))
@@ -110,7 +110,7 @@ async function guardar() {
     if (pestana.value === 'traslado') {
       await inventarioService.trasladar({
         insumoId: props.insumo.id,
-        origenId: almacenId.value,
+        origenId: zonaId.value,
         destinoId: destinoId.value,
         cantidad: Number(cantidad.value),
         motivo: motivo.value || undefined,
@@ -120,7 +120,7 @@ async function guardar() {
     } else if (pestana.value === 'produccion') {
       await inventarioService.producir({
         insumoId: props.insumo.id,
-        almacenId: almacenId.value,
+        zonaId: zonaId.value,
         cantidad: Number(cantidad.value),
         usuarioId,
       })
@@ -128,7 +128,7 @@ async function guardar() {
     } else {
       await inventarioService.registrarMovimiento({
         insumoId: props.insumo.id,
-        almacenId: almacenId.value,
+        zonaId: zonaId.value,
         tipo: tipo.value,
         cantidad: Number(cantidad.value),
         costoUnitario:
@@ -160,15 +160,10 @@ async function guardar() {
           </KmField>
           <KmField
             v-slot="{ id, invalido }"
-            :label="pestana === 'traslado' ? 'Desde' : 'Almacén'"
-            :error="errores.almacenId"
+            :label="pestana === 'traslado' ? 'Desde' : 'Zona'"
+            :error="errores.zonaId"
           >
-            <KmSelect
-              :id="id"
-              v-model="almacenId"
-              :opciones="opcionesAlmacen"
-              :invalido="invalido"
-            />
+            <KmSelect :id="id" v-model="zonaId" :opciones="opcionesZona" :invalido="invalido" />
           </KmField>
           <KmField
             v-if="pestana === 'traslado'"
@@ -180,7 +175,7 @@ async function guardar() {
               :id="id"
               v-model="destinoId"
               placeholder="Elige destino"
-              :opciones="opcionesAlmacen.filter((o) => o.valor !== almacenId)"
+              :opciones="opcionesZona.filter((o) => o.valor !== zonaId)"
               :invalido="invalido"
             />
           </KmField>
@@ -222,7 +217,7 @@ async function guardar() {
           class="rounded-card border border-dashed border-linea px-4 py-3 text-sm"
         >
           <p class="rs-etiqueta mb-2 text-tenue">
-            Se descontará de {{ opcionesAlmacen.find((o) => o.valor === almacenId)?.etiqueta }}
+            Se descontará de {{ opcionesZona.find((o) => o.valor === zonaId)?.etiqueta }}
           </p>
           <ul class="flex flex-col gap-1">
             <li v-for="c in consumos" :key="c.insumoId" class="flex justify-between tabular-nums">

@@ -1,4 +1,4 @@
-import { test as base, expect, type Page } from '@playwright/test'
+import { test as base, expect, type Locator, type Page } from '@playwright/test'
 
 /**
  * Fixtures: piezas que cada prueba recibe ya preparadas.
@@ -47,3 +47,9 @@ export const drawer = (page: Page) => page.getByRole('dialog').last()
 /** Fila de una tabla que contiene el texto indicado. */
 export const fila = (page: Page, texto: string | RegExp) =>
   page.getByRole('row').filter({ hasText: texto })
+
+/** Elige una opción de un `KmSelect`: abre la lista y pulsa la opción. */
+export async function elegir(control: Locator, opcion: string | RegExp) {
+  await control.click()
+  await control.page().getByRole('listbox').getByRole('option', { name: opcion }).click()
+}

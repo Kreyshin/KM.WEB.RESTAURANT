@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
+import KmCheckbox from '@/components/ui/KmCheckbox.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
@@ -116,6 +117,15 @@ function marcarPorDefecto(indice: number) {
           :contexto="articuloPor(vinculo.articuloId)?.nombre ?? 'sin elegir'"
           @click="quitar(indice)"
         />
+        <div class="basis-full">
+          <KmCheckbox
+            v-model="vinculo.procesar"
+            tamano="sm"
+            ayuda="Al recepcionarlo queda por procesar hasta registrar su transformación (pescado entero, carne por despiezar)."
+          >
+            Llega sin procesar
+          </KmCheckbox>
+        </div>
         <p v-if="articuloPor(vinculo.articuloId)" class="basis-full text-xs text-tenue">
           1 {{ articuloPor(vinculo.articuloId)!.unidadCompra }} = {{ vinculo.factor }}
           {{ etiquetaUnidad[unidad] }}

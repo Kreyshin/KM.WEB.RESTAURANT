@@ -12,31 +12,31 @@ import type { Consulta, Ubicacion } from '@/types'
 import type { ColumnaTabla, OpcionSelect } from '@/types/ui'
 
 /**
- * Dónde se guarda cada cosa dentro de un almacén (F4.3, D-004). La recepción
- * deja el stock en la ubicación por defecto del almacén; sin ella, un insumo
+ * Dónde se guarda cada cosa dentro de una zona (F4.3, D-004). La recepción
+ * deja el stock en la ubicación por defecto de la zona; sin ella, un insumo
  * que controla ubicación no se puede recepcionar.
  */
 
-const catalogos = useCatalogos(['almacenes', 'locales'])
-const { nombreAlmacen, opcionesAlmacen } = catalogos
+const catalogos = useCatalogos(['zonas', 'locales'])
+const { nombreZona, opcionesZona } = catalogos
 
 const servicio: ServicioCatalogo<Ubicacion> = ubicacionesService
 
 const columnas: ColumnaTabla[] = [
   { clave: 'codigo', etiqueta: 'Ubicación', ordenable: false },
-  { clave: 'almacenId', etiqueta: 'Almacén', clase: 'w-56', ordenable: true },
+  { clave: 'zonaId', etiqueta: 'Zona', clase: 'w-56', ordenable: true },
   { clave: 'pasillo', etiqueta: 'Pasillo', clase: 'w-32', ordenable: true },
   { clave: 'estante', etiqueta: 'Estante', clase: 'w-32', ordenable: true },
 ]
 
-const opcionesAlmacenFiltro = computed<OpcionSelect[]>(() => [
-  { valor: '', etiqueta: 'Todos los almacenes' },
-  ...opcionesAlmacen.value,
+const opcionesZonaFiltro = computed<OpcionSelect[]>(() => [
+  { valor: '', etiqueta: 'Todas las zonas' },
+  ...opcionesZona.value,
 ])
 
 function nuevo(): Omit<Ubicacion, 'id'> {
   return {
-    almacenId: (opcionesAlmacen.value[0]?.valor as string) ?? '',
+    zonaId: (opcionesZona.value[0]?.valor as string) ?? '',
     pasillo: '',
     estante: '',
     fila: '',
@@ -48,31 +48,31 @@ function nuevo(): Omit<Ubicacion, 'id'> {
 
 function validar(u: Omit<Ubicacion, 'id'>): Record<string, string> {
   const e: Record<string, string> = {}
-  if (!u.almacenId) e.almacenId = 'Elige el almacén.'
+  if (!u.zonaId) e.zonaId = 'Elige la zona.'
   if (!codigoUbicacion(u)) e.pasillo = 'Indica al menos pasillo o estante.'
   return e
 }
 
 function filtrar(consulta: Consulta, valor: string | number | undefined) {
-  consulta.filtros = { ...consulta.filtros, almacenId: valor || undefined }
+  consulta.filtros = { ...consulta.filtros, zonaId: valor || undefined }
 }
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-5">
+  <div class="flex w-full flex-col gap-5">
     <KmCatalogo
       titulo="Ubicaciones"
-      subtitulo="Pasillo, estante, fila y columna dentro de cada almacén. Una por defecto por almacén: es donde aterriza lo que se recepciona."
+      subtitulo="Pasillo, estante, fila y columna dentro de cada zona. Una por defecto por zona: es donde aterriza lo que se recepciona."
       entidad="ubicación"
       femenino
       :servicio="servicio"
       :columnas="columnas"
       :nuevo="nuevo"
       :validar="validar"
-      :nombre-de="(u: Ubicacion) => `${codigoUbicacion(u)} · ${nombreAlmacen(u.almacenId)}`"
+      :nombre-de="(u: Ubicacion) => `${codigoUbicacion(u)} · ${nombreZona(u.zonaId)}`"
       :orden="{ campo: 'pasillo', direccion: 'asc' }"
       :exportacion="[
-        { etiqueta: 'Almacén', valor: (u: Ubicacion) => nombreAlmacen(u.almacenId) },
+        { etiqueta: 'Zona', valor: (u: Ubicacion) => nombreZona(u.zonaId) },
         { etiqueta: 'Código', valor: (u: Ubicacion) => codigoUbicacion(u) },
         { etiqueta: 'Pasillo', valor: (u: Ubicacion) => u.pasillo },
         { etiqueta: 'Estante', valor: (u: Ubicacion) => u.estante },
@@ -87,9 +87,9 @@ function filtrar(consulta: Consulta, valor: string | number | undefined) {
       <template #filtros="{ consulta }">
         <div class="w-full sm:w-56">
           <KmSelect
-            :model-value="(consulta.filtros?.almacenId as string) ?? ''"
-            :opciones="opcionesAlmacenFiltro"
-            etiqueta="Filtrar por almacén"
+            :model-value="(consulta.filtros?.zonaId as string) ?? ''"
+            :opciones="opcionesZonaFiltro"
+            etiqueta="Filtrar por zona"
             @update:model-value="filtrar(consulta, $event)"
           />
         </div>
@@ -99,14 +99,14 @@ function filtrar(consulta: Consulta, valor: string | number | undefined) {
         <p class="font-medium text-tinta tabular-nums">{{ codigoUbicacion(fila) }}</p>
         <KmBadge v-if="fila.porDefecto" tono="verde" punto>Por defecto</KmBadge>
       </template>
-      <template #col-almacenId="{ fila }">{{ nombreAlmacen(fila.almacenId) }}</template>
+      <template #col-zonaId="{ fila }">{{ nombreZona(fila.zonaId) }}</template>
 
       <template #formulario="{ borrador, errores }">
-        <KmField v-slot="{ id, invalido }" label="Almacén" requerido :error="errores.almacenId">
+        <KmField v-slot="{ id, invalido }" label="Zona" requerido :error="errores.zonaId">
           <KmSelect
             :id="id"
-            v-model="borrador.almacenId"
-            :opciones="opcionesAlmacen"
+            v-model="borrador.zonaId"
+            :opciones="opcionesZona"
             :invalido="invalido"
           />
         </KmField>
@@ -132,7 +132,7 @@ function filtrar(consulta: Consulta, valor: string | number | undefined) {
           v-model="borrador.porDefecto"
           ayuda="Al marcarla, deja de serlo la que lo fuera antes."
         >
-          Ubicación por defecto del almacén
+          Ubicación por defecto de la zona
         </KmCheckbox>
       </template>
     </KmCatalogo>

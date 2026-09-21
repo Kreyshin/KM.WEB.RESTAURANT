@@ -9,14 +9,44 @@ import KmButton from '@/components/ui/KmButton.vue'
 import KmCampoEstado from '@/components/ui/KmCampoEstado.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
+import KmCheckbox from '@/components/ui/KmCheckbox.vue'
 import KmModal from '@/components/ui/KmModal.vue'
-import type { ApiError, Categoria, NuevaCategoria } from '@/types'
+import KmNumero from '@/components/ui/KmNumero.vue'
+import KmSelect from '@/components/ui/KmSelect.vue'
+import { useLocales } from '@/composables/useLocales'
+import { canalesService } from '@/services/comercial.service'
+import type { ApiError, CanalVenta, Categoria, NuevaCategoria } from '@/types'
+import type { OpcionSelect } from '@/types/ui'
+import { onMounted, shallowRef } from 'vue'
 
 const props = defineProps<{
   /** Categoría a editar; `null` significa "crear nueva". */
   categoria: Categoria | null
   ordenSugerido: number
+  categorias: Categoria[]
 }>()
+
+const { locales } = useLocales()
+const canales = shallowRef<CanalVenta[]>([])
+onMounted(async () => {
+  canales.value = await canalesService.todos()
+})
+
+/** Solo agrupa en un nivel: la sección no puede estar dentro de otra ni ser esta misma. */
+const agrupaOtras = computed(
+  () => !!props.categoria && props.categorias.some((c) => c.seccionId === props.categoria!.id),
+)
+const opcionesSeccion = computed<OpcionSelect[]>(() => [
+  { valor: '', etiqueta: 'No está dentro de una sección' },
+  ...props.categorias
+    .filter((c) => c.id !== props.categoria?.id && !c.seccionId)
+    .map((c) => ({ valor: c.id, etiqueta: c.nombre })),
+])
+
+function alternar(campo: 'localIds' | 'canalIds', id: string, marcado: boolean) {
+  const actual = form.value[campo] ?? []
+  form.value[campo] = marcado ? [...actual, id] : actual.filter((x) => x !== id)
+}
 
 const abierto = defineModel<boolean>({ required: true })
 const emit = defineEmits<{ guardado: [datos: NuevaCategoria, id?: string] }>()
@@ -66,7 +96,15 @@ function enviar() {
   if (!validar()) return
   guardando.value = true
   try {
-    emit('guardado', { ...form.value, orden: Number(form.value.orden) }, props.categoria?.id)
+    const datos: NuevaCategoria = {
+      ...form.value,
+      orden: Number(form.value.orden),
+      seccionId: form.value.seccionId || undefined,
+      localIds: form.value.localIds?.length ? form.value.localIds : undefined,
+      canalIds: form.value.canalIds?.length ? form.value.canalIds : undefined,
+      foodCostObjetivo: form.value.foodCostObjetivo ?? undefined,
+    }
+    emit('guardado', datos, props.categoria?.id)
   } finally {
     guardando.value = false
   }
@@ -88,6 +126,69 @@ defineExpose({ mostrarError })
 
       <KmField v-slot="{ id }" label="Descripción" ayuda="Aparece bajo el nombre en la carta.">
         <KmInput :id="id" v-model="form.descripcion" placeholder="Ej. Para empezar" />
+      </KmField>
+
+      <KmField
+        v-slot="{ id }"
+        label="Sección"
+        :error="errores.seccionId"
+        :ayuda="
+          agrupaOtras
+            ? 'Esta categoría ya agrupa a otras: es una sección.'
+            : 'Agrupa categorías en la carta: «Fondos» reúne criollos y marinos.'
+        "
+      >
+        <KmSelect
+          :id="id"
+          :model-value="form.seccionId ?? ''"
+          :opciones="opcionesSeccion"
+          :disabled="agrupaOtras"
+          @update:model-value="form.seccionId = String($event ?? '') || undefined"
+        />
+      </KmField>
+
+      <section class="grid gap-4 rounded-card border border-linea p-4 sm:grid-cols-2">
+        <div class="flex flex-col gap-2">
+          <p class="text-sm font-medium text-tinta">Locales</p>
+          <p class="text-xs text-tenue">Sin marcar ninguno: todos.</p>
+          <KmCheckbox
+            v-for="l in locales"
+            :key="l.id"
+            :model-value="!!form.localIds?.includes(l.id)"
+            @update:model-value="alternar('localIds', l.id, $event)"
+          >
+            {{ l.nombre }}
+          </KmCheckbox>
+        </div>
+        <div class="flex flex-col gap-2">
+          <p class="text-sm font-medium text-tinta">Canales</p>
+          <p class="text-xs text-tenue">Incluye apps externas. Sin marcar: todos.</p>
+          <KmCheckbox
+            v-for="c in canales"
+            :key="c.id"
+            :model-value="!!form.canalIds?.includes(c.id)"
+            @update:model-value="alternar('canalIds', c.id, $event)"
+          >
+            {{ c.nombre }}
+          </KmCheckbox>
+        </div>
+      </section>
+
+      <KmField
+        v-slot="{ id }"
+        label="Objetivo de food cost"
+        :error="errores.foodCostObjetivo"
+        ayuda="Sin valor usa el de su sección o el de la configuración. Una presentación puede fijar el suyo."
+      >
+        <KmNumero
+          :id="id"
+          :model-value="form.foodCostObjetivo ?? null"
+          :min="1"
+          :max="99"
+          :decimales="1"
+          sufijo="%"
+          @update:model-value="form.foodCostObjetivo = $event ?? undefined"
+        />
       </KmField>
 
       <section class="flex flex-col gap-3 rounded-card border border-linea p-4">

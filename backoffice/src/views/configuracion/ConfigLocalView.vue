@@ -26,7 +26,7 @@ const local = computed(() => localStore.locales.find((l) => l.id === seleccionad
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCard v-if="localStore.locales.length === 0" titulo="Configuración por local">
       <KmEstado
         tipo="vacio"

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+﻿import { beforeEach, describe, expect, it } from 'vitest'
 import { transformacionesService } from './abastecimiento.service'
 import { combosService, precioSueltos } from './combos.service'
 import { inventarioService } from './inventario.service'
@@ -7,7 +7,7 @@ import { db, reiniciarMock } from './mock/db'
 
 /**
  * Reglas de F3 y F4 donde un error cuesta dinero o descuadra el stock:
- * existencias por almacén, costo promedio, traslados, transformaciones y combos.
+ * existencias por zona, costo promedio, traslados, transformaciones y combos.
  */
 
 beforeEach(() => {
@@ -16,14 +16,14 @@ beforeEach(() => {
 })
 
 const insumo = (id: string) => db.insumos.find((i) => i.id === id)!
-const enAlmacen = (id: string, almacenId: string) =>
-  insumo(id).existencias.find((e) => e.almacenId === almacenId)?.cantidad ?? 0
+const enZona = (id: string, zonaId: string) =>
+  insumo(id).existencias.find((e) => e.zonaId === zonaId)?.cantidad ?? 0
 
-describe('existencias por almacén', () => {
-  it('el stock total es la suma de los almacenes', async () => {
+describe('existencias por zona', () => {
+  it('el stock total es la suma de las zonas', async () => {
     await inventarioService.registrarMovimiento({
       insumoId: 'i8',
-      almacenId: 'al4',
+      zonaId: 'zn4',
       tipo: 'entrada',
       cantidad: 10,
       usuarioId: 'u1',
@@ -32,17 +32,17 @@ describe('existencias por almacén', () => {
     expect(i.stock).toBeCloseTo(i.existencias.reduce((t, e) => t + e.cantidad, 0))
   })
 
-  it('no deja salir más de lo que hay en ese almacén aunque el total alcance', async () => {
-    const enSanIsidro = enAlmacen('i8', 'al4')
+  it('no deja salir más de lo que hay en esa zona aunque el total alcance', async () => {
+    const enSanIsidro = enZona('i8', 'zn4')
     await expect(
       inventarioService.registrarMovimiento({
         insumoId: 'i8',
-        almacenId: 'al4',
+        zonaId: 'zn4',
         tipo: 'salida',
         cantidad: enSanIsidro + 1,
         usuarioId: 'u1',
       }),
-    ).rejects.toMatchObject({ mensaje: expect.stringContaining('Almacén San Isidro') })
+    ).rejects.toMatchObject({ mensaje: expect.stringContaining('Despensa San Isidro') })
   })
 
   it('una entrada con costo recalcula el costo promedio ponderado', async () => {
@@ -50,7 +50,7 @@ describe('existencias por almacén', () => {
     const [stock, costo] = [antes.stock, antes.costoUnitario]
     await inventarioService.registrarMovimiento({
       insumoId: 'i1',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       tipo: 'entrada',
       cantidad: 10,
       costoUnitario: 60,
@@ -62,19 +62,19 @@ describe('existencias por almacén', () => {
 })
 
 describe('traslados', () => {
-  it('mueve stock entre almacenes sin cambiar el total', async () => {
+  it('mueve stock entre zonas sin cambiar el total', async () => {
     const total = insumo('i8').stock
-    const [origen, destino] = [enAlmacen('i8', 'al4'), enAlmacen('i8', 'al1')]
+    const [origen, destino] = [enZona('i8', 'zn4'), enZona('i8', 'zn1')]
     await inventarioService.trasladar({
       insumoId: 'i8',
-      origenId: 'al4',
-      destinoId: 'al1',
+      origenId: 'zn4',
+      destinoId: 'zn1',
       cantidad: 5,
       usuarioId: 'u1',
     })
     expect(insumo('i8').stock).toBe(total)
-    expect(enAlmacen('i8', 'al4')).toBeCloseTo(origen - 5)
-    expect(enAlmacen('i8', 'al1')).toBeCloseTo(destino + 5)
+    expect(enZona('i8', 'zn4')).toBeCloseTo(origen - 5)
+    expect(enZona('i8', 'zn1')).toBeCloseTo(destino + 5)
   })
 
   it('si falla no deja nada a medias', async () => {
@@ -82,8 +82,8 @@ describe('traslados', () => {
     await expect(
       inventarioService.trasladar({
         insumoId: 'i8',
-        origenId: 'al4',
-        destinoId: 'al1',
+        origenId: 'zn4',
+        destinoId: 'zn1',
         cantidad: 9999,
         usuarioId: 'u1',
       }),
@@ -91,12 +91,12 @@ describe('traslados', () => {
     expect(db.movimientos).toHaveLength(movimientos)
   })
 
-  it('rechaza el mismo almacén como origen y destino', async () => {
+  it('rechaza el misma zona como origen y destino', async () => {
     await expect(
       inventarioService.trasladar({
         insumoId: 'i8',
-        origenId: 'al1',
-        destinoId: 'al1',
+        origenId: 'zn1',
+        destinoId: 'zn1',
         cantidad: 1,
         usuarioId: 'u1',
       }),
@@ -134,20 +134,20 @@ describe('transformaciones y recetas', () => {
     ).rejects.toMatchObject({ campos: { salidas: expect.any(String) } })
   })
 
-  it('producir descuenta las entradas y suma lo producido en el mismo almacén', async () => {
+  it('producir descuenta las entradas y suma lo producido en el misma zona', async () => {
     await transformacionesService.actualizar('tf2', {
       entradas: [{ insumoId: 'i2', cantidad: 0.5 }],
       salidas: [{ id: 'tf2-s1', tipo: 'insumo', insumoId: 'i16', cantidad: 1, reparto: 100 }],
     })
-    const [pescado, leche] = [enAlmacen('i2', 'al2'), enAlmacen('i16', 'al2')]
+    const [pescado, leche] = [enZona('i2', 'zn2'), enZona('i16', 'zn2')]
     await inventarioService.producir({
       insumoId: 'i16',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       cantidad: 2,
       usuarioId: 'u1',
     })
-    expect(enAlmacen('i2', 'al2')).toBeCloseTo(pescado - 1)
-    expect(enAlmacen('i16', 'al2')).toBeCloseTo(leche + 2)
+    expect(enZona('i2', 'zn2')).toBeCloseTo(pescado - 1)
+    expect(enZona('i16', 'zn2')).toBeCloseTo(leche + 2)
   })
 
   it('un despiece reparte el costo entre sus salidas y la merma lo encarece', async () => {
@@ -161,19 +161,19 @@ describe('transformaciones y recetas', () => {
 
   it('la transformación consume las entradas y da de alta todas las salidas', async () => {
     const antes = {
-      pescado: enAlmacen('i2', 'al2'),
-      filete: enAlmacen('i17', 'al2'),
-      espinazo: enAlmacen('i18', 'al2'),
+      pescado: enZona('i2', 'zn2'),
+      filete: enZona('i17', 'zn2'),
+      espinazo: enZona('i18', 'zn2'),
     }
     await inventarioService.transformar({
       transformacionId: 'tf1',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       veces: 0.5,
       usuarioId: 'u1',
     })
-    expect(enAlmacen('i2', 'al2')).toBeCloseTo(antes.pescado - 5)
-    expect(enAlmacen('i17', 'al2')).toBeCloseTo(antes.filete + 3)
-    expect(enAlmacen('i18', 'al2')).toBeCloseTo(antes.espinazo + 0.75)
+    expect(enZona('i2', 'zn2')).toBeCloseTo(antes.pescado - 5)
+    expect(enZona('i17', 'zn2')).toBeCloseTo(antes.filete + 3)
+    expect(enZona('i18', 'zn2')).toBeCloseTo(antes.espinazo + 0.75)
   })
 })
 

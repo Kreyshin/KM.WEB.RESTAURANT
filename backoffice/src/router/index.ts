@@ -51,6 +51,12 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Carta y menú', roles: ['admin'] },
       },
       {
+        path: 'carta/listas-precios',
+        name: 'listas-precios',
+        component: () => import('@/views/carta/ListasPreciosView.vue'),
+        meta: { titulo: 'Listas de precios', roles: ['admin'] },
+      },
+      {
         path: 'combos',
         name: 'combos',
         component: () => import('@/views/carta/CombosView.vue'),
@@ -87,10 +93,10 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Parámetros de abastecimiento', roles: ['admin'] },
       },
       {
-        path: 'inventario/stock-detallado',
+        path: 'inventario/stock',
         name: 'inv-stock-detalle',
         component: () => import('@/views/inventario/StockDetalleView.vue'),
-        meta: { titulo: 'Lotes y stock detallado', roles: ['admin'] },
+        meta: { titulo: 'Stock', roles: ['admin'] },
       },
       {
         path: 'inventario/ubicaciones',
@@ -99,10 +105,34 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Ubicaciones', roles: ['admin'] },
       },
       {
-        path: 'inventario/almacenes',
-        name: 'inv-almacenes',
-        component: () => import('@/views/inventario/AlmacenesView.vue'),
-        meta: { titulo: 'Almacenes', roles: ['admin'] },
+        path: 'inventario/zonas',
+        name: 'inv-zonas',
+        component: () => import('@/views/inventario/ZonasView.vue'),
+        meta: { titulo: 'Almacén y zonas', roles: ['admin'] },
+      },
+      {
+        path: 'compras/solicitudes',
+        name: 'compras-solicitudes',
+        component: () => import('@/views/compras/SolicitudesView.vue'),
+        meta: { titulo: 'Solicitudes de compra', roles: ['admin'] },
+      },
+      {
+        path: 'compras/requerimientos',
+        name: 'compras-requerimientos',
+        component: () => import('@/views/compras/RequerimientosView.vue'),
+        meta: { titulo: 'Requerimientos de compra', roles: ['admin'] },
+      },
+      {
+        path: 'compras/recepcion',
+        name: 'compras-recepcion',
+        component: () => import('@/views/compras/RecepcionView.vue'),
+        meta: { titulo: 'Recepción', roles: ['admin'] },
+      },
+      {
+        path: 'inventario/produccion',
+        name: 'inv-produccion',
+        component: () => import('@/views/inventario/ProduccionView.vue'),
+        meta: { titulo: 'Producción', roles: ['admin'] },
       },
       {
         path: 'compras/articulos',
@@ -122,7 +152,7 @@ const rutas: RouteRecordRaw[] = [
         component: () => import('@/views/compras/MarcasView.vue'),
         meta: { titulo: 'Marcas', roles: ['admin'] },
       },
-      { path: 'compras', redirect: { name: 'compras-articulos' } },
+      { path: 'compras', redirect: { name: 'compras-solicitudes' } },
       { path: 'configuracion', redirect: { name: 'config-vertical' } },
       {
         path: 'configuracion/vertical',
@@ -147,6 +177,42 @@ const rutas: RouteRecordRaw[] = [
         name: 'config-excepciones',
         component: () => import('@/views/configuracion/ExcepcionesUsuarioView.vue'),
         meta: { titulo: 'Excepciones por usuario', roles: ['admin'] },
+      },
+      {
+        path: 'clientes',
+        name: 'clientes',
+        component: () => import('@/views/clientes/ClientesView.vue'),
+        meta: { titulo: 'Clientes', roles: ['admin'] },
+      },
+      {
+        path: 'reservas',
+        name: 'reservas',
+        component: () => import('@/views/clientes/ReservasView.vue'),
+        meta: { titulo: 'Reservas', roles: ['admin'] },
+      },
+      {
+        path: 'personal/turnos',
+        name: 'personal-turnos',
+        component: () => import('@/views/personal/TurnosView.vue'),
+        meta: { titulo: 'Turnos', roles: ['admin'] },
+      },
+      {
+        path: 'personal/bitacora',
+        name: 'personal-bitacora',
+        component: () => import('@/views/personal/BitacoraView.vue'),
+        meta: { titulo: 'Bitácora', roles: ['admin'] },
+      },
+      {
+        path: 'configuracion/cadenas',
+        name: 'config-cadenas',
+        component: () => import('@/views/configuracion/CadenasView.vue'),
+        meta: { titulo: 'Cadenas', roles: ['admin'] },
+      },
+      {
+        path: 'karma/integracion',
+        name: 'karma-integracion',
+        component: () => import('@/views/karma/ConsolaIntegracionView.vue'),
+        meta: { titulo: 'Consola Karma · Integración', roles: ['admin'] },
       },
       {
         path: 'configuracion/canales',

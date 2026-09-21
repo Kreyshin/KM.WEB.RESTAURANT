@@ -21,7 +21,7 @@ const vacio = (): Omit<Marca, 'id'> => ({ nombre: '', activo: true })
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-3xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCatalogo
       titulo="Marcas"
       subtitulo="Marcas de los artículos que compra el ERP. Sirven para expresar una preferencia al solicitar."

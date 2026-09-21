@@ -82,7 +82,6 @@ onMounted(() => {
       <div class="hidden items-center gap-3 sm:flex">
         <div class="h-9 w-px bg-linea" role="presentation" />
         <SelectorLocal />
-        <p class="hidden text-xs text-tenue xl:block">Karma Corp</p>
       </div>
     </div>
   </header>

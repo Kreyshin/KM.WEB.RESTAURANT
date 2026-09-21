@@ -74,6 +74,7 @@ export default defineConfig({
             { text: 'Entidades del dominio', link: '/guia/entidades' },
             { text: 'Decisiones de diseño', link: '/guia/decisiones' },
             { text: 'Roadmap', link: '/guia/roadmap' },
+      { text: 'Revisión pendiente', link: '/guia/revision-pendiente' },
             { text: 'Publicación', link: '/guia/publicacion' },
           ],
         },

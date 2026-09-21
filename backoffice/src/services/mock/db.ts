@@ -6,13 +6,14 @@
  */
 
 import type {
-  Almacen,
+  Zona,
   CanalVenta,
   CategoriaInsumo,
   Combo,
   Proveedor,
   Categoria,
   ConfigImpuestos,
+  ListaPrecios,
   Empresa,
   Area,
   HorarioDia,
@@ -25,7 +26,14 @@ import type {
   Mesa,
   Movimiento,
   Producto,
-  Receta,
+  Cliente,
+  ExcepcionPermiso,
+  FichaCliente,
+  Reserva,
+  RecetaEstandar,
+  RegistroAuditoria,
+  Rol,
+  Turno,
   Salon,
   Usuario,
   Articulo,
@@ -36,6 +44,18 @@ import type {
   Transformacion,
   AjusteParametros,
   VinculoArticulo,
+  SolicitudCompra,
+  RequerimientoCompra,
+  Recepcion,
+  PorProcesar,
+  ParteProduccion,
+  ValoresConfiguracion,
+  Almacen,
+  Cadena,
+  AccesoZona,
+  AccesoCadena,
+  ConfigIntegracion,
+  VinculoErp,
 } from '@/types'
 import { ilustracionCombo, imagenPlato } from './ilustraciones'
 import { simularRed } from './red'
@@ -44,11 +64,18 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v18'
+const CLAVE = 'km.restaurante.mock.v29'
 
 export interface Esquema {
   combos: Combo[]
+  listasPrecios: ListaPrecios[]
   almacenes: Almacen[]
+  zonas: Zona[]
+  cadenas: Cadena[]
+  accesosZona: AccesoZona[]
+  accesosCadena: AccesoCadena[]
+  integracion: ConfigIntegracion
+  vinculosErp: VinculoErp[]
   proveedores: Proveedor[]
   marcas: Marca[]
   articulos: Articulo[]
@@ -68,12 +95,25 @@ export interface Esquema {
   productos: Producto[]
   insumos: Insumo[]
   movimientos: Movimiento[]
-  recetas: Receta[]
+  recetasEstandar: RecetaEstandar[]
+  permisosPorRol: Record<Rol, string[]>
+  excepcionesPermiso: ExcepcionPermiso[]
+  turnos: Turno[]
+  clientes: Cliente[]
+  fichasCliente: FichaCliente[]
+  reservas: Reserva[]
+  bitacora: RegistroAuditoria[]
   ubicaciones: Ubicacion[]
   lotes: Lote[]
   stockDetalle: StockDetalle[]
   transformaciones: Transformacion[]
   ajustesParametros: AjusteParametros[]
+  solicitudes: SolicitudCompra[]
+  requerimientos: RequerimientoCompra[]
+  recepciones: Recepcion[]
+  porProcesar: PorProcesar[]
+  partesProduccion: ParteProduccion[]
+  configuracion: ValoresConfiguracion
 }
 
 /** Horario semanal con el mismo turno todos los días, salvo los cerrados. */
@@ -412,6 +452,11 @@ function semilla(): Esquema {
       rol: 'admin',
       activo: true,
       localIds: ['l1', 'l2', 'l3'],
+      // Sin acceso a la Barra y solo consulta en San Isidro: muestra el filtro por permisos.
+      almacenes: [
+        { almacenId: 'am1', nivel: 'gestionar' },
+        { almacenId: 'am2', nivel: 'ver' },
+      ],
     },
     {
       id: 'u2',
@@ -626,9 +671,12 @@ function semilla(): Esquema {
       orden: 2,
       activa: true,
     },
-    { id: 'c3', nombre: 'Fondos criollos', orden: 3, activa: true },
-    { id: 'c4', nombre: 'Fondos marinos', orden: 4, activa: true },
-    { id: 'c5', nombre: 'Postres', orden: 5, activa: true },
+    // «Fondos» es una sección: agrupa criollos y marinos en la carta.
+    { id: 'c8', nombre: 'Fondos', orden: 3, activa: true, foodCostObjetivo: 33 },
+    { id: 'c3', nombre: 'Fondos criollos', orden: 3, activa: true, seccionId: 'c8' },
+    { id: 'c4', nombre: 'Fondos marinos', orden: 4, activa: true, seccionId: 'c8' },
+    // Los postres no viajan bien: no se publican en apps de delivery.
+    { id: 'c5', nombre: 'Postres', orden: 5, activa: true, canalIds: ['cv1', 'cv2', 'cv3'] },
     { id: 'c6', nombre: 'Bebidas', orden: 6, activa: true },
     {
       id: 'c7',
@@ -636,6 +684,8 @@ function semilla(): Esquema {
       descripcion: 'Solo de lunes a viernes al mediodía',
       orden: 7,
       activa: false,
+      localIds: ['l1'],
+      canalIds: ['cv1'],
     },
   ]
 
@@ -652,7 +702,7 @@ function semilla(): Esquema {
     ],
   })
 
-  const productosBase: Omit<Producto, 'preciosCanal'>[] = [
+  const productosBase: Producto[] = [
     {
       id: 'p1',
       categoriaId: 'c1',
@@ -1009,41 +1059,21 @@ function semilla(): Esquema {
         costoUnitario: 6.5,
         activo: false,
       },
+      {
+        id: 'i40',
+        nombre: 'Inca Kola 500 ml',
+        unidad: 'unidad',
+        stock: 48,
+        stockMinimo: 24,
+        costoUnitario: 2.4,
+        activo: true,
+      },
     ]
-
-  const recetas: Receta[] = [
-    {
-      productoId: 'p6',
-      ingredientes: [
-        { insumoId: 'i1', cantidad: 0.22 },
-        { insumoId: 'i4', cantidad: 0.25 },
-        { insumoId: 'i5', cantidad: 0.08 },
-        { insumoId: 'i8', cantidad: 0.15 },
-        { insumoId: 'i9', cantidad: 0.05 },
-      ],
-    },
-    {
-      productoId: 'p3',
-      ingredientes: [
-        { insumoId: 'i2', cantidad: 0.2 },
-        { insumoId: 'i6', cantidad: 0.12 },
-        { insumoId: 'i5', cantidad: 0.06 },
-        { insumoId: 'i7', cantidad: 0.02 },
-      ],
-    },
-    {
-      productoId: 'p13',
-      ingredientes: [
-        { insumoId: 'i13', cantidad: 0.05 },
-        { insumoId: 'i6', cantidad: 0.03 },
-      ],
-    },
-  ]
 
   const ahora = Date.now()
   const hace = (horas: number) => new Date(ahora - horas * 3600_000).toISOString()
 
-  const movimientosBase: Omit<Movimiento, 'almacenId'>[] = [
+  const movimientosBase: Omit<Movimiento, 'zonaId'>[] = [
     {
       id: 'mv1',
       insumoId: 'i2',
@@ -1121,10 +1151,15 @@ function semilla(): Esquema {
   // ── Fase 3: carta ──
   const productos: Producto[] = productosBase.map((p) => ({
     ...p,
+    codigo: `PR${p.id.slice(1).padStart(3, '0')}`,
     imagen: imagenPlato(p.nombre),
-    // Rappi cobra 25 % de comisión: los platos de fondo suben de precio en la app.
-    preciosCanal: p.precio >= 30 ? [{ canalId: 'cv4', precio: Math.round(p.precio * 1.15) }] : [],
   }))
+  for (const p of productos) {
+    for (const v of p.variantes) v.codigo = `${p.codigo}-${v.id.toUpperCase()}`
+    for (const g of p.gruposModificadores)
+      for (const m of g.modificadores)
+        if (m.recargo > 0) m.codigo = `AD${m.id.slice(2).padStart(3, '0')}`
+  }
 
   const c7 = categorias.find((c) => c.id === 'c7')
   if (c7) c7.disponibilidad = { dias: [0, 1, 2, 3, 4], desde: '12:00', hasta: '16:00' }
@@ -1161,29 +1196,46 @@ function semilla(): Esquema {
     },
   ]
 
+  for (const c of combos) c.codigo = `CB${c.id.slice(2).padStart(3, '0')}`
   for (const c of combos)
     c.imagen = ilustracionCombo(
       c.grupos.map((g) => productos.find((p) => p.id === g.opciones[0])?.nombre ?? ''),
     )
 
   // ── Fase 4: inventario y compras ──
+  /** Uno por local: es lo que ve Inventarios del ERP (D-009). */
   const almacenes: Almacen[] = [
+    { id: 'am1', nombre: 'Almacén Miraflores', localId: 'l1', activo: true },
+    { id: 'am2', nombre: 'Almacén San Isidro', localId: 'l2', activo: true },
+    { id: 'am3', nombre: 'Almacén Barranco', localId: 'l3', activo: true },
+  ]
+
+  const zonas: Zona[] = [
     {
-      id: 'al1',
-      nombre: 'Almacén principal',
+      id: 'zn1',
+      nombre: 'Despensa',
       localId: 'l1',
+      almacenId: 'am1',
       descripcion: 'Secos y abarrotes',
       activo: true,
     },
     {
-      id: 'al2',
+      id: 'zn2',
       nombre: 'Cámara de frío',
       localId: 'l1',
+      almacenId: 'am1',
       descripcion: 'Carnes, pescados y lácteos',
       activo: true,
     },
-    { id: 'al3', nombre: 'Barra', localId: 'l1', descripcion: 'Bebidas y licores', activo: true },
-    { id: 'al4', nombre: 'Almacén San Isidro', localId: 'l2', activo: true },
+    {
+      id: 'zn3',
+      nombre: 'Barra',
+      localId: 'l1',
+      almacenId: 'am1',
+      descripcion: 'Bebidas y licores',
+      activo: true,
+    },
+    { id: 'zn4', nombre: 'Despensa San Isidro', localId: 'l2', almacenId: 'am2', activo: true },
   ]
 
   const proveedores: Proveedor[] = [
@@ -1255,17 +1307,18 @@ function semilla(): Esquema {
     i13: 'abarrotes',
     i14: 'bebidas',
     i15: 'descartables',
+    i40: 'bebidas',
   }
-  /** Almacén donde se guarda cada categoría en Miraflores. */
-  const almacenPorCategoria: Record<CategoriaInsumo, string> = {
-    carnes: 'al2',
-    pescados: 'al2',
-    lacteos: 'al2',
-    verduras: 'al1',
-    abarrotes: 'al1',
-    descartables: 'al1',
-    preparaciones: 'al2',
-    bebidas: 'al3',
+  /** Zona donde se guarda cada categoría en Miraflores. */
+  const zonaPorCategoria: Record<CategoriaInsumo, string> = {
+    carnes: 'zn2',
+    pescados: 'zn2',
+    lacteos: 'zn2',
+    verduras: 'zn1',
+    abarrotes: 'zn1',
+    descartables: 'zn1',
+    preparaciones: 'zn2',
+    bebidas: 'zn3',
   }
 
   /**
@@ -1275,9 +1328,10 @@ function semilla(): Esquema {
    */
   const articulosPorInsumo: Record<string, VinculoArticulo[]> = {
     i1: [{ articuloId: 'ar1', factor: 1, porDefecto: true }],
+    // Llega entero: queda por procesar hasta despiezarlo.
     i2: [
-      { articuloId: 'ar2', factor: 1, porDefecto: true },
-      { articuloId: 'ar3', factor: 1, porDefecto: false },
+      { articuloId: 'ar2', factor: 1, porDefecto: true, procesar: true },
+      { articuloId: 'ar3', factor: 1, porDefecto: false, procesar: true },
     ],
     i3: [{ articuloId: 'ar5', factor: 50, porDefecto: true }],
     i4: [{ articuloId: 'ar6', factor: 50, porDefecto: true }],
@@ -1294,11 +1348,12 @@ function semilla(): Esquema {
     i11: [{ articuloId: 'ar14', factor: 30, porDefecto: true }],
     i12: [{ articuloId: 'ar4', factor: 1, porDefecto: true }],
     i13: [{ articuloId: 'ar16', factor: 1, porDefecto: true }],
+    i40: [{ articuloId: 'ar15', factor: 12, porDefecto: true }],
   }
 
   const insumos: Insumo[] = insumosBase.map((i) => {
     const categoria = categoriaPorInsumo[i.id] ?? 'abarrotes'
-    const almacenId = almacenPorCategoria[categoria]
+    const zonaId = zonaPorCategoria[categoria]
     // Una quinta parte del stock está en San Isidro para que el traslado tenga sentido.
     const enSanIsidro = Math.round(i.stock * 0.2 * 10) / 10
     return {
@@ -1307,11 +1362,25 @@ function semilla(): Esquema {
       abastecimiento: 'directa' as const,
       articulos: articulosPorInsumo[i.id] ?? [],
       existencias: [
-        { almacenId, cantidad: Math.round((i.stock - enSanIsidro) * 1000) / 1000 },
-        { almacenId: 'al4', cantidad: enSanIsidro },
+        { zonaId, cantidad: Math.round((i.stock - enSanIsidro) * 1000) / 1000 },
+        { zonaId: 'zn4', cantidad: enSanIsidro },
       ],
     }
   })
+
+  // Stock repartido entre zonas del mismo local, para que el total del local sume de verdad.
+  const repartos: [insumoId: string, zonaId: string, cantidad: number][] = [
+    ['i11', 'zn1', 60],
+    ['i10', 'zn1', 24],
+    ['i4', 'zn1', 3.5],
+    ['i9', 'zn3', 6],
+  ]
+  for (const [insumoId, zonaId, cantidad] of repartos) {
+    const insumo = insumos.find((x) => x.id === insumoId)
+    if (!insumo) continue
+    insumo.existencias.push({ zonaId, cantidad })
+    insumo.stock = Math.round(insumo.existencias.reduce((t, e) => t + e.cantidad, 0) * 1000) / 1000
+  }
 
   // Salen de una transformación, no se compran: su costo lo calcula la receta.
   insumos.push(
@@ -1321,10 +1390,11 @@ function semilla(): Esquema {
       unidad: 'l',
       categoria: 'preparaciones',
       stock: 1.5,
-      existencias: [{ almacenId: 'al2', cantidad: 1.5 }],
+      existencias: [{ zonaId: 'zn2', cantidad: 1.5 }],
       stockMinimo: 1,
       costoUnitario: 0,
       abastecimiento: 'transformacion',
+      vidaUtilDias: 1,
       articulos: [],
       activo: true,
     },
@@ -1334,10 +1404,11 @@ function semilla(): Esquema {
       unidad: 'kg',
       categoria: 'pescados',
       stock: 4.2,
-      existencias: [{ almacenId: 'al2', cantidad: 4.2 }],
+      existencias: [{ zonaId: 'zn2', cantidad: 4.2 }],
       stockMinimo: 4,
       costoUnitario: 0,
       abastecimiento: 'transformacion',
+      vidaUtilDias: 2,
       articulos: [],
       activo: true,
     },
@@ -1347,7 +1418,7 @@ function semilla(): Esquema {
       unidad: 'kg',
       categoria: 'pescados',
       stock: 1.1,
-      existencias: [{ almacenId: 'al2', cantidad: 1.1 }],
+      existencias: [{ zonaId: 'zn2', cantidad: 1.1 }],
       stockMinimo: 0,
       costoUnitario: 0,
       abastecimiento: 'transformacion',
@@ -1412,14 +1483,14 @@ function semilla(): Esquema {
   }
 
   /**
-   * Parámetros de abastecimiento heredados: Cadena → Local → Almacén →
+   * Parámetros de abastecimiento heredados: Cadena → Local → Zona →
    * Categoría → Insumo, y gana el más específico (D-004). La semilla muestra
    * los cuatro niveles en uso sobre el pescado de la cámara de frío.
    */
   const ajustesParametros: AjusteParametros[] = [
     {
       id: 'pa1',
-      nivel: 'cadena',
+      nivel: 'empresa',
       valores: {
         controlaLote: false,
         controlaVencimiento: false,
@@ -1433,8 +1504,8 @@ function semilla(): Esquema {
     // La cámara de frío sí lleva lote y ubicación: dentro no se distingue a ojo.
     {
       id: 'pa2',
-      nivel: 'almacen',
-      referencia: 'al2',
+      nivel: 'zona',
+      referencia: 'zn2',
       valores: { controlaLote: true, controlaUbicacion: true, tipoRecepcion: 'detalle' },
     },
     // El pescado caduca en días: vencimiento, FEFO y aviso más corto.
@@ -1449,7 +1520,7 @@ function semilla(): Esquema {
   const ubicaciones: Ubicacion[] = [
     {
       id: 'ub1',
-      almacenId: 'al1',
+      zonaId: 'zn1',
       pasillo: 'P1',
       estante: 'A',
       fila: '1',
@@ -1459,7 +1530,7 @@ function semilla(): Esquema {
     },
     {
       id: 'ub2',
-      almacenId: 'al1',
+      zonaId: 'zn1',
       pasillo: 'P1',
       estante: 'A',
       fila: '2',
@@ -1469,7 +1540,7 @@ function semilla(): Esquema {
     },
     {
       id: 'ub3',
-      almacenId: 'al1',
+      zonaId: 'zn1',
       pasillo: 'P2',
       estante: 'B',
       fila: '1',
@@ -1479,7 +1550,7 @@ function semilla(): Esquema {
     },
     {
       id: 'ub4',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       pasillo: 'Cámara',
       estante: 'Rack 1',
       fila: '1',
@@ -1489,7 +1560,7 @@ function semilla(): Esquema {
     },
     {
       id: 'ub5',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       pasillo: 'Cámara',
       estante: 'Rack 2',
       fila: '1',
@@ -1499,7 +1570,7 @@ function semilla(): Esquema {
     },
     {
       id: 'ub6',
-      almacenId: 'al3',
+      zonaId: 'zn3',
       pasillo: 'Barra',
       estante: 'Bajo mostrador',
       fila: '1',
@@ -1523,22 +1594,31 @@ function semilla(): Esquema {
 
   /**
    * Stock detallado de la cámara de frío: cuadra con el principal de al2.
-   * El resto de almacenes no controla lote ni ubicación, así que no lleva detalle.
+   * El resto de zonas no controla lote ni ubicación, así que no lleva detalle.
    */
   const stockDetalle: StockDetalle[] = [
-    { id: 'sd1', insumoId: 'i2', almacenId: 'al2', loteId: 'lt1', ubicacionId: 'ub4', cantidad: 4 },
+    { id: 'sd1', insumoId: 'i2', zonaId: 'zn2', loteId: 'lt1', ubicacionId: 'ub4', cantidad: 4 },
+    // El mismo lote repartido en dos racks.
     {
       id: 'sd2',
       insumoId: 'i2',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       loteId: 'lt2',
       ubicacionId: 'ub5',
-      cantidad: 7.2,
+      cantidad: 4.2,
+    },
+    {
+      id: 'sd10',
+      insumoId: 'i2',
+      zonaId: 'zn2',
+      loteId: 'lt2',
+      ubicacionId: 'ub4',
+      cantidad: 3,
     },
     {
       id: 'sd3',
       insumoId: 'i1',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       loteId: 'lt3',
       ubicacionId: 'ub4',
       cantidad: 6.7,
@@ -1546,7 +1626,7 @@ function semilla(): Esquema {
     {
       id: 'sd4',
       insumoId: 'i12',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       loteId: 'lt4',
       ubicacionId: 'ub5',
       cantidad: 4.4,
@@ -1554,17 +1634,17 @@ function semilla(): Esquema {
     {
       id: 'sd5',
       insumoId: 'i17',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       loteId: 'lt5',
       ubicacionId: 'ub4',
       cantidad: 4.2,
     },
-    { id: 'sd6', insumoId: 'i16', almacenId: 'al2', ubicacionId: 'ub4', cantidad: 1.5 },
-    { id: 'sd7', insumoId: 'i18', almacenId: 'al2', ubicacionId: 'ub5', cantidad: 1.1 },
+    { id: 'sd6', insumoId: 'i16', zonaId: 'zn2', ubicacionId: 'ub4', cantidad: 1.5 },
+    { id: 'sd7', insumoId: 'i18', zonaId: 'zn2', ubicacionId: 'ub5', cantidad: 1.1 },
     {
       id: 'sd8',
       insumoId: 'i10',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       loteId: 'lt6',
       ubicacionId: 'ub5',
       cantidad: 32,
@@ -1572,7 +1652,7 @@ function semilla(): Esquema {
     {
       id: 'sd9',
       insumoId: 'i11',
-      almacenId: 'al2',
+      zonaId: 'zn2',
       loteId: 'lt7',
       ubicacionId: 'ub4',
       cantidad: 96,
@@ -1581,7 +1661,7 @@ function semilla(): Esquema {
 
   const movimientos: Movimiento[] = movimientosBase.map((m) => ({
     ...m,
-    almacenId: almacenPorCategoria[categoriaPorInsumo[m.insumoId] ?? 'abarrotes'],
+    zonaId: zonaPorCategoria[categoriaPorInsumo[m.insumoId] ?? 'abarrotes'],
   }))
 
   const marcas: Marca[] = [
@@ -1740,9 +1820,778 @@ function semilla(): Esquema {
     },
   ]
 
+  /**
+   * Solicitudes y requerimientos de compra (F4.4). Cubren el circuito completo:
+   * solicitudes enviadas esperando consolidarse, un requerimiento en cada
+   * etapa que decide el ERP y una línea no disponible para reemplazar.
+   */
+  const solicitudes: SolicitudCompra[] = [
+    {
+      id: 'so1',
+      numero: 'SOL-000001',
+      localId: 'l1',
+      areaId: 'ae2',
+      estado: 'enviada',
+      fecha: hace(20),
+      usuarioId: 'u6',
+      nota: 'Para el fin de semana',
+      lineas: [
+        { id: 'so1-1', insumoId: 'i2', cantidad: 12 },
+        { id: 'so1-2', insumoId: 'i6', cantidad: 10 },
+        { id: 'so1-3', insumoId: 'i5', cantidad: 8 },
+      ],
+    },
+    {
+      id: 'so2',
+      numero: 'SOL-000002',
+      localId: 'l1',
+      areaId: 'ae1',
+      estado: 'enviada',
+      fecha: hace(8),
+      usuarioId: 'u6',
+      lineas: [
+        { id: 'so2-1', insumoId: 'i1', cantidad: 6 },
+        { id: 'so2-2', insumoId: 'i3', cantidad: 30 },
+        { id: 'so2-3', insumoId: 'i9', cantidad: 10, marcaId: 'mc3' },
+        { id: 'so2-4', insumoId: 'i5', cantidad: 5 },
+      ],
+    },
+    {
+      id: 'so3',
+      numero: 'SOL-000003',
+      localId: 'l1',
+      areaId: 'ae3',
+      estado: 'borrador',
+      fecha: hace(2),
+      usuarioId: 'u1',
+      lineas: [{ id: 'so3-1', insumoId: 'i13', cantidad: 4 }],
+    },
+    {
+      id: 'so4',
+      numero: 'SOL-000004',
+      localId: 'l1',
+      areaId: 'ae1',
+      estado: 'atendida',
+      fecha: hace(96),
+      usuarioId: 'u6',
+      requerimientoId: 'rq1',
+      lineas: [
+        { id: 'so4-1', insumoId: 'i8', cantidad: 80 },
+        { id: 'so4-2', insumoId: 'i11', cantidad: 120 },
+      ],
+    },
+    {
+      id: 'so5',
+      numero: 'SOL-000005',
+      localId: 'l1',
+      areaId: 'ae3',
+      estado: 'rechazada',
+      fecha: hace(70),
+      usuarioId: 'u1',
+      motivoRechazo: 'Hay stock suficiente en la zona principal.',
+      lineas: [{ id: 'so5-1', insumoId: 'i10', cantidad: 48 }],
+    },
+    {
+      id: 'so6',
+      numero: 'SOL-000006',
+      localId: 'l1',
+      areaId: 'ae2',
+      estado: 'atendida',
+      fecha: hace(50),
+      usuarioId: 'u6',
+      requerimientoId: 'rq2',
+      lineas: [
+        { id: 'so6-1', insumoId: 'i2', cantidad: 15 },
+        { id: 'so6-2', insumoId: 'i12', cantidad: 6 },
+      ],
+    },
+  ]
+
+  const requerimientos: RequerimientoCompra[] = [
+    {
+      id: 'rq1',
+      numero: 'REQ-000001',
+      localId: 'l1',
+      estado: 'convertido',
+      fecha: hace(90),
+      usuarioId: 'u1',
+      ordenCompra: 'OC-2026-00871',
+      lineas: [
+        {
+          id: 'rq1-1',
+          insumoId: 'i8',
+          articuloId: 'ar10',
+          cantidad: 2,
+          cantidadInsumo: 80,
+          proveedorId: 'pv4',
+          origen: [{ solicitudId: 'so4', lineaId: 'so4-1' }],
+          cantidadConvertida: 2,
+          precioNeto: 162.5,
+        },
+        {
+          id: 'rq1-2',
+          insumoId: 'i11',
+          articuloId: 'ar14',
+          cantidad: 4,
+          cantidadInsumo: 120,
+          proveedorId: 'pv5',
+          origen: [{ solicitudId: 'so4', lineaId: 'so4-2' }],
+          cantidadConvertida: 3,
+          precioNeto: 14.8,
+        },
+      ],
+      historial: [
+        { estado: 'borrador', fecha: hace(90), autor: 'Brandon Ríos' },
+        { estado: 'enviado', fecha: hace(89), autor: 'Brandon Ríos' },
+        { estado: 'aprobado', fecha: hace(80), autor: 'ERP' },
+        {
+          estado: 'convertido',
+          fecha: hace(72),
+          autor: 'ERP',
+          nota: 'OC-2026-00871 · huevo parcial: el proveedor solo tiene 3 jabas',
+        },
+      ],
+    },
+    {
+      id: 'rq2',
+      numero: 'REQ-000002',
+      localId: 'l1',
+      estado: 'aprobado',
+      fecha: hace(48),
+      usuarioId: 'u1',
+      lineas: [
+        {
+          id: 'rq2-1',
+          insumoId: 'i2',
+          articuloId: 'ar2',
+          cantidad: 15,
+          cantidadInsumo: 15,
+          proveedorId: 'pv2',
+          origen: [{ solicitudId: 'so6', lineaId: 'so6-1' }],
+          noDisponible: true,
+        },
+        {
+          id: 'rq2-2',
+          insumoId: 'i12',
+          articuloId: 'ar4',
+          cantidad: 6,
+          cantidadInsumo: 6,
+          proveedorId: 'pv2',
+          origen: [{ solicitudId: 'so6', lineaId: 'so6-2' }],
+        },
+      ],
+      historial: [
+        { estado: 'borrador', fecha: hace(48), autor: 'Brandon Ríos' },
+        { estado: 'enviado', fecha: hace(47), autor: 'Brandon Ríos' },
+        {
+          estado: 'aprobado',
+          fecha: hace(30),
+          autor: 'ERP',
+          nota: 'Lenguado no disponible esta semana',
+        },
+      ],
+    },
+  ]
+
+  // Despachado por el proveedor: listo para recepcionar en la cámara y la zona.
+  requerimientos.push({
+    id: 'rq3',
+    numero: 'REQ-000003',
+    localId: 'l1',
+    estado: 'despachado',
+    fecha: hace(40),
+    usuarioId: 'u1',
+    ordenCompra: 'OC-2026-00902',
+    lineas: [
+      {
+        id: 'rq3-1',
+        insumoId: 'i2',
+        articuloId: 'ar2',
+        cantidad: 12,
+        cantidadInsumo: 12,
+        proveedorId: 'pv2',
+        origen: [],
+        cantidadConvertida: 12,
+        precioNeto: 38,
+      },
+      {
+        id: 'rq3-2',
+        insumoId: 'i6',
+        articuloId: 'ar8',
+        cantidad: 1,
+        cantidadInsumo: 20,
+        proveedorId: 'pv3',
+        origen: [],
+        cantidadConvertida: 1,
+        precioNeto: 96,
+      },
+      {
+        id: 'rq3-3',
+        insumoId: 'i3',
+        articuloId: 'ar5',
+        cantidad: 1,
+        cantidadInsumo: 50,
+        proveedorId: 'pv3',
+        origen: [],
+        cantidadConvertida: 1,
+        precioNeto: 110,
+      },
+      {
+        id: 'rq3-4',
+        insumoId: 'i5',
+        articuloId: 'ar7',
+        cantidad: 1,
+        cantidadInsumo: 20,
+        proveedorId: 'pv3',
+        origen: [],
+        cantidadConvertida: 1,
+        precioNeto: 52,
+      },
+    ],
+    historial: [
+      { estado: 'borrador', fecha: hace(40), autor: 'Brandon Ríos' },
+      { estado: 'enviado', fecha: hace(39), autor: 'Brandon Ríos' },
+      { estado: 'aprobado', fecha: hace(30), autor: 'ERP' },
+      { estado: 'convertido', fecha: hace(26), autor: 'ERP', nota: 'OC-2026-00902' },
+      { estado: 'despachado', fecha: hace(3), autor: 'ERP' },
+    ],
+  })
+
+  /** Compra de mercado sin OC, esperando que administración la valide. */
+  const recepciones: Recepcion[] = [
+    {
+      id: 'rc1',
+      numero: 'REC-000001',
+      localId: 'l1',
+      zonaId: 'zn1',
+      comprobante: {
+        tipo: 'boleta',
+        serie: 'B001',
+        numero: '004512',
+        monto: 42,
+        proveedorOcasional: 'Mercado N.° 2 · puesto 40',
+      },
+      motivo: 'Faltó limón para el servicio del mediodía',
+      estado: 'pendienteRegularizar',
+      fecha: hace(20),
+      usuarioId: 'u1',
+      lineas: [
+        {
+          id: 'rc1-1',
+          insumoId: 'i6',
+          factor: 1,
+          costoUnitario: 7.12,
+          modo: 'total',
+          partes: [{ cantidad: 5 }],
+          porProcesar: false,
+        },
+      ],
+    },
+  ]
+
+  /** Pescado recibido ayer que todavía no se despiezó. */
+  const porProcesar: PorProcesar[] = [
+    {
+      id: 'pp1',
+      recepcionId: 'rc0',
+      insumoId: 'i2',
+      zonaId: 'zn2',
+      cantidad: 7.2,
+      pendiente: 7.2,
+      fecha: hace(12),
+    },
+  ]
+
+  // ── F4.6: recetas estandarizadas (D-007) ──
+  const diaIso = (dias: number) => new Date(ahora - dias * 86_400_000).toISOString().slice(0, 10)
+  const costoDe = (ids: string[], cambios: Record<string, number> = {}) =>
+    Object.fromEntries(
+      ids.map((id) => [id, cambios[id] ?? insumos.find((x) => x.id === id)?.costoUnitario ?? 0]),
+    )
+  const linea = (
+    id: string,
+    insumoId: string,
+    cantidad: number,
+    unidad: LineaRecetaSemilla['unidad'],
+    extra: Partial<LineaRecetaSemilla> = {},
+  ): LineaRecetaSemilla => ({ id, tipo: 'ingrediente', insumoId, cantidad, unidad, ...extra })
+  type LineaRecetaSemilla = RecetaEstandar['versiones'][number]['lineas'][number]
+  const lineasLomo = [
+    linea('lr1', 'i1', 200, 'g'),
+    linea('lr2', 'i4', 250, 'g'),
+    linea('lr3', 'i5', 80, 'g'),
+    linea('lr4', 'i8', 150, 'g'),
+    linea('lr5', 'i9', 50, 'ml'),
+    linea('lr6', 'i15', 0.02, 'paquete', { tipo: 'consumible' }),
+  ]
+  const lineasCebiche = (f: number, p: string) => [
+    linea(`${p}1`, 'i2', 200 * f, 'g', { cantidadTipo: 'neta' }),
+    linea(`${p}2`, 'i6', 120 * f, 'g'),
+    linea(`${p}3`, 'i5', 60 * f, 'g'),
+    linea(`${p}4`, 'i7', 20 * f, 'g'),
+  ]
+  const recetasEstandar: RecetaEstandar[] = [
+    {
+      id: 're1',
+      vendibleId: 'p:p6',
+      versiones: [
+        {
+          id: 'vr1',
+          numero: 1,
+          vigenteDesde: diaIso(90),
+          lineas: lineasLomo.map((l) => (l.insumoId === 'i1' ? { ...l, cantidad: 220 } : l)),
+          nota: 'Receta inicial',
+          autor: 'Chef ejecutivo',
+          creada: hace(24 * 90),
+          costosAlGuardar: costoDe(['i1', 'i4', 'i5', 'i8', 'i9', 'i15'], { i1: 48 }),
+        },
+        {
+          id: 'vr2',
+          numero: 2,
+          vigenteDesde: diaIso(20),
+          lineas: lineasLomo,
+          nota: 'Porción de lomo de 220 g a 200 g para cuidar el food cost',
+          autor: 'Chef ejecutivo',
+          creada: hace(24 * 20),
+          costosAlGuardar: costoDe(['i1', 'i4', 'i5', 'i8', 'i9', 'i15']),
+        },
+      ],
+    },
+    {
+      id: 're2',
+      vendibleId: 'v:v1',
+      versiones: [
+        {
+          id: 'vr3',
+          numero: 1,
+          vigenteDesde: diaIso(60),
+          lineas: lineasCebiche(1, 'lc'),
+          autor: 'Chef ejecutivo',
+          creada: hace(24 * 60),
+          // El lenguado subió de 40 a 45 desde que se guardó: costo desactualizado.
+          costosAlGuardar: costoDe(['i2', 'i6', 'i5', 'i7'], { i2: 40 }),
+        },
+      ],
+    },
+    {
+      id: 're3',
+      vendibleId: 'v:v2',
+      // La fuente se comparte: se acepta un food cost más alto.
+      foodCostObjetivo: 34,
+      versiones: [
+        {
+          id: 'vr4',
+          numero: 1,
+          vigenteDesde: diaIso(60),
+          lineas: lineasCebiche(1.8, 'lf'),
+          nota: 'Escalada de la personal × 1,8',
+          autor: 'Chef ejecutivo',
+          creada: hace(24 * 60),
+          costosAlGuardar: costoDe(['i2', 'i6', 'i5', 'i7']),
+        },
+      ],
+    },
+    {
+      id: 're4',
+      vendibleId: 'v:v3',
+      versiones: [
+        {
+          id: 'vr5',
+          numero: 1,
+          vigenteDesde: diaIso(60),
+          lineas: [linea('lh1', 'i13', 50, 'g'), linea('lh2', 'i6', 30, 'g')],
+          autor: 'Jefe de barra',
+          creada: hace(24 * 60),
+          costosAlGuardar: costoDe(['i13', 'i6']),
+        },
+      ],
+    },
+  ]
+  // Se vende tal como se compra: receta 1:1 automática.
+  recetasEstandar.push({
+    id: 're5',
+    vendibleId: 'p:p15',
+    reventaInsumoId: 'i40',
+    versiones: [
+      {
+        id: 'vr6',
+        numero: 1,
+        vigenteDesde: diaIso(60),
+        lineas: [linea('lk1', 'i40', 1, 'unidad')],
+        nota: 'Reventa 1:1',
+        autor: 'Sistema',
+        creada: hace(24 * 60),
+        costosAlGuardar: costoDe(['i40']),
+      },
+    ],
+  })
+  // Ficha técnica del lomo saltado (se muestra con la ficha activa).
+  const lomoV2 = recetasEstandar[0]!.versiones[1]!
+  lomoV2.ficha = {
+    porciones: 1,
+    toleranciaPesoPorcentaje: 5,
+    conservacion: 'Se sirve al momento; el lomo cortado dura 48 h en cámara a 2 °C.',
+    pasos: [
+      {
+        id: 'pf1',
+        descripcion: 'Saltear el lomo en tiras a fuego máximo',
+        tiempoMin: 2,
+        temperaturaC: 250,
+        equipo: 'Wok',
+      },
+      {
+        id: 'pf2',
+        descripcion: 'Agregar cebolla y tomate, flamear con sillao y vinagre',
+        tiempoMin: 1,
+        equipo: 'Wok',
+      },
+      { id: 'pf3', descripcion: 'Emplatar con papas fritas y arroz' },
+    ],
+  }
+  // Alérgenos de los insumos: la receta los suma.
+  const alergenosInsumo: Record<string, NonNullable<Insumo['alergenos']>> = {
+    i2: ['pescado'],
+    i7: ['aji'],
+    i10: ['lacteos'],
+    i11: ['huevo'],
+    i12: ['mariscos'],
+  }
+  for (const [id, a] of Object.entries(alergenosInsumo)) {
+    const insumo = insumos.find((x) => x.id === id)
+    if (insumo) insumo.alergenos = a
+  }
+  // Extras del lomo que suman insumos; «Sin cebolla» la quita.
+  const lomo = productos.find((p) => p.id === 'p6')
+  const extras = lomo?.gruposModificadores.find((g) => g.id === 'g3')
+  if (lomo && extras) {
+    for (const m of extras.modificadores) {
+      if (m.id === 'mo7')
+        m.efectos = [{ insumoId: 'i11', cantidad: 1, unidad: 'unidad', efecto: 'suma' }]
+      if (m.id === 'mo8')
+        m.efectos = [{ insumoId: 'i4', cantidad: 150, unidad: 'g', efecto: 'suma' }]
+    }
+    extras.modificadores.push({
+      id: 'mo20',
+      nombre: 'Sin cebolla',
+      recargo: 0,
+      activo: true,
+      efectos: [{ insumoId: 'i5', cantidad: 80, unidad: 'g', efecto: 'quita' }],
+    })
+    lomo.notasRapidas = ['Poca sal', 'Sin ají', 'Para compartir']
+  }
+  // Barranco no trabaja lenguado: el tiradito no se ofrece allí.
+  const tiradito = productos.find((p) => p.id === 'p4')
+  if (tiradito) {
+    tiradito.noOfrecidoEn = ['l3']
+  }
+
+  // El lenguado rinde 55 % limpio: solo cuenta con el parámetro de rendimiento activo.
+  const lenguado = insumos.find((x) => x.id === 'i2')
+  if (lenguado) lenguado.rendimientoPorcentaje = 55
+  const cebiches = categorias.find((c) => c.id === 'c2')
+  if (cebiches) cebiches.foodCostObjetivo = 32
+
+  // ── F4.5.2: listas de precios (D-010) ──
+  const iso = (d: Date) => d.toISOString().slice(0, 10)
+  const hoyFecha = new Date()
+  const inicioMes = iso(new Date(hoyFecha.getFullYear(), hoyFecha.getMonth(), 1))
+  const finMes = iso(new Date(hoyFecha.getFullYear(), hoyFecha.getMonth() + 1, 0))
+  const anio = hoyFecha.getFullYear()
+  const listasPrecios: ListaPrecios[] = [
+    {
+      id: 'lp1',
+      codigo: 'LP-MIR-01',
+      nombre: 'Carta Miraflores',
+      tipo: 'base',
+      localId: 'l1',
+      canalIds: ['cv1', 'cv2', 'cv3'],
+      // La chicha tiene 20 % de descuento este mes; el resto usa el precio de la carta.
+      precios: [
+        {
+          vendibleId: 'v:v3',
+          precio: 12,
+          descuento: { porcentaje: 20, desde: inicioMes, hasta: finMes },
+        },
+        { vendibleId: 'p:p4', precio: 48 },
+      ],
+      activa: true,
+    },
+    {
+      id: 'lp2',
+      codigo: 'LP-MIR-RP',
+      nombre: 'Rappi Miraflores',
+      tipo: 'base',
+      localId: 'l1',
+      canalIds: ['cv4', 'cv5'],
+      // Rappi cobra 25 % de comisión: la lista sube 15 % sobre la carta del salón.
+      derivadaDe: 'lp1',
+      ajustePorcentaje: 15,
+      precios: [{ vendibleId: 'c:cb2', precio: 139 }],
+      activa: true,
+    },
+    {
+      id: 'lp3',
+      codigo: 'LP-MIR-VR',
+      nombre: `Verano ${anio + 1}`,
+      tipo: 'temporada',
+      localId: 'l1',
+      canalIds: ['cv1'],
+      desde: `${anio + 1}-01-01`,
+      hasta: `${anio + 1}-03-31`,
+      precios: [
+        { vendibleId: 'v:v1', precio: 45 },
+        { vendibleId: 'v:v2', precio: 82 },
+      ],
+      activa: true,
+    },
+    {
+      id: 'lp4',
+      codigo: 'LP-SIS-01',
+      nombre: 'Carta San Isidro',
+      tipo: 'base',
+      localId: 'l2',
+      canalIds: ['cv1', 'cv2', 'cv3', 'cv4'],
+      derivadaDe: 'lp1',
+      ajustePorcentaje: 0,
+      precios: [],
+      activa: true,
+    },
+    {
+      id: 'lp5',
+      codigo: 'LP-BAR-01',
+      nombre: 'Carta Barranco',
+      tipo: 'base',
+      localId: 'l3',
+      canalIds: ['cv1', 'cv2'],
+      // Barranco declara precios sin IGV (clientela corporativa con factura).
+      igvIncluido: false,
+      precios: [{ vendibleId: 'p:p1', precio: 20.34 }],
+      activa: true,
+    },
+  ]
+
+  // ── F6.1: clientes (ERP) y reservas ──
+  const clientes: Cliente[] = [
+    {
+      id: 'cl1',
+      tipoDocumento: 'dni',
+      documento: '45872109',
+      nombre: 'Carla Benavides',
+      telefono: '987 654 321',
+      email: 'carla.benavides@gmail.com',
+      distrito: 'Miraflores',
+      activo: true,
+    },
+    {
+      id: 'cl2',
+      tipoDocumento: 'ruc',
+      documento: '20548712399',
+      nombre: 'Consultora Andina S.A.C.',
+      telefono: '01 445 8890',
+      email: 'administracion@andina.pe',
+      direccion: 'Av. Camino Real 1234',
+      distrito: 'San Isidro',
+      activo: true,
+    },
+    {
+      id: 'cl3',
+      tipoDocumento: 'dni',
+      documento: '09871234',
+      nombre: 'Jorge Manrique',
+      telefono: '999 112 334',
+      distrito: 'Barranco',
+      activo: true,
+    },
+    {
+      id: 'cl4',
+      tipoDocumento: 'ce',
+      documento: '001238845',
+      nombre: 'Marie Lefèvre',
+      telefono: '921 887 010',
+      email: 'marie.lefevre@outlook.com',
+      distrito: 'Miraflores',
+      activo: true,
+    },
+    {
+      id: 'cl5',
+      tipoDocumento: 'dni',
+      documento: '71234098',
+      nombre: 'Renzo Palacios',
+      telefono: '955 340 128',
+      distrito: 'Surco',
+      activo: false,
+    },
+  ]
+
+  const fichasCliente: FichaCliente[] = [
+    {
+      clienteId: 'cl1',
+      alergenos: ['mariscos'],
+      etiquetas: ['Frecuente', 'Celebra aniversario en julio'],
+      notas: 'Prefiere mesa junto a la ventana; siempre pide cebiche sin ají.',
+      salonPreferidoId: 's1',
+    },
+    {
+      clienteId: 'cl2',
+      alergenos: [],
+      etiquetas: ['Corporativo', 'Factura'],
+      notas: 'Almuerzos de trabajo: pide comprobante a nombre de la empresa.',
+    },
+  ]
+
+  /** Día relativo a hoy, en el mismo formato que usan los servicios. */
+  const diaReserva = (dias: number) =>
+    new Date(ahora + dias * 86_400_000).toISOString().slice(0, 10)
+
+  const reservas: Reserva[] = [
+    {
+      id: 'rs1',
+      localId: 'l1',
+      clienteId: 'cl1',
+      nombreContacto: 'Carla Benavides',
+      telefono: '987 654 321',
+      personas: 4,
+      fecha: diaReserva(0),
+      hora: '13:00',
+      duracionMin: 90,
+      mesaIds: ['m4'],
+      canal: 'telefono',
+      estado: 'confirmada',
+      nota: 'Cumpleaños: llevar postre con vela.',
+      creada: hace(30),
+      usuarioId: 'u4',
+    },
+    {
+      id: 'rs2',
+      localId: 'l1',
+      clienteId: 'cl2',
+      nombreContacto: 'Consultora Andina',
+      telefono: '01 445 8890',
+      personas: 8,
+      fecha: diaReserva(0),
+      hora: '20:00',
+      duracionMin: 120,
+      mesaIds: ['m1', 'm2'],
+      canal: 'web',
+      estado: 'pendiente',
+      creada: hace(8),
+    },
+    {
+      id: 'rs3',
+      localId: 'l1',
+      nombreContacto: 'Familia Rodríguez',
+      telefono: '913 442 771',
+      personas: 2,
+      fecha: diaReserva(1),
+      hora: '21:00',
+      duracionMin: 90,
+      mesaIds: ['m4'],
+      canal: 'mostrador',
+      estado: 'pendiente',
+      creada: hace(2),
+      usuarioId: 'u4',
+    },
+    {
+      id: 'rs4',
+      localId: 'l1',
+      clienteId: 'cl4',
+      nombreContacto: 'Marie Lefèvre',
+      personas: 3,
+      fecha: diaReserva(-2),
+      hora: '13:30',
+      duracionMin: 90,
+      mesaIds: ['m4'],
+      canal: 'app',
+      estado: 'noShow',
+      motivo: 'No llegó y no contestó el teléfono',
+      creada: hace(60),
+    },
+  ]
+
+  // ── F5: permisos, turnos y bitácora ──
+  const turnos: Turno[] = [
+    {
+      id: 'tu1',
+      nombre: 'Mañana',
+      localId: 'l1',
+      desde: '11:00',
+      hasta: '18:00',
+      dias: [0, 1, 2, 3, 4],
+      usuarioIds: ['u2', 'u4'],
+      activo: true,
+    },
+    {
+      id: 'tu2',
+      nombre: 'Noche',
+      localId: 'l1',
+      desde: '18:00',
+      hasta: '00:30',
+      dias: [3, 4, 5],
+      usuarioIds: ['u3', 'u5'],
+      activo: true,
+    },
+    {
+      id: 'tu3',
+      nombre: 'Fin de semana',
+      localId: 'l2',
+      desde: '12:00',
+      hasta: '23:00',
+      dias: [5, 6],
+      usuarioIds: ['u6'],
+      activo: true,
+    },
+  ]
+
+  const bitacora: RegistroAuditoria[] = [
+    {
+      id: 'au1',
+      fecha: hace(240),
+      autor: 'Consola Karma',
+      modulo: 'Integración',
+      accion: 'Cambio de modo',
+      detalle: 'Compras en Barranco pasó de sincronizado a autónomo',
+      localId: 'l3',
+    },
+    {
+      id: 'au2',
+      fecha: hace(20 * 24),
+      usuarioId: 'u1',
+      autor: 'Chef ejecutivo',
+      modulo: 'Recetas',
+      accion: 'Versión guardada',
+      detalle: 'Lomo saltado · versión 2 desde ' + diaIso(20),
+    },
+    {
+      id: 'au3',
+      fecha: hace(6),
+      usuarioId: 'u4',
+      autor: 'Ana Quispe',
+      modulo: 'Compras',
+      accion: 'Ingreso sin OC',
+      detalle: 'Limón · 8 kg · S/ 60.00 en Miraflores',
+      localId: 'l1',
+    },
+  ]
+
   return {
     combos,
-    almacenes,
+    permisosPorRol: {
+      admin: [],
+      cajero: ['compras.solicitar', 'reservas.gestionar'],
+      mesero: [],
+      cocinero: ['compras.solicitar', 'produccion.registrar'],
+    },
+    excepcionesPermiso: [
+      // Marco, el cocinero jefe, aprueba recetas sin ser administrador.
+      { usuarioId: 'u5', clave: 'recetas.aprobar', concedido: true },
+    ],
+    turnos,
+    bitacora,
+    clientes,
+    fichasCliente,
+    reservas,
+    listasPrecios,
+    zonas,
     proveedores,
     marcas,
     articulos,
@@ -1762,12 +2611,85 @@ function semilla(): Esquema {
     productos,
     insumos,
     movimientos,
-    recetas,
+    recetasEstandar,
     ubicaciones,
     lotes,
     stockDetalle,
     transformaciones,
     ajustesParametros,
+    solicitudes,
+    requerimientos,
+    recepciones,
+    porProcesar,
+    partesProduccion: [],
+    configuracion: { vertical: {}, cadenas: {}, locales: {} },
+    almacenes,
+    // Cevicherías agrupa Miraflores y San Isidro; Barranco opera sin cadena.
+    cadenas: [{ id: 'cd1', nombre: 'Cevicherías', localIds: ['l1', 'l2'], activo: true }],
+    // El administrador no gestiona la barra, aunque el ERP le da el almacén.
+    accesosZona: [{ usuarioId: 'u1', zonaId: 'zn3', nivel: 'ninguno' }],
+    accesosCadena: [],
+    integracion: {
+      empresa: {
+        inventario: 'sincronizado',
+        compras: 'sincronizado',
+        precios: 'autonomo',
+        ventas: 'autonomo',
+        contabilidad: 'autonomo',
+        asistencia: 'autonomo',
+      },
+      // Barranco es el local piloto que todavía compra sin pasar por el ERP.
+      locales: { l3: { compras: 'autonomo', inventario: 'autonomo' } },
+      historial: [
+        {
+          capacidad: 'compras',
+          localId: 'l3',
+          anterior: 'sincronizado',
+          nuevo: 'autonomo',
+          motivo: 'Local nuevo: empieza con compra directa hasta estabilizar la operación',
+          autor: 'Consola Karma',
+          fecha: hace(240),
+        },
+      ],
+    },
+    vinculosErp: [
+      {
+        id: 've1',
+        entidad: 'almacen',
+        idVertical: 'am1',
+        idExterno: 'ALM-0101',
+        estado: 'sincronizado',
+        version: 3,
+        actualizado: hace(5),
+      },
+      {
+        id: 've2',
+        entidad: 'almacen',
+        idVertical: 'am2',
+        idExterno: 'ALM-0201',
+        estado: 'sincronizado',
+        version: 2,
+        actualizado: hace(5),
+      },
+      {
+        id: 've3',
+        entidad: 'local',
+        idVertical: 'l1',
+        idExterno: 'LV-0001',
+        estado: 'sincronizado',
+        version: 1,
+        actualizado: hace(400),
+      },
+      {
+        id: 've4',
+        entidad: 'local',
+        idVertical: 'l2',
+        idExterno: 'LV-0002',
+        estado: 'sincronizado',
+        version: 1,
+        actualizado: hace(400),
+      },
+    ],
   }
 }
 

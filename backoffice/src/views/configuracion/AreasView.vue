@@ -222,7 +222,7 @@ function validarImpresora(i: NuevaImpresora) {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-6xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCard
       titulo="Áreas e impresoras"
       subtitulo="Dónde se prepara cada producto, a qué área llega su comanda y en qué impresora sale."
@@ -364,7 +364,7 @@ function validarImpresora(i: NuevaImpresora) {
                 <KmField
                   v-slot="{ id, invalido }"
                   label="Salón"
-                  ayuda="Dónde está el área. Recepción o almacén suelen estar fuera de los salones."
+                  ayuda="Dónde está el área. Recepción o zona suelen estar fuera de los salones."
                   :error="errores.salonId"
                 >
                   <KmSelect
@@ -394,7 +394,7 @@ function validarImpresora(i: NuevaImpresora) {
                 <KmSwitch
                   v-model="borrador.recibeComandas"
                   etiqueta="Recibe comandas"
-                  descripcion="Desactívalo en áreas que no preparan pedidos, como recepción o almacén."
+                  descripcion="Desactívalo en áreas que no preparan pedidos, como recepción o zona."
                 />
 
                 <template v-if="borrador.recibeComandas">

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+﻿import { beforeEach, describe, expect, it } from 'vitest'
 import { inventarioService } from './inventario.service'
 import { db, reiniciarMock } from './mock/db'
 import type { NuevoMovimiento } from '@/types'
@@ -73,48 +73,5 @@ describe('movimientos de stock', () => {
     await inventarioService.registrarMovimiento(movimiento({ motivo: 'El más nuevo' }))
     const movimientos = await inventarioService.listarMovimientos('i1')
     expect(movimientos[0].motivo).toBe('El más nuevo')
-  })
-})
-
-describe('recetas', () => {
-  it('calcula el coste sumando insumo por insumo', () => {
-    const coste = inventarioService.costeDeReceta({
-      productoId: 'p6',
-      // 0.2 kg de lomo a 52 = 10.4; 0.5 kg de papa blanca a 3.2 = 1.6
-      ingredientes: [
-        { insumoId: 'i1', cantidad: 0.2 },
-        { insumoId: 'i4', cantidad: 0.5 },
-      ],
-    })
-    expect(coste).toBeCloseTo(12)
-  })
-
-  it('ignora insumos que ya no existen en vez de fallar', () => {
-    const coste = inventarioService.costeDeReceta({
-      productoId: 'p6',
-      ingredientes: [{ insumoId: 'no-existe', cantidad: 3 }],
-    })
-    expect(coste).toBe(0)
-  })
-
-  it('guardar una receta sin ingredientes la elimina', async () => {
-    await inventarioService.guardarReceta({ productoId: 'p6', ingredientes: [] })
-    expect(db.recetas.some((r) => r.productoId === 'p6')).toBe(false)
-  })
-
-  it('descarta ingredientes con cantidad cero al guardar', async () => {
-    const receta = await inventarioService.guardarReceta({
-      productoId: 'p7',
-      ingredientes: [
-        { insumoId: 'i1', cantidad: 0.3 },
-        { insumoId: 'i4', cantidad: 0 },
-      ],
-    })
-    expect(receta.ingredientes).toHaveLength(1)
-  })
-
-  it('no deja eliminar un insumo que forma parte de una receta', async () => {
-    await expect(inventarioService.eliminarInsumo('i1')).rejects.toBeTruthy()
-    expect(db.insumos.some((i) => i.id === 'i1')).toBe(true)
   })
 })

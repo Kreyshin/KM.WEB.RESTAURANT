@@ -43,7 +43,7 @@ function filtrar(consulta: Consulta, campo: string, valor: string | number | und
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-6xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCatalogo
       titulo="Artículos"
       subtitulo="Lo que el ERP compra, con su marca, cómo se compra y a quién. Se vinculan a los insumos del restaurante."

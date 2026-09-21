@@ -115,7 +115,7 @@ const codigoEstados = `<KmEstado tipo="vacio" mensaje="Aún no hay proveedores r
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-6xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCard
       titulo="Guía de componentes"
       subtitulo="Piezas base del back office con demo, código y props. Revísalas también en sala de noche."

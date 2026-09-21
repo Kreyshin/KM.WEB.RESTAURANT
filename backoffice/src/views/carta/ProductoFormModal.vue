@@ -6,22 +6,15 @@ import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
+import KmSwitch from '@/components/ui/KmSwitch.vue'
 import KmModal from '@/components/ui/KmModal.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmUploadImagen from '@/components/ui/KmUploadImagen.vue'
-import { canalesService } from '@/services/comercial.service'
 import { areasService, recibeProducto } from '@/services/produccion.service'
 import { useLocales } from '@/composables/useLocales'
+import { precioVigente } from '@/services/precios.service'
 import { useUiStore } from '@/stores/ui.store'
-import type {
-  Alergeno,
-  ApiError,
-  CanalVenta,
-  Categoria,
-  Area,
-  NuevoProducto,
-  Producto,
-} from '@/types'
+import type { Alergeno, ApiError, Categoria, Area, NuevoProducto, Producto } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
 import { alergenos, etiquetaAlergeno, formatearSoles } from '@/utils/formato'
 
@@ -45,17 +38,34 @@ const vacio = (): NuevoProducto => ({
   alergenos: [],
   variantes: [],
   gruposModificadores: [],
-  preciosCanal: [],
   imagen: undefined,
 })
 
 const ui = useUiStore()
-const canales = shallowRef<CanalVenta[]>([])
 const areas = shallowRef<Area[]>([])
-const { nombreLocal } = useLocales()
+const { locales, nombreLocal } = useLocales()
+
+function alternarLocal(localId: string, ofrecido: boolean) {
+  const actual = form.value.noOfrecidoEn ?? []
+  const lista = ofrecido ? actual.filter((x) => x !== localId) : [...actual, localId]
+  form.value.noOfrecidoEn = lista.length ? lista : undefined
+}
+
+/** Precio vigente en salón para la primera presentación activa o el producto. */
+function precioEnLocal(localId: string) {
+  const p = props.producto
+  if (!p) return 0
+  const v = p.variantes.find((x) => x.activa)
+  return precioVigente(
+    v ? `v:${v.id}` : `p:${p.id}`,
+    localId,
+    'cv1',
+    new Date().toISOString().slice(0, 10),
+  ).precio
+}
 
 onMounted(async () => {
-  ;[canales.value, areas.value] = await Promise.all([canalesService.todos(), areasService.todos()])
+  areas.value = await areasService.todos()
 })
 
 /** A qué áreas llega la comanda de este producto, por local. Se decide en Áreas. */
@@ -69,17 +79,6 @@ const destinos = computed(() => {
   return [...porLocal.entries()].map(([localId, nombres]) => ({ localId, nombres }))
 })
 
-/** Precio por canal: vacío significa «usa el precio base». */
-function precioCanal(canalId: string) {
-  return form.value.preciosCanal.find((p) => p.canalId === canalId)?.precio ?? null
-}
-
-function fijarPrecioCanal(canalId: string, precio: number | null | undefined) {
-  const lista = form.value.preciosCanal.filter((p) => p.canalId !== canalId)
-  if (precio !== null && precio !== undefined) lista.push({ canalId, precio })
-  form.value.preciosCanal = lista
-}
-
 const form = ref<NuevoProducto>(vacio())
 const errores = ref<Record<string, string>>({})
 const guardando = ref(false)
@@ -89,9 +88,7 @@ watch(abierto, (esta) => {
   errores.value = {}
   guardando.value = false
   // Copia: evita editar en vivo el objeto de la tabla.
-  form.value = props.producto
-    ? { ...copiar({ ...props.producto }), preciosCanal: props.producto.preciosCanal ?? [] }
-    : vacio()
+  form.value = props.producto ? copiar({ ...props.producto }) : vacio()
 })
 
 const opcionesCategoria = computed<OpcionSelect[]>(() =>
@@ -338,42 +335,39 @@ defineExpose({ mostrarError })
         </div>
       </div>
 
-      <!-- Precios por canal -->
+      <!-- Por local -->
       <div>
-        <p class="rs-etiqueta text-laton-texto">Precio por canal</p>
+        <p class="rs-etiqueta text-laton-texto">Por local</p>
         <p class="mt-1 mb-2.5 text-xs text-tenue">
-          Déjalo vacío para cobrar el precio base. Útil en apps de delivery que cobran comisión.
+          Apágalo donde no se ofrece. El precio de cada local sale de su lista de precios.
         </p>
-        <p v-if="errores.preciosCanal" class="mb-2 text-xs font-medium text-vino">
-          {{ errores.preciosCanal }}
-        </p>
-        <ul class="grid gap-2 sm:grid-cols-2">
+        <ul class="grid gap-2 sm:grid-cols-3">
           <li
-            v-for="c in canales.filter((x) => x.activo)"
-            :key="c.id"
-            class="flex items-center justify-between gap-3 rounded-control border border-linea px-3 py-2"
+            v-for="l in locales"
+            :key="l.id"
+            class="flex flex-col gap-1 rounded-control border border-linea px-3 py-2"
           >
-            <span class="min-w-0">
-              <span class="block truncate text-sm text-tinta">{{ c.nombre }}</span>
-              <span v-if="c.comisionPorcentaje" class="block text-[11px] text-tenue">
-                Comisión {{ c.comisionPorcentaje }} %
-              </span>
+            <KmSwitch
+              :model-value="!form.noOfrecidoEn?.includes(l.id)"
+              :etiqueta="l.nombre"
+              @update:model-value="alternarLocal(l.id, $event)"
+            />
+            <span v-if="producto" class="text-xs text-tenue tabular-nums">
+              Salón hoy: {{ formatearSoles(precioEnLocal(l.id)) }}
             </span>
-            <div class="w-32 shrink-0">
-              <KmNumero
-                :model-value="precioCanal(c.id)"
-                :min="0"
-                :decimales="2"
-                prefijo="S/"
-                :controles="false"
-                :placeholder="String(Number(form.precio || 0).toFixed(2))"
-                :aria-label="`Precio en ${c.nombre}`"
-                @update:model-value="fijarPrecioCanal(c.id, $event)"
-              />
-            </div>
           </li>
         </ul>
       </div>
+
+      <!-- Precios -->
+      <p class="rounded-control border border-linea px-3 py-2 text-xs text-tenue">
+        El precio de arriba es el de la carta. Lo que se cobra por local, canal y temporada se
+        define en
+        <RouterLink :to="{ name: 'listas-precios' }" class="font-medium text-verde underline">
+          Listas de precios
+        </RouterLink>
+        .
+      </p>
 
       <!-- Alérgenos -->
       <div>

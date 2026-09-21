@@ -1,5 +1,6 @@
-import { ref, watch } from 'vue'
+import { ref, shallowRef, watch } from 'vue'
 import { defineStore } from 'pinia'
+import type { ModuloNav } from '@/components/layout/navegacion'
 
 export type TipoToast = 'exito' | 'error' | 'info'
 export type Tema = 'claro' | 'oscuro'
@@ -23,11 +24,10 @@ function temaInicial(): Tema {
 
 export const useUiStore = defineStore('ui', () => {
   const toasts = ref<Toast[]>([])
-  /**
-   * Menú contextual del módulo: 325px abierto, 0px cerrado.
-   * Arranca plegado en pantallas estrechas, donde se superpone al contenido.
-   */
-  const menuAbierto = ref(window.innerWidth >= 1024)
+  /** Menú flotante de secciones del módulo. Arranca cerrado: el ancho es del trabajo. */
+  const menuAbierto = ref(false)
+  /** Módulo cuyas secciones muestra el menú (el abierto desde la barra principal). */
+  const moduloMenu = shallowRef<ModuloNav | null>(null)
   const tema = ref<Tema>(temaInicial())
   /** Paleta de búsqueda global (Ctrl+K). */
   const buscadorAbierto = ref(false)
@@ -62,12 +62,14 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   function alternarMenu() {
+    moduloMenu.value = null
     menuAbierto.value = !menuAbierto.value
   }
 
   return {
     toasts,
     menuAbierto,
+    moduloMenu,
     tema,
     buscadorAbierto,
     panelDatosAbierto,

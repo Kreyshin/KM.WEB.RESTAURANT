@@ -17,11 +17,15 @@ La estructura vive en `src/components/layout/navegacion.ts`. Una sección solo a
 | Inventario | Insumos                      | `/inventario`                  | admin         | ✅       |
 | Inventario | Movimientos y kardex         | `/inventario/movimientos`      | admin         | ✅       |
 | Inventario | Recetas y costos             | `/inventario/recetas`          | admin         | ✅       |
+| Inventario | Producción                   | `/inventario/produccion`       | admin         | ✅       |
 | Inventario | Transformaciones             | `/inventario/transformaciones` | admin         | ✅       |
-| Inventario | Lotes y stock detallado      | `/inventario/stock-detallado`  | admin         | ✅       |
+| Inventario | Stock                        | `/inventario/stock`            | admin         | ✅       |
 | Inventario | Parámetros de abastecimiento | `/inventario/parametros`       | admin         | ✅       |
 | Inventario | Ubicaciones                  | `/inventario/ubicaciones`      | admin         | ✅       |
 | Inventario | Almacenes                    | `/inventario/almacenes`        | admin         | ✅ ERP   |
+| Compras    | Solicitudes de compra        | `/compras/solicitudes`         | admin         | ✅       |
+| Compras    | Requerimientos de compra     | `/compras/requerimientos`      | admin         | ✅       |
+| Compras    | Recepción                    | `/compras/recepcion`           | admin         | ✅       |
 | Compras    | Artículos                    | `/compras/articulos`           | admin         | ✅ ERP   |
 | Compras    | Proveedores                  | `/compras/proveedores`         | admin         | ✅ ERP   |
 | Compras    | Marcas                       | `/compras/marcas`              | admin         | ✅ ERP   |

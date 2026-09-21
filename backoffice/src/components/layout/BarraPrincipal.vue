@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import PerfilUsuario from './PerfilUsuario.vue'
 import { modulos, moduloDeRuta } from './navegacion'
 import MarcaMesa from '@/components/marca/MarcaMesa.vue'
@@ -11,7 +11,6 @@ import { useUiStore } from '@/stores/ui.store'
 const auth = useAuthStore()
 const ui = useUiStore()
 const route = useRoute()
-const router = useRouter()
 
 /** Un módulo se oculta si el rol no puede ver ninguna de sus secciones. */
 const modulosVisibles = computed(() =>
@@ -20,18 +19,20 @@ const modulosVisibles = computed(() =>
 
 const moduloActivo = computed(() => moduloDeRuta(route.name))
 
+/**
+ * Pulsar un módulo abre su menú de secciones para elegir adónde ir; no navega
+ * por sí solo. Volver a pulsar el mismo módulo con el menú abierto lo cierra.
+ */
 function abrirModulo(id: string) {
   const modulo = modulos.find((m) => m.id === id)
-  const primera = modulo?.secciones.find((s) => auth.puede(s.roles))
-  if (!primera) return
+  if (!modulo?.secciones.some((s) => auth.puede(s.roles))) return
 
-  // Volver a pulsar el módulo activo pliega o despliega su menú de secciones.
-  if (moduloActivo.value?.id === id) {
-    ui.alternarMenu()
+  if (ui.menuAbierto && ui.moduloMenu?.id === id) {
+    ui.menuAbierto = false
     return
   }
+  ui.moduloMenu = modulo
   ui.menuAbierto = true
-  router.push({ name: primera.nombreRuta })
 }
 </script>
 

@@ -1,4 +1,4 @@
-﻿import { drawer, expect, fila, test } from './fixtures'
+﻿import { drawer, elegir, expect, fila, test } from './fixtures'
 
 test.describe('Configuración del negocio', () => {
   test.beforeEach(async ({ entrar }) => {
@@ -23,7 +23,8 @@ test.describe('Configuración del negocio', () => {
   test('configuración de la vertical y por local muestran su alcance', async ({ page }) => {
     await page.goto('/configuracion/vertical')
     await expect(page.getByText('afecta a todos los locales')).toBeVisible()
-    await expect(page.getByText('Aún no hay parámetros en esta sección')).toBeVisible()
+    await expect(page.getByText('Permitir ingresos sin orden de compra')).toBeVisible()
+    await expect(page.getByText('Vida útil de lo producido')).toBeVisible()
 
     // El administrador tiene acceso a varios locales: elige cuál configurar.
     await page.goto('/configuracion/local')
@@ -31,6 +32,9 @@ test.describe('Configuración del negocio', () => {
     await expect(locales.getByRole('button')).toHaveCount(2)
     await locales.getByRole('button', { name: /San Isidro/ }).click()
     await expect(page.getByRole('heading', { name: 'Configuración de San Isidro' })).toBeVisible()
+    // En el local solo aparecen los parámetros que admiten valor propio.
+    await expect(page.getByText('Registro de producción')).toBeVisible()
+    await expect(page.getByText('Vida útil de lo producido')).toHaveCount(0)
   })
 
   test('permisos por rol del ERP y excepciones por usuario', async ({ page }) => {
@@ -40,7 +44,11 @@ test.describe('Configuración del negocio', () => {
       .getByRole('button', { name: /Mesero/ })
       .click()
     await expect(page.getByRole('heading', { name: 'Permisos de Mesero' })).toBeVisible()
-    await expect(page.getByText('Aún no hay permisos de la vertical para asignar')).toBeVisible()
+    await expect(page.getByText('Ajustar cantidades al consolidar')).toBeVisible()
+    // El mesero no trae permisos: todos sus interruptores están apagados.
+    const interruptores = page.getByRole('switch')
+    await expect(interruptores.first()).toHaveAttribute('aria-checked', 'false')
+    await expect(page.getByRole('button', { name: 'Guardar permisos' })).toBeDisabled()
 
     await page.goto('/configuracion/excepciones')
     await page
@@ -49,7 +57,10 @@ test.describe('Configuración del negocio', () => {
       .click()
     await expect(page.getByRole('heading', { name: 'Ana Quispe' })).toBeVisible()
     await expect(page.getByText('Miraflores, San Isidro')).toBeVisible()
-    await expect(page.getByText('Sin excepciones')).toBeVisible()
+    // Ana es cajera: sus permisos salen del rol y se pueden ajustar uno a uno.
+    await expect(page.getByText('Lo da su rol').first()).toBeVisible()
+    await elegir(page.getByLabel('«Ver la bitácora» para Ana Quispe'), 'Conceder')
+    await expect(page.getByText('Concedido a esta persona')).toBeVisible()
   })
 
   test('no permite eliminar una impresora usada por áreas', async ({ page }) => {

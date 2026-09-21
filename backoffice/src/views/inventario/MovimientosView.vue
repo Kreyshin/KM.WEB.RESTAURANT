@@ -26,8 +26,8 @@ import {
 } from '@/utils/formato'
 
 const ui = useUiStore()
-const catalogos = useCatalogos(['almacenes', 'insumos', 'locales'])
-const { insumo, nombreAlmacen } = catalogos
+const catalogos = useCatalogos(['zonas', 'insumos', 'locales'])
+const { insumo, nombreZona } = catalogos
 
 const rango = ref<RangoFechas>(rangoDeAtajo('ultimos7'))
 
@@ -46,7 +46,7 @@ const columnas: ColumnaTabla[] = [
   { clave: 'fecha', etiqueta: 'Fecha', clase: 'w-36', ordenable: true },
   { clave: 'insumoId', etiqueta: 'Insumo' },
   { clave: 'tipo', etiqueta: 'Movimiento', clase: 'w-44', ordenable: true },
-  { clave: 'almacenId', etiqueta: 'Almacén', clase: 'w-40' },
+  { clave: 'zonaId', etiqueta: 'Zona', clase: 'w-40' },
   { clave: 'cantidad', etiqueta: 'Cantidad', clase: 'w-32 text-right' },
   { clave: 'valor', etiqueta: 'Valor', clase: 'w-28 text-right' },
 ]
@@ -58,9 +58,9 @@ const opcionesTipo: OpcionSelect[] = [
     etiqueta: etiquetaMovimiento[t],
   })),
 ]
-const opcionesAlmacen = computed<OpcionSelect[]>(() => [
-  { valor: '', etiqueta: 'Todos los almacenes' },
-  ...catalogos.opcionesAlmacen.value,
+const opcionesZona = computed<OpcionSelect[]>(() => [
+  { valor: '', etiqueta: 'Todas las zonas' },
+  ...catalogos.opcionesZona.value,
 ])
 const opcionesInsumo = computed<OpcionSelect[]>(() => [
   { valor: '', etiqueta: 'Todos los insumos' },
@@ -73,7 +73,7 @@ const columnasExport: ColumnaExportable<Movimiento>[] = [
   { etiqueta: 'Fecha', valor: (m) => formatearFecha(m.fecha) },
   { etiqueta: 'Insumo', valor: (m) => insumo(m.insumoId)?.nombre },
   { etiqueta: 'Tipo', valor: (m) => etiquetaMovimiento[m.tipo] },
-  { etiqueta: 'Almacén', valor: (m) => nombreAlmacen(m.almacenId) },
+  { etiqueta: 'Zona', valor: (m) => nombreZona(m.zonaId) },
   { etiqueta: 'Cantidad', valor: (m) => signoNumerico[m.tipo] * m.cantidad },
   { etiqueta: 'Unidad', valor: (m) => insumo(m.insumoId)?.unidad },
   { etiqueta: 'Costo unitario', valor: (m) => m.costoUnitario },
@@ -99,10 +99,10 @@ async function exportar(formato: 'csv' | 'excel') {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-6xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCard
       titulo="Movimientos"
-      subtitulo="Todo lo que entra y sale de los almacenes: compras, consumos, mermas, traslados y ajustes."
+      subtitulo="Todo lo que entra y sale de las zonas: compras, consumos, mermas, traslados y ajustes."
       sin-padding
     >
       <template #acciones>
@@ -130,10 +130,10 @@ async function exportar(formato: 'csv' | 'excel') {
           </div>
           <div class="w-full sm:w-48">
             <KmSelect
-              :model-value="(consulta.filtros?.almacenId as string) ?? ''"
-              :opciones="opcionesAlmacen"
-              etiqueta="Filtrar por almacén"
-              @update:model-value="filtrar('almacenId', $event)"
+              :model-value="(consulta.filtros?.zonaId as string) ?? ''"
+              :opciones="opcionesZona"
+              etiqueta="Filtrar por zona"
+              @update:model-value="filtrar('zonaId', $event)"
             />
           </div>
         </div>
@@ -163,7 +163,7 @@ async function exportar(formato: 'csv' | 'excel') {
         <template #col-tipo="{ fila }">
           <KmBadge :tono="tonoMovimiento[fila.tipo]">{{ etiquetaMovimiento[fila.tipo] }}</KmBadge>
         </template>
-        <template #col-almacenId="{ fila }">{{ nombreAlmacen(fila.almacenId) }}</template>
+        <template #col-zonaId="{ fila }">{{ nombreZona(fila.zonaId) }}</template>
         <template #col-cantidad="{ fila }">
           <span
             class="font-medium tabular-nums"

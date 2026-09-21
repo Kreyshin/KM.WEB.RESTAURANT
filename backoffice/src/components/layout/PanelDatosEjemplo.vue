@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmConfirm from '@/components/ui/KmConfirm.vue'
@@ -101,6 +101,25 @@ function reiniciar() {
             @change="aplicar"
           />
         </label>
+      </section>
+
+      <section class="flex flex-col gap-3 rounded-card border border-linea bg-panel-2 p-4">
+        <div>
+          <h3 class="text-sm font-semibold text-tinta">Consola de Karma</h3>
+          <p class="text-xs text-tenue">
+            Modo de integración con el ERP por capacidad y local. En producción la usa solo el
+            equipo de Karma.
+          </p>
+        </div>
+        <div>
+          <RouterLink
+            :to="{ name: 'karma-integracion' }"
+            class="text-sm font-medium text-verde underline"
+            @click="ui.panelDatosAbierto = false"
+          >
+            Abrir consola de integración
+          </RouterLink>
+        </div>
       </section>
 
       <section class="flex flex-col gap-3 rounded-card border border-linea bg-panel-2 p-4">

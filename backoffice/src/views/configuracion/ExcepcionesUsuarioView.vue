@@ -4,9 +4,18 @@ import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBusqueda from '@/components/ui/KmBusqueda.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmEstado from '@/components/ui/KmEstado.vue'
-import { etiquetaRol, parametrosService } from '@/services/parametros.service'
+import KmSelect from '@/components/ui/KmSelect.vue'
+import {
+  etiquetaRol,
+  origenPermiso,
+  parametrosService,
+  tienePermiso,
+} from '@/services/parametros.service'
+import { useAuthStore } from '@/stores/auth.store'
 import { useLocalStore } from '@/stores/local.store'
-import type { PermisoVertical, Usuario } from '@/types'
+import { useUiStore } from '@/stores/ui.store'
+import type { ApiError, ExcepcionPermiso, PermisoVertical, Usuario } from '@/types'
+import type { OpcionSelect } from '@/types/ui'
 
 /**
  * Ajustes a los permisos de una persona sobre los de su rol. Los usuarios y
@@ -18,11 +27,63 @@ const seleccionado = ref<string | null>(null)
 const busqueda = ref('')
 const cargando = ref(true)
 const localStore = useLocalStore()
+const ui = useUiStore()
+const auth = useAuthStore()
+const excepciones = ref<ExcepcionPermiso[]>([])
+const puedeEditar = computed(() => tienePermiso(auth.usuario?.id, 'personal.permisos'))
+
+const opcionesEstado: OpcionSelect[] = [
+  { valor: '', etiqueta: 'Como su rol' },
+  { valor: 'si', etiqueta: 'Conceder' },
+  { valor: 'no', etiqueta: 'Quitar' },
+]
+const etiquetaOrigen: Record<string, string> = {
+  admin: 'Puede todo por ser administrador',
+  rol: 'Lo da su rol',
+  concedido: 'Concedido a esta persona',
+  quitado: 'Quitado a esta persona',
+  sinAcceso: 'Su rol no lo da',
+}
+
+/** Recalcula al cambiar excepciones. */
+function estadoDe(clave: string) {
+  void excepciones.value
+  const u = usuario.value
+  if (!u) return { valor: '', origen: 'sinAcceso' as const, permitido: false }
+  const e = excepciones.value.find((x) => x.usuarioId === u.id && x.clave === clave)
+  return {
+    valor: e ? (e.concedido ? 'si' : 'no') : '',
+    origen: origenPermiso(u.id, clave),
+    permitido: tienePermiso(u.id, clave),
+  }
+}
+
+async function fijar(clave: string, valor: string) {
+  const u = usuario.value
+  if (!u || !auth.usuario) return
+  try {
+    excepciones.value = await parametrosService.fijarExcepcion(
+      u.id,
+      clave,
+      valor === '' ? undefined : valor === 'si',
+      auth.usuario.id,
+    )
+  } catch (e) {
+    ui.error((e as ApiError).mensaje ?? 'No se pudo cambiar el permiso.')
+  }
+}
+
+const porModulo = computed(() => {
+  const grupos = new Map<string, PermisoVertical[]>()
+  for (const p of permisos.value) grupos.set(p.modulo, [...(grupos.get(p.modulo) ?? []), p])
+  return [...grupos.entries()]
+})
 
 onMounted(async () => {
-  ;[usuarios.value, permisos.value] = await Promise.all([
+  ;[usuarios.value, permisos.value, excepciones.value] = await Promise.all([
     parametrosService.usuarios(),
     parametrosService.permisos(),
+    parametrosService.excepciones(),
     localStore.locales.length ? Promise.resolve() : localStore.cargar(),
   ])
   seleccionado.value = usuarios.value[0]?.id ?? null
@@ -44,7 +105,7 @@ function textoLocales(u: Usuario) {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCard v-if="cargando" titulo="Excepciones por usuario">
       <KmEstado tipo="cargando" compacto />
     </KmCard>
@@ -104,13 +165,47 @@ function textoLocales(u: Usuario) {
           </dl>
 
           <div
-            v-if="permisos.length === 0"
+            v-if="usuario.rol === 'admin'"
             class="flex flex-col items-center gap-2 rounded-card border border-dashed border-linea px-6 py-10 text-center"
           >
-            <p class="font-semibold text-tinta">Sin excepciones</p>
+            <p class="font-semibold text-tinta">El administrador puede todo</p>
             <p class="max-w-md text-sm text-tenue">
-              Usa los permisos de su rol. Cuando existan permisos de la vertical, aquí podrás
-              concederle o quitarle alguno solo a esta persona.
+              No necesita excepciones. Para limitar a alguien, dale otro rol en el ERP.
+            </p>
+          </div>
+
+          <div v-else class="flex flex-col gap-5">
+            <section v-for="[modulo, lista] in porModulo" :key="modulo">
+              <p class="rs-etiqueta mb-2 text-laton-texto">{{ modulo }}</p>
+              <ul class="divide-y divide-linea rounded-card border border-linea">
+                <li
+                  v-for="p in lista"
+                  :key="p.clave"
+                  class="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+                >
+                  <div class="min-w-48 flex-1">
+                    <p class="text-sm font-medium text-tinta">{{ p.etiqueta }}</p>
+                    <p class="text-xs text-tenue">
+                      {{ etiquetaOrigen[estadoDe(p.clave).origen] }}
+                    </p>
+                  </div>
+                  <KmBadge :tono="estadoDe(p.clave).permitido ? 'verde' : 'neutro'" punto>
+                    {{ estadoDe(p.clave).permitido ? 'Puede' : 'No puede' }}
+                  </KmBadge>
+                  <div class="w-40">
+                    <KmSelect
+                      :model-value="estadoDe(p.clave).valor"
+                      :opciones="opcionesEstado"
+                      :disabled="!puedeEditar"
+                      :etiqueta="`«${p.etiqueta}» para ${usuario.nombre}`"
+                      @update:model-value="fijar(p.clave, String($event ?? ''))"
+                    />
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <p class="text-xs text-tenue">
+              «Quitar» gana sobre lo que da el rol. Cada cambio queda en la bitácora.
             </p>
           </div>
         </div>

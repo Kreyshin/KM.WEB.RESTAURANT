@@ -47,17 +47,19 @@ export const parametrosPorDefecto: ParametrosAbastecimiento = {
 
 /** Orden de herencia: el último que fije un valor manda. */
 export const nivelesParametros: NivelParametros[] = [
+  'empresa',
   'cadena',
   'local',
-  'almacen',
+  'zona',
   'categoria',
   'insumo',
 ]
 
 export const etiquetaNivel: Record<NivelParametros, string> = {
+  empresa: 'Empresa',
   cadena: 'Cadena',
   local: 'Local',
-  almacen: 'Almacén',
+  zona: 'Zona',
   categoria: 'Categoría',
   insumo: 'Insumo',
 }
@@ -75,27 +77,37 @@ export const etiquetaParametro: Record<keyof ParametrosAbastecimiento, string> =
 /** A qué apunta la `referencia` del ajuste en cada nivel. */
 export interface Contexto {
   insumoId?: string
-  almacenId?: string
+  zonaId?: string
   localId?: string
+  cadenaId?: string
   categoria?: CategoriaInsumo
 }
 
-/** Completa el contexto con lo que se deduce: el local del almacén, la categoría del insumo. */
+/** Cadena del local, si pertenece a una (D-008). Solo se consulta cuando hay cadenas. */
+export function cadenaDeLocal(localId?: string) {
+  if (!localId || db.cadenas.length === 0) return undefined
+  return db.cadenas.find((c) => c.activo && c.localIds.includes(localId))
+}
+
+/** Completa el contexto con lo que se deduce: local de la zona, cadena del local, categoría del insumo. */
 function contextoCompleto(ctx: Contexto): Contexto {
   const insumo = ctx.insumoId ? db.insumos.find((i) => i.id === ctx.insumoId) : undefined
-  const almacen = ctx.almacenId ? db.almacenes.find((a) => a.id === ctx.almacenId) : undefined
+  const zona = ctx.zonaId ? db.zonas.find((a) => a.id === ctx.zonaId) : undefined
+  const localId = ctx.localId ?? zona?.localId
   return {
     insumoId: ctx.insumoId,
-    almacenId: ctx.almacenId,
-    localId: ctx.localId ?? almacen?.localId,
+    zonaId: ctx.zonaId,
+    localId,
+    cadenaId: ctx.cadenaId ?? cadenaDeLocal(localId)?.id,
     categoria: ctx.categoria ?? insumo?.categoria,
   }
 }
 
 function referenciaDe(nivel: NivelParametros, ctx: Contexto): string | undefined {
-  if (nivel === 'cadena') return undefined
+  if (nivel === 'empresa') return undefined
+  if (nivel === 'cadena') return ctx.cadenaId
   if (nivel === 'local') return ctx.localId
-  if (nivel === 'almacen') return ctx.almacenId
+  if (nivel === 'zona') return ctx.zonaId
   if (nivel === 'categoria') return ctx.categoria
   return ctx.insumoId
 }
@@ -107,20 +119,20 @@ function ajusteDe(nivel: NivelParametros, referencia?: string) {
 }
 
 /**
- * Resuelve los parámetros que aplican a un insumo en un almacén, diciendo de
+ * Resuelve los parámetros que aplican a un insumo en una zona, diciendo de
  * qué nivel salió cada uno. Los niveles que el contexto no alcanza (por
- * ejemplo el almacén, cuando se consulta solo el insumo) se saltan.
+ * ejemplo la zona, cuando se consulta solo el insumo) se saltan.
  */
 export function resolverParametros(contexto: Contexto): ParametrosResueltos {
   const ctx = contextoCompleto(contexto)
   const resuelto = {} as ParametrosResueltos
   for (const clave of Object.keys(parametrosPorDefecto) as (keyof ParametrosAbastecimiento)[]) {
-    resuelto[clave] = { valor: parametrosPorDefecto[clave], nivel: 'cadena' } as never
+    resuelto[clave] = { valor: parametrosPorDefecto[clave], nivel: 'empresa' } as never
   }
 
   for (const nivel of nivelesParametros) {
     const referencia = referenciaDe(nivel, ctx)
-    if (nivel !== 'cadena' && !referencia) continue
+    if (nivel !== 'empresa' && !referencia) continue
     const valores = { ...ajusteDe(nivel, referencia)?.valores }
     // El insumo puede llevar sus propios valores en la ficha, sin ajuste aparte.
     if (nivel === 'insumo' && ctx.insumoId) {
@@ -163,14 +175,14 @@ export const parametrosAbastecimientoService = {
     referencia: string | undefined,
     valores: Partial<ParametrosAbastecimiento>,
   ): Promise<AjusteParametros> {
-    if (nivel !== 'cadena' && !referencia) {
+    if (nivel !== 'empresa' && !referencia) {
       throw errorCampo('referencia', `Elige a qué ${etiquetaNivel[nivel].toLowerCase()} aplica.`)
     }
     const limpios = Object.fromEntries(
       Object.entries(valores).filter(([, v]) => v !== undefined),
     ) as Partial<ParametrosAbastecimiento>
 
-    if (nivel === 'cadena') {
+    if (nivel === 'empresa') {
       // El nivel más general no hereda de nadie: no admite huecos.
       for (const clave of Object.keys(parametrosPorDefecto) as (keyof ParametrosAbastecimiento)[]) {
         if (limpios[clave] === undefined) {
@@ -182,7 +194,7 @@ export const parametrosAbastecimientoService = {
     const existente = ajusteDe(nivel, referencia)
     if (existente) {
       existente.valores = limpios
-      if (nivel !== 'cadena' && Object.keys(limpios).length === 0) {
+      if (nivel !== 'empresa' && Object.keys(limpios).length === 0) {
         // Un ajuste sin valores no ajusta nada: se retira.
         db.ajustesParametros = db.ajustesParametros.filter((a) => a !== existente)
       }
@@ -193,7 +205,7 @@ export const parametrosAbastecimientoService = {
     const ajuste: AjusteParametros = {
       id: nuevoId('pa'),
       nivel,
-      referencia: nivel === 'cadena' ? undefined : referencia,
+      referencia: nivel === 'empresa' ? undefined : referencia,
       valores: limpios,
     }
     if (Object.keys(limpios).length > 0) db.ajustesParametros.push(ajuste)
@@ -203,8 +215,8 @@ export const parametrosAbastecimientoService = {
 
   async eliminarAjuste(id: string): Promise<void> {
     const ajuste = db.ajustesParametros.find((a) => a.id === id)
-    if (ajuste?.nivel === 'cadena') {
-      throw { mensaje: 'El nivel de cadena es el que da los valores por defecto: no se elimina.' }
+    if (ajuste?.nivel === 'empresa') {
+      throw { mensaje: 'El nivel de empresa es el que da los valores por defecto: no se elimina.' }
     }
     db.ajustesParametros = db.ajustesParametros.filter((a) => a.id !== id)
     persistir()
@@ -229,24 +241,24 @@ const repoUbicaciones = crearRepositorio('ubicaciones', {
 })
 
 function validarUbicacion(datos: NuevaUbicacion, id?: string) {
-  if (!datos.almacenId) throw errorCampo('almacenId', 'Elige el almacén.')
-  if (!db.almacenes.some((a) => a.id === datos.almacenId)) {
-    throw errorCampo('almacenId', 'Almacén no encontrado.')
+  if (!datos.zonaId) throw errorCampo('zonaId', 'Elige la zona.')
+  if (!db.zonas.some((a) => a.id === datos.zonaId)) {
+    throw errorCampo('zonaId', 'Zona no encontrado.')
   }
   const codigo = codigoUbicacion(datos)
   if (!codigo) {
     throw errorCampo('pasillo', 'Indica al menos pasillo o estante.', 'Ubicación vacía')
   }
-  const mismas = db.ubicaciones.filter((u) => u.almacenId === datos.almacenId)
+  const mismas = db.ubicaciones.filter((u) => u.zonaId === datos.zonaId)
   if (existeOtro(mismas, codigoUbicacion, codigo, id)) {
-    throw errorCampo('pasillo', `Ya existe la ubicación ${codigo} en ese almacén.`, 'Duplicada')
+    throw errorCampo('pasillo', `Ya existe la ubicación ${codigo} en esa zona.`, 'Duplicada')
   }
 }
 
-/** Como mucho una ubicación por defecto por almacén: al marcar una, se desmarca la anterior. */
-function unicaPorDefecto(almacenId: string, id: string) {
+/** Como mucho una ubicación por defecto por zona: al marcar una, se desmarca la anterior. */
+function unicaPorDefecto(zonaId: string, id: string) {
   for (const u of db.ubicaciones) {
-    if (u.almacenId === almacenId && u.id !== id) u.porDefecto = false
+    if (u.zonaId === zonaId && u.id !== id) u.porDefecto = false
   }
 }
 
@@ -258,7 +270,7 @@ export const ubicacionesService = {
   async crear(datos: NuevaUbicacion): Promise<Ubicacion> {
     validarUbicacion(datos)
     const ubicacion = await repoUbicaciones.crear(datos)
-    if (ubicacion.porDefecto) unicaPorDefecto(ubicacion.almacenId, ubicacion.id)
+    if (ubicacion.porDefecto) unicaPorDefecto(ubicacion.zonaId, ubicacion.id)
     persistir()
     return ubicacion
   },
@@ -268,7 +280,7 @@ export const ubicacionesService = {
     if (!actual) throw { mensaje: 'Ubicación no encontrada.' }
     validarUbicacion({ ...actual, ...cambios }, id)
     const ubicacion = await repoUbicaciones.actualizar(id, cambios)
-    if (ubicacion.porDefecto) unicaPorDefecto(ubicacion.almacenId, id)
+    if (ubicacion.porDefecto) unicaPorDefecto(ubicacion.zonaId, id)
     persistir()
     return ubicacion
   },
@@ -280,9 +292,9 @@ export const ubicacionesService = {
     await repoUbicaciones.eliminar(id)
   },
 
-  /** Ubicación que propone la recepción en un almacén. */
-  porDefectoDe(almacenId: string): Ubicacion | undefined {
-    return db.ubicaciones.find((u) => u.almacenId === almacenId && u.porDefecto && u.activo)
+  /** Ubicación que propone la recepción en una zona. */
+  porDefectoDe(zonaId: string): Ubicacion | undefined {
+    return db.ubicaciones.find((u) => u.zonaId === zonaId && u.porDefecto && u.activo)
   },
 }
 
@@ -322,6 +334,19 @@ function validarTransformacion(datos: NuevaTransformacion, id?: string) {
     throw errorCampo('salidas', 'Un insumo no puede entrar y salir de la misma transformación.')
   }
 
+  const ciclo = cicloCon(
+    entradas.map((e) => e.insumoId),
+    productos.map((s) => s.insumoId!),
+    id,
+  )
+  if (ciclo) {
+    throw errorCampo(
+      'salidas',
+      `Se forma un ciclo: ${ciclo} ya se usa para producir lo que entra aquí.`,
+      'Dependencia circular',
+    )
+  }
+
   const reparto = productos.reduce((t, s) => t + Number(s.reparto || 0), 0)
   if (Math.abs(reparto - 100) > 0.01) {
     throw errorCampo(
@@ -331,6 +356,52 @@ function validarTransformacion(datos: NuevaTransformacion, id?: string) {
     )
   }
   return { ...datos, nombre, entradas, salidas }
+}
+
+/**
+ * ¿Alguna salida de esta transformación termina, a través de otras, siendo
+ * entrada de sí misma? Devuelve el nombre del insumo que cierra el ciclo.
+ */
+function cicloCon(entradas: string[], salidas: string[], propioId?: string): string | undefined {
+  // Aristas insumo de entrada → insumo de salida de las demás transformaciones.
+  const aristas = new Map<string, string[]>()
+  for (const t of db.transformaciones) {
+    if (t.id === propioId) continue
+    for (const e of t.entradas) {
+      const destinos = t.salidas
+        .filter((s) => s.tipo === 'insumo' && s.insumoId)
+        .map((s) => s.insumoId!)
+      aristas.set(e.insumoId, [...(aristas.get(e.insumoId) ?? []), ...destinos])
+    }
+  }
+  for (const salida of salidas) {
+    const pila = [salida]
+    const vistos = new Set<string>()
+    while (pila.length) {
+      const actual = pila.pop()!
+      if (entradas.includes(actual)) {
+        return db.insumos.find((i) => i.id === actual)?.nombre ?? actual
+      }
+      if (vistos.has(actual)) continue
+      vistos.add(actual)
+      pila.push(...(aristas.get(actual) ?? []))
+    }
+  }
+  return undefined
+}
+
+/**
+ * Reparto por valor de mercado: pesa cada salida por su cantidad y el costo
+ * actual del insumo, así lo que vale más absorbe más costo.
+ */
+export function repartoPorValor(salidas: { tipo: string; cantidad: number; insumoId?: string }[]) {
+  const valor = (s: { tipo: string; cantidad: number; insumoId?: string }) =>
+    s.tipo === 'insumo'
+      ? Number(s.cantidad || 0) * (db.insumos.find((i) => i.id === s.insumoId)?.costoUnitario ?? 0)
+      : 0
+  const total = salidas.reduce((t, s) => t + valor(s), 0)
+  if (total <= 0) return repartoProporcional(salidas)
+  return salidas.map((s) => (s.tipo === 'merma' ? 0 : r2((valor(s) / total) * 100)))
 }
 
 /** Reparto por defecto: proporcional a la cantidad de cada salida que no es merma. */
@@ -400,6 +471,7 @@ export const transformacionesService = {
   obtener: repoTransformaciones.obtener,
   costosDeSalida,
   repartoProporcional,
+  repartoPorValor,
   transformacionQueProduce,
 
   async crear(datos: NuevaTransformacion): Promise<Transformacion> {
@@ -460,6 +532,8 @@ export const lotesService = {
       codigo,
       vencimiento: datos.vencimiento,
       recepcion: datos.recepcion ?? new Date().toISOString(),
+      origen: datos.origen,
+      referencia: datos.referencia,
     }
     db.lotes.push(lote)
     persistir()
@@ -493,9 +567,9 @@ function diasHasta(fecha: string) {
 
 export const stockDetalleService = {
   /** Stock detallado de un insumo, en orden FEFO. */
-  async porInsumo(insumoId: string, almacenId?: string): Promise<FilaStockDetalle[]> {
+  async porInsumo(insumoId: string, zonaId?: string): Promise<FilaStockDetalle[]> {
     const filas = db.stockDetalle
-      .filter((s) => s.insumoId === insumoId && (!almacenId || s.almacenId === almacenId))
+      .filter((s) => s.insumoId === insumoId && (!zonaId || s.zonaId === zonaId))
       .map((s) => decorar(s))
     filas.sort((a, b) => {
       if (a.lote && b.lote) return ordenFefo(a.lote, b.lote)
@@ -511,29 +585,29 @@ export const stockDetalleService = {
 
   /**
    * ¿Cuadra el stock detallado con el principal? Devuelve las diferencias por
-   * insumo y almacén. Solo se comprueban los insumos que controlan lote o
+   * insumo y zona. Solo se comprueban los insumos que controlan lote o
    * ubicación: los demás no llevan detalle.
    */
   async descuadres(): Promise<
-    { insumo: Insumo; almacenId: string; principal: number; detallado: number }[]
+    { insumo: Insumo; zonaId: string; principal: number; detallado: number }[]
   > {
-    const filas: { insumo: Insumo; almacenId: string; principal: number; detallado: number }[] = []
+    const filas: { insumo: Insumo; zonaId: string; principal: number; detallado: number }[] = []
     for (const insumo of db.insumos) {
       for (const existencia of insumo.existencias) {
         const { controlaLote, controlaUbicacion } = valoresParametros({
           insumoId: insumo.id,
-          almacenId: existencia.almacenId,
+          zonaId: existencia.zonaId,
         })
         if (!controlaLote && !controlaUbicacion) continue
         const detallado = r3(
           db.stockDetalle
-            .filter((s) => s.insumoId === insumo.id && s.almacenId === existencia.almacenId)
+            .filter((s) => s.insumoId === insumo.id && s.zonaId === existencia.zonaId)
             .reduce((t, s) => t + s.cantidad, 0),
         )
         if (Math.abs(detallado - existencia.cantidad) > 0.001) {
           filas.push({
             insumo,
-            almacenId: existencia.almacenId,
+            zonaId: existencia.zonaId,
             principal: existencia.cantidad,
             detallado,
           })
@@ -551,14 +625,14 @@ export const stockDetalleService = {
   ajustar(datos: Omit<StockDetalle, 'id'>): StockDetalle {
     const { controlaUbicacion } = valoresParametros({
       insumoId: datos.insumoId,
-      almacenId: datos.almacenId,
+      zonaId: datos.zonaId,
     })
     if (controlaUbicacion && !datos.ubicacionId) {
-      const porDefecto = ubicacionesService.porDefectoDe(datos.almacenId)
+      const porDefecto = ubicacionesService.porDefectoDe(datos.zonaId)
       if (!porDefecto) {
         throw errorCampo(
           'ubicacionId',
-          'El insumo controla ubicación y el almacén no tiene una por defecto.',
+          'El insumo controla ubicación y la zona no tiene una por defecto.',
           'Falta ubicación',
         )
       }
@@ -567,7 +641,7 @@ export const stockDetalleService = {
     const existente = db.stockDetalle.find(
       (s) =>
         s.insumoId === datos.insumoId &&
-        s.almacenId === datos.almacenId &&
+        s.zonaId === datos.zonaId &&
         (s.loteId ?? undefined) === (datos.loteId ?? undefined) &&
         (s.ubicacionId ?? undefined) === (datos.ubicacionId ?? undefined),
     )
@@ -590,11 +664,45 @@ export const stockDetalleService = {
   },
 }
 
+/**
+ * Descuenta stock detallado de un insumo en orden FEFO (lo que vence antes,
+ * primero). Si el insumo bloquea vencidos, esos lotes no se tocan. Solo actúa
+ * cuando el insumo controla lote o ubicación en esa zona.
+ */
+export function consumirDetalle(insumoId: string, zonaId: string, cantidad: number) {
+  const p = valoresParametros({ insumoId, zonaId })
+  if (!p.controlaLote && !p.controlaUbicacion) return
+  const filas = db.stockDetalle
+    .filter((s) => s.insumoId === insumoId && s.zonaId === zonaId && s.cantidad > 0)
+    .map((s) => decorar(s))
+    .filter((f) => !(p.bloquearVencidos && f.vencido))
+    .sort((a, b) => {
+      if (a.lote && b.lote) return ordenFefo(a.lote, b.lote)
+      return a.lote ? -1 : b.lote ? 1 : 0
+    })
+  let resta = r3(cantidad)
+  for (const fila of filas) {
+    if (resta <= 0) break
+    const toma = Math.min(fila.cantidad, resta)
+    const real = db.stockDetalle.find((s) => s.id === fila.id)!
+    real.cantidad = r3(real.cantidad - toma)
+    resta = r3(resta - toma)
+  }
+  if (resta > 0.0005) {
+    const nombre = db.insumos.find((i) => i.id === insumoId)?.nombre ?? 'El insumo'
+    throw errorCampo(
+      'cantidad',
+      `${nombre} no tiene suficiente stock utilizable en sus lotes${p.bloquearVencidos ? ' (los vencidos están bloqueados)' : ''}.`,
+    )
+  }
+  db.stockDetalle = db.stockDetalle.filter((s) => s.cantidad > 0)
+}
+
 function decorar(s: StockDetalle): FilaStockDetalle {
   const lote = s.loteId ? db.lotes.find((l) => l.id === s.loteId) : undefined
   const ubicacion = s.ubicacionId ? db.ubicaciones.find((u) => u.id === s.ubicacionId) : undefined
   const dias = lote?.vencimiento ? diasHasta(lote.vencimiento) : undefined
-  const { diasAlerta } = valoresParametros({ insumoId: s.insumoId, almacenId: s.almacenId })
+  const { diasAlerta } = valoresParametros({ insumoId: s.insumoId, zonaId: s.zonaId })
   return {
     ...s,
     lote,

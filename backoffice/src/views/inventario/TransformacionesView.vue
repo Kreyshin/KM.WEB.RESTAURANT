@@ -36,8 +36,8 @@ import { etiquetaUnidad, formatearCantidad, formatearSoles } from '@/utils/forma
 
 const ui = useUiStore()
 const auth = useAuthStore()
-const catalogos = useCatalogos(['insumos', 'almacenes', 'locales'])
-const { insumo, opcionesInsumo, opcionesAlmacen } = catalogos
+const catalogos = useCatalogos(['insumos', 'zonas', 'locales'])
+const { insumo, opcionesInsumo, opcionesZona } = catalogos
 
 const transformaciones = shallowRef<Transformacion[]>([])
 const cargando = ref(true)
@@ -120,6 +120,12 @@ function quitarSalida(indice: number) {
   salidas.value = salidas.value.filter((_, i) => i !== indice)
 }
 
+/** Reparte el costo según lo que vale cada salida: cantidad por costo actual del insumo. */
+function repartirPorValor() {
+  const porcentajes = transformacionesService.repartoPorValor(salidas.value)
+  salidas.value = salidas.value.map((s, i) => ({ ...s, reparto: porcentajes[i] ?? 0 }))
+}
+
 /** Reparte el costo en proporción a la cantidad de cada salida que no es merma. */
 function repartirProporcional() {
   const porcentajes = transformacionesService.repartoProporcional(salidas.value)
@@ -199,13 +205,13 @@ async function confirmarEliminar() {
 
 const procesarAbierto = ref(false)
 const aProcesar = shallowRef<Transformacion | null>(null)
-const almacenId = ref('')
+const zonaId = ref('')
 const veces = ref<number | null>(1)
 const procesando = ref(false)
 
 function procesar(t: Transformacion) {
   aProcesar.value = t
-  almacenId.value = (opcionesAlmacen.value[0]?.valor as string) ?? ''
+  zonaId.value = (opcionesZona.value[0]?.valor as string) ?? ''
   veces.value = 1
   procesarAbierto.value = true
 }
@@ -216,7 +222,7 @@ async function confirmarProcesar() {
   try {
     await inventarioService.transformar({
       transformacionId: aProcesar.value.id,
-      almacenId: almacenId.value,
+      zonaId: zonaId.value,
       veces: Number(veces.value),
       usuarioId: auth.usuario?.id ?? 'u1',
     })
@@ -232,7 +238,7 @@ async function confirmarProcesar() {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-5">
+  <div class="flex w-full flex-col gap-5">
     <KmCard
       titulo="Transformaciones"
       subtitulo="Qué entra y qué sale al procesar un insumo: despiece de una pieza o preparación de una base. El costo de las entradas se reparte entre las salidas."
@@ -356,6 +362,9 @@ async function confirmarProcesar() {
               <KmButton tamano="sm" variante="secundario" @click="repartirProporcional">
                 Repartir por cantidad
               </KmButton>
+              <KmButton tamano="sm" variante="secundario" @click="repartirPorValor">
+                Repartir por valor
+              </KmButton>
               <KmButton tamano="sm" variante="secundario" @click="anadirSalida">
                 Añadir salida
               </KmButton>
@@ -468,8 +477,8 @@ async function confirmarProcesar() {
 
     <KmModal v-model="procesarAbierto" :titulo="`Procesar · ${aProcesar?.nombre ?? ''}`">
       <div class="flex flex-col gap-4">
-        <KmField v-slot="{ id }" label="Almacén" ayuda="Se consume y se produce en el mismo sitio.">
-          <KmSelect :id="id" v-model="almacenId" :opciones="opcionesAlmacen" />
+        <KmField v-slot="{ id }" label="Zona" ayuda="Se consume y se produce en el mismo sitio.">
+          <KmSelect :id="id" v-model="zonaId" :opciones="opcionesZona" />
         </KmField>
         <KmField v-slot="{ id }" label="Tandas" ayuda="0.5 procesa media receta.">
           <KmNumero :id="id" v-model="veces" :min="0" :decimales="3" />

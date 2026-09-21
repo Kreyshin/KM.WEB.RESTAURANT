@@ -1,20 +1,23 @@
 import { computed, onMounted, shallowRef } from 'vue'
 import { cartaService } from '@/services/carta.service'
 import { articulosService, proveedoresService } from '@/services/erp.service'
-import { almacenesService, inventarioService } from '@/services/inventario.service'
+import { cadenasService } from '@/services/cadenas.service'
+import { zonasService, inventarioService } from '@/services/inventario.service'
 import { localesService } from '@/services/locales.service'
-import type { Almacen, Articulo, Insumo, Local, Producto, Proveedor } from '@/types'
+import type { Cadena, Zona, Articulo, Insumo, Local, Producto, Proveedor } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
 import { etiquetaUnidad } from '@/utils/formato'
 
-type Catalogo = 'almacenes' | 'insumos' | 'proveedores' | 'productos' | 'locales' | 'articulos'
+type Catalogo =
+  'zonas' | 'cadenas' | 'insumos' | 'proveedores' | 'productos' | 'locales' | 'articulos'
 
 /**
  * Listas de referencia para selects y para mostrar nombres en tablas.
  * Solo se cargan las que se piden.
  */
 export function useCatalogos(pedidos: Catalogo[]) {
-  const almacenes = shallowRef<Almacen[]>([])
+  const zonas = shallowRef<Zona[]>([])
+  const cadenas = shallowRef<Cadena[]>([])
   const insumos = shallowRef<Insumo[]>([])
   const proveedores = shallowRef<Proveedor[]>([])
   const productos = shallowRef<Producto[]>([])
@@ -23,7 +26,8 @@ export function useCatalogos(pedidos: Catalogo[]) {
 
   async function recargar() {
     await Promise.all([
-      pedidos.includes('almacenes') && almacenesService.todos().then((l) => (almacenes.value = l)),
+      pedidos.includes('zonas') && zonasService.todos().then((l) => (zonas.value = l)),
+      pedidos.includes('cadenas') && cadenasService.todos().then((l) => (cadenas.value = l)),
       pedidos.includes('insumos') &&
         inventarioService.listarInsumos().then((l) => (insumos.value = l)),
       pedidos.includes('proveedores') &&
@@ -38,7 +42,7 @@ export function useCatalogos(pedidos: Catalogo[]) {
   onMounted(recargar)
 
   const nombreLocal = (id?: string) => locales.value.find((l) => l.id === id)?.nombre ?? '—'
-  const nombreAlmacen = (id?: string) => almacenes.value.find((a) => a.id === id)?.nombre ?? '—'
+  const nombreZona = (id?: string) => zonas.value.find((a) => a.id === id)?.nombre ?? '—'
   const nombreProveedor = (id?: string) =>
     proveedores.value.find((p) => p.id === id)?.razonSocial ?? '—'
   const insumo = (id?: string) => insumos.value.find((i) => i.id === id)
@@ -46,8 +50,8 @@ export function useCatalogos(pedidos: Catalogo[]) {
   const articulo = (id?: string) => articulos.value.find((a) => a.id === id)
   const nombreArticulo = (id?: string) => articulo(id)?.nombre ?? '—'
 
-  const opcionesAlmacen = computed<OpcionSelect[]>(() =>
-    almacenes.value
+  const opcionesZona = computed<OpcionSelect[]>(() =>
+    zonas.value
       .filter((a) => a.activo)
       .map((a) => ({
         valor: a.id,
@@ -74,7 +78,8 @@ export function useCatalogos(pedidos: Catalogo[]) {
   )
 
   return {
-    almacenes,
+    zonas,
+    cadenas,
     insumos,
     proveedores,
     productos,
@@ -82,14 +87,14 @@ export function useCatalogos(pedidos: Catalogo[]) {
     articulos,
     recargar,
     nombreLocal,
-    nombreAlmacen,
+    nombreZona,
     nombreProveedor,
     insumo,
     producto,
     articulo,
     nombreArticulo,
     opcionesArticulo,
-    opcionesAlmacen,
+    opcionesZona,
     opcionesProveedor,
     opcionesInsumo,
     opcionesLocal,

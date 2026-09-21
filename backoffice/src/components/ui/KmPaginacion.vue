@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import KmSelect from './KmSelect.vue'
 
 const props = withDefaults(defineProps<{ total: number; opcionesPorPagina?: number[] }>(), {
   opcionesPorPagina: () => [10, 20, 50],
@@ -25,8 +26,12 @@ function ir(destino: number) {
   pagina.value = Math.min(Math.max(1, destino), paginas.value)
 }
 
-function cambiarPorPagina(evento: Event) {
-  porPagina.value = Number((evento.target as HTMLSelectElement).value)
+const opcionesSelect = computed(() =>
+  props.opcionesPorPagina.map((o) => ({ valor: o, etiqueta: String(o) })),
+)
+
+function cambiarPorPagina(valor: string | number | undefined) {
+  porPagina.value = Number(valor)
   pagina.value = 1
 }
 
@@ -45,16 +50,16 @@ const boton =
     </p>
 
     <div class="flex items-center gap-3">
-      <label class="flex items-center gap-2 text-tenue">
+      <div class="flex items-center gap-2 text-tenue">
         <span class="hidden sm:inline">Por página</span>
-        <select
-          :value="porPagina"
-          class="h-8 rounded-control border border-linea bg-panel px-2 text-sm text-tinta"
-          @change="cambiarPorPagina"
-        >
-          <option v-for="o in opcionesPorPagina" :key="o" :value="o">{{ o }}</option>
-        </select>
-      </label>
+        <KmSelect
+          class="w-20"
+          :model-value="porPagina"
+          :opciones="opcionesSelect"
+          etiqueta="Filas por página"
+          @update:model-value="cambiarPorPagina"
+        />
+      </div>
 
       <div class="flex items-center gap-1">
         <button

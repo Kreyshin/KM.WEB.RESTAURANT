@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { onBeforeUnmount, watch } from 'vue'
 
-withDefaults(defineProps<{ titulo?: string; subtitulo?: string; ancho?: 'sm' | 'md' | 'lg' }>(), {
-  ancho: 'md',
-})
+withDefaults(
+  defineProps<{ titulo?: string; subtitulo?: string; ancho?: 'sm' | 'md' | 'lg' | 'xl' }>(),
+  { ancho: 'md' },
+)
 
 const abierto = defineModel<boolean>({ required: true })
 
-const anchos = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl' } as const
+const anchos = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl', xl: 'max-w-6xl' } as const
 
 function alPresionarTecla(e: KeyboardEvent) {
   if (e.key === 'Escape') abierto.value = false

@@ -85,7 +85,7 @@ function validar(c: NuevoCombo): Record<string, string> {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCatalogo
       titulo="Combos y menús"
       subtitulo="Productos agrupados a un precio cerrado: menú del día, combos y promociones."

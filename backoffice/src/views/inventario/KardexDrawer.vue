@@ -5,7 +5,7 @@ import KmDrawer from '@/components/ui/KmDrawer.vue'
 import KmEstado from '@/components/ui/KmEstado.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import { inventarioService, type FilaKardex } from '@/services/inventario.service'
-import type { Almacen, ApiError, Insumo } from '@/types'
+import type { Zona, ApiError, Insumo } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
 import {
   etiquetaMovimiento,
@@ -17,29 +17,29 @@ import {
   tonoMovimiento,
 } from '@/utils/formato'
 
-const props = defineProps<{ insumo: Insumo | null; almacenes: Almacen[] }>()
+const props = defineProps<{ insumo: Insumo | null; zonas: Zona[] }>()
 const abierto = defineModel<boolean>({ required: true })
 
-const almacenId = ref('')
+const zonaId = ref('')
 const filas = ref<FilaKardex[]>([])
 const cargando = ref(false)
 const error = ref<string | null>(null)
 
 const opciones = computed<OpcionSelect[]>(() => [
-  { valor: '', etiqueta: 'Todos los almacenes' },
-  ...props.almacenes
-    .filter((a) => props.insumo?.existencias.some((e) => e.almacenId === a.id))
+  { valor: '', etiqueta: 'Todas las zonas' },
+  ...props.zonas
+    .filter((a) => props.insumo?.existencias.some((e) => e.zonaId === a.id))
     .map((a) => ({ valor: a.id, etiqueta: a.nombre })),
 ])
 
-const nombreAlmacen = (id: string) => props.almacenes.find((a) => a.id === id)?.nombre ?? '—'
+const nombreZona = (id: string) => props.zonas.find((a) => a.id === id)?.nombre ?? '—'
 
 async function cargar() {
   if (!props.insumo) return
   cargando.value = true
   error.value = null
   try {
-    filas.value = await inventarioService.kardex(props.insumo.id, almacenId.value || undefined)
+    filas.value = await inventarioService.kardex(props.insumo.id, zonaId.value || undefined)
   } catch (e) {
     error.value = (e as ApiError).mensaje ?? 'No se pudo cargar el kardex.'
   } finally {
@@ -49,10 +49,10 @@ async function cargar() {
 
 watch(abierto, (esta) => {
   if (!esta) return
-  almacenId.value = ''
+  zonaId.value = ''
   cargar()
 })
-watch(almacenId, cargar)
+watch(zonaId, cargar)
 </script>
 
 <template>
@@ -70,10 +70,10 @@ watch(almacenId, cargar)
       <div class="flex flex-wrap gap-2">
         <div
           v-for="e in insumo.existencias"
-          :key="e.almacenId"
+          :key="e.zonaId"
           class="rounded-card border border-linea px-3 py-2"
         >
-          <p class="rs-etiqueta text-tenue">{{ nombreAlmacen(e.almacenId) }}</p>
+          <p class="rs-etiqueta text-tenue">{{ nombreZona(e.zonaId) }}</p>
           <p class="rs-display text-lg font-semibold text-tinta tabular-nums">
             {{ formatearCantidad(e.cantidad, insumo.unidad) }}
           </p>
@@ -81,7 +81,7 @@ watch(almacenId, cargar)
       </div>
 
       <div class="w-56">
-        <KmSelect v-model="almacenId" :opciones="opciones" etiqueta="Filtrar por almacén" />
+        <KmSelect v-model="zonaId" :opciones="opciones" etiqueta="Filtrar por zona" />
       </div>
 
       <KmEstado v-if="cargando" tipo="cargando" compacto />
@@ -106,8 +106,7 @@ watch(almacenId, cargar)
               <td class="px-3 py-2">
                 <KmBadge :tono="tonoMovimiento[f.tipo]">{{ etiquetaMovimiento[f.tipo] }}</KmBadge>
                 <p class="mt-1 text-xs text-tenue">
-                  {{ nombreAlmacen(f.almacenId)
-                  }}<template v-if="f.motivo"> · {{ f.motivo }}</template>
+                  {{ nombreZona(f.zonaId) }}<template v-if="f.motivo"> · {{ f.motivo }}</template>
                   <template v-if="f.referencia">
                     · <span class="font-mono">{{ f.referencia }}</span></template
                   >

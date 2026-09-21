@@ -86,7 +86,7 @@ const saludo = computed(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-7xl flex-col gap-7">
+  <div class="flex w-full flex-col gap-7">
     <div>
       <p class="rs-display text-lg text-tinta">
         {{ saludo }}, {{ auth.usuario?.nombre.split(' ')[0] }}.

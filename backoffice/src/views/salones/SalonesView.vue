@@ -173,7 +173,7 @@ async function eliminar() {
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCard
       titulo="Salones"
       subtitulo="Zonas físicas del restaurante donde se distribuyen las mesas."

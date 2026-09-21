@@ -25,7 +25,7 @@ const condicion = (dias: number) => (dias ? `Crédito ${dias} días` : 'Contado'
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-5xl flex-col gap-6">
+  <div class="flex w-full flex-col gap-6">
     <KmCatalogo
       titulo="Proveedores"
       subtitulo="Quién abastece a la cadena y en qué condiciones de pago."

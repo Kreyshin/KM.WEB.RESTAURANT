@@ -1,4 +1,4 @@
-import { drawer, expect, fila, test } from './fixtures'
+import { drawer, elegir, expect, fila, test } from './fixtures'
 
 test.describe('Áreas y comandas', () => {
   test.beforeEach(async ({ page, entrar }) => {
@@ -20,7 +20,7 @@ test.describe('Áreas y comandas', () => {
     await page.getByRole('button', { name: 'Nueva área' }).click()
     const d = drawer(page)
     await d.getByLabel('Nombre').fill('Parrilla')
-    await d.getByLabel('Salón').selectOption({ label: 'Terraza' })
+    await elegir(d.getByLabel('Salón'), 'Terraza')
     await d.getByRole('radio', { name: /Solo algunos/ }).click()
     await d.getByText('Fondos criollos', { exact: true }).click()
     await d.getByRole('button', { name: 'Crear área' }).click()
@@ -35,7 +35,7 @@ test.describe('Áreas y comandas', () => {
     await page.getByRole('button', { name: 'Nueva área' }).click()
     const d = drawer(page)
     await d.getByLabel('Nombre').fill('Postres')
-    await d.getByLabel('Salón').selectOption({ label: 'Segundo piso' })
+    await elegir(d.getByLabel('Salón'), 'Segundo piso')
     await d.getByRole('radio', { name: /Solo algunos/ }).click()
     await d.getByRole('button', { name: 'Crear área' }).click()
     await expect(d).toContainText('Elige al menos una categoría o un producto')

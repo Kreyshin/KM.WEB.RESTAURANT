@@ -1,11 +1,13 @@
-import type {
+﻿import type {
+  Almacen,
   Consulta,
+  NuevaZona,
+  Zona,
   Insumo,
   Movimiento,
   NuevoInsumo,
   NuevoMovimiento,
   Paginado,
-  Receta,
   Transformacion,
 } from '@/types'
 import { recalcularCostosTransformados, transformacionQueProduce } from './abastecimiento.service'
@@ -15,6 +17,7 @@ import { db, latencia, nuevoId, persistir } from './mock/db'
 import { clonar } from './mock/red'
 import { errorCampo, existeOtro } from './mock/reglas'
 import { crearRepositorio } from './mock/repositorio'
+import { insumoEnRecetas } from './recetas.service'
 
 /** Cantidades con 3 decimales: evita arrastrar error de coma flotante (8.700000000000001). */
 const r3 = (n: number) => Math.round((n + Number.EPSILON) * 1000) / 1000
@@ -26,16 +29,16 @@ function insumoOError(id: string) {
   return insumo
 }
 
-function almacenOError(id: string) {
-  const almacen = db.almacenes.find((a) => a.id === id)
-  if (!almacen) throw errorCampo('almacenId', 'Almacén no encontrado.', 'Elige un almacén')
-  return almacen
+function zonaOError(id: string) {
+  const zona = db.zonas.find((a) => a.id === id)
+  if (!zona) throw errorCampo('zonaId', 'Zona no encontrada.', 'Elige una zona')
+  return zona
 }
 
-function existenciaDe(insumo: Insumo, almacenId: string) {
-  let e = insumo.existencias.find((x) => x.almacenId === almacenId)
+function existenciaDe(insumo: Insumo, zonaId: string) {
+  let e = insumo.existencias.find((x) => x.zonaId === zonaId)
   if (!e) {
-    e = { almacenId, cantidad: 0 }
+    e = { zonaId, cantidad: 0 }
     insumo.existencias.push(e)
   }
   return e
@@ -45,13 +48,13 @@ function recalcularTotal(insumo: Insumo) {
   insumo.stock = r3(insumo.existencias.reduce((t, e) => t + e.cantidad, 0))
 }
 
-/** Almacén por defecto de un insumo: donde más stock tiene, o el primero activo. */
-function almacenPrincipal(insumo: Insumo) {
+/** Zona por defecto de un insumo: donde más stock tiene, o el primero activo. */
+function zonaPrincipal(insumo: Insumo) {
   const conStock = [...insumo.existencias].sort((a, b) => b.cantidad - a.cantidad)[0]
-  return conStock?.almacenId ?? db.almacenes.find((a) => a.activo)?.id ?? ''
+  return conStock?.zonaId ?? db.zonas.find((a) => a.activo)?.id ?? ''
 }
 
-type MovimientoCompleto = NuevoMovimiento & { almacenId: string }
+type MovimientoCompleto = NuevoMovimiento & { zonaId: string }
 
 /**
  * Aplica un movimiento al stock sin latencia ni persistencia, para poder
@@ -61,20 +64,20 @@ type MovimientoCompleto = NuevoMovimiento & { almacenId: string }
  */
 function aplicar(datos: MovimientoCompleto): Movimiento {
   const insumo = insumoOError(datos.insumoId)
-  const almacen = almacenOError(datos.almacenId)
+  const zona = zonaOError(datos.zonaId)
 
   const cantidad = Number(datos.cantidad)
   if (!Number.isFinite(cantidad) || cantidad <= 0) {
     throw errorCampo('cantidad', 'La cantidad debe ser mayor que cero.', 'Cantidad inválida')
   }
 
-  const existencia = existenciaDe(insumo, almacen.id)
+  const existencia = existenciaDe(insumo, zona.id)
   const signo = signoNumerico[datos.tipo]
   const resultante = existencia.cantidad + signo * cantidad
   if (resultante < 0) {
     throw errorCampo(
       'cantidad',
-      `No hay stock suficiente de ${insumo.nombre} en ${almacen.nombre}: quedan ${existencia.cantidad} ${insumo.unidad}.`,
+      `No hay stock suficiente de ${insumo.nombre} en ${zona.nombre}: quedan ${existencia.cantidad} ${insumo.unidad}.`,
       'Supera el stock disponible',
     )
   }
@@ -102,6 +105,9 @@ function aplicar(datos: MovimientoCompleto): Movimiento {
   return movimiento
 }
 
+/** Para recepción y producción (F4.5), que encadenan movimientos en su propia transacción. */
+export const aplicarMovimiento = aplicar
+
 /**
  * Ejecuta varios cambios como una transacción: si uno falla, se restaura el
  * estado anterior de insumos y movimientos.
@@ -120,26 +126,72 @@ function transaccion<T>(fn: () => T): T {
   }
 }
 
-function costeIngredientes(ingredientes: { insumoId: string; cantidad: number }[]) {
-  return ingredientes.reduce((total, g) => {
-    const insumo = db.insumos.find((i) => i.id === g.insumoId)
-    return total + (insumo ? insumo.costoUnitario * g.cantidad : 0)
-  }, 0)
-}
+// ── Zonas ────────────────────────────────────────────────────────────────
 
-// ── Almacenes ────────────────────────────────────────────────────────────────
-
-/** Almacenes: vienen del ERP y aquí solo se consultan (D-005). */
-const repoAlmacenes = crearRepositorio('almacenes', {
-  prefijo: 'al',
-  entidad: 'Almacén',
+/**
+ * Zonas (D-009): espacios del restaurante dentro del almacén de su local —
+ * cámara de frío, barra, despensa—. Son de la vertical: el ERP ve el total
+ * del almacén y los movimientos entre zonas no le afectan.
+ */
+const repoZonas = crearRepositorio('zonas', {
+  prefijo: 'zn',
+  entidad: 'Zona',
   camposBusqueda: ['nombre', 'descripcion'],
 })
 
+function validarZona(datos: NuevaZona, id?: string) {
+  const nombre = datos.nombre.trim()
+  if (!nombre) throw errorCampo('nombre', 'El nombre es obligatorio.')
+  const almacen = db.almacenes.find((a) => a.localId === datos.localId && a.activo)
+  if (!almacen) throw errorCampo('localId', 'Ese local no tiene almacén.')
+  const delAlmacen = db.zonas.filter((z) => z.almacenId === almacen.id)
+  if (existeOtro(delAlmacen, (z) => z.nombre, nombre, id)) {
+    throw errorCampo('nombre', 'Ese almacén ya tiene una zona con ese nombre.', 'Nombre duplicado')
+  }
+  return { ...datos, nombre, almacenId: almacen.id }
+}
+
+export const zonasService = {
+  consultar: repoZonas.consultar,
+  todos: repoZonas.todos,
+  obtener: repoZonas.obtener,
+
+  async crear(datos: NuevaZona): Promise<Zona> {
+    return repoZonas.crear(validarZona(datos))
+  },
+
+  async actualizar(id: string, cambios: Partial<NuevaZona>): Promise<Zona> {
+    const actual = db.zonas.find((z) => z.id === id)
+    if (!actual) throw { mensaje: 'Zona no encontrada.' }
+    const datos = validarZona({ ...actual, ...cambios }, id)
+    if (
+      datos.activo === false &&
+      db.insumos.some((i) => i.existencias.some((e) => e.zonaId === id && e.cantidad > 0))
+    ) {
+      throw { mensaje: 'No se puede desactivar: la zona todavía guarda stock. Trasládalo antes.' }
+    }
+    return repoZonas.actualizar(id, datos)
+  },
+
+  async eliminar(id: string): Promise<void> {
+    const usada =
+      db.insumos.some((i) => i.existencias.some((e) => e.zonaId === id && e.cantidad > 0)) ||
+      db.movimientos.some((m) => m.zonaId === id)
+    if (usada) {
+      throw { mensaje: 'La zona tiene stock o movimientos: desactívala en lugar de eliminarla.' }
+    }
+    await repoZonas.eliminar(id)
+  },
+}
+
+/** Almacén de cada local (uno por local): lo que conoce Inventarios del ERP. */
 export const almacenesService = {
-  consultar: repoAlmacenes.consultar,
-  todos: repoAlmacenes.todos,
-  obtener: repoAlmacenes.obtener,
+  async todos(): Promise<Almacen[]> {
+    return latencia([...db.almacenes])
+  },
+  delLocal(localId: string): Almacen | undefined {
+    return db.almacenes.find((a) => a.localId === localId && a.activo)
+  },
 }
 
 // ── Insumos, movimientos y recetas ───────────────────────────────────────────
@@ -153,7 +205,7 @@ export function estadoStock(stock: number, minimo: number): EstadoStock {
 }
 
 export interface FilaKardex extends Movimiento {
-  /** Saldo del almacén (o total) tras el movimiento. */
+  /** Saldo de la zona (o total) tras el movimiento. */
   saldo: number
 }
 
@@ -166,21 +218,21 @@ export const inventarioService = {
 
   /**
    * Listado paginado. Filtros especiales:
-   * - `almacenId`: el stock mostrado es el de ese almacén.
+   * - `zonaId`: el stock mostrado es el de esa zona.
    * - `estadoStock`: `agotado`, `bajo` u `ok`.
    */
   async consultarInsumos(consulta: Consulta = {}): Promise<Paginado<Insumo>> {
-    const { almacenId, estadoStock: estado, ...resto } = consulta.filtros ?? {}
+    const { zonaId, estadoStock: estado, ...resto } = consulta.filtros ?? {}
     let lista = db.insumos.map((i) =>
-      almacenId
+      zonaId
         ? {
             ...i,
-            stock: i.existencias.find((e) => e.almacenId === almacenId)?.cantidad ?? 0,
+            stock: i.existencias.find((e) => e.zonaId === zonaId)?.cantidad ?? 0,
           }
         : i,
     )
-    if (almacenId) {
-      lista = lista.filter((i) => i.existencias.some((e) => e.almacenId === almacenId))
+    if (zonaId) {
+      lista = lista.filter((i) => i.existencias.some((e) => e.zonaId === zonaId))
     }
     if (estado) lista = lista.filter((i) => estadoStock(i.stock, i.stockMinimo) === estado)
     return latencia(
@@ -192,7 +244,7 @@ export const inventarioService = {
     return latencia(insumoOError(id))
   },
 
-  async crearInsumo(datos: NuevoInsumo, almacenId?: string): Promise<Insumo> {
+  async crearInsumo(datos: NuevoInsumo, zonaId?: string): Promise<Insumo> {
     const nombre = datos.nombre.trim()
     if (existeOtro(db.insumos, (i) => i.nombre, nombre)) {
       throw errorCampo('nombre', 'Ya existe un insumo con ese nombre.', 'Nombre duplicado')
@@ -207,12 +259,12 @@ export const inventarioService = {
     }
     db.insumos.push(insumo)
     if (stockInicial && stockInicial > 0) {
-      const destino = almacenId ?? db.almacenes.find((a) => a.activo)?.id
-      if (!destino) throw errorCampo('almacenId', 'Crea un almacén antes de cargar stock.')
+      const destino = zonaId ?? db.zonas.find((a) => a.activo)?.id
+      if (!destino) throw errorCampo('zonaId', 'Crea una zona antes de cargar stock.')
       transaccion(() =>
         aplicar({
           insumoId: insumo.id,
-          almacenId: destino,
+          zonaId: destino,
           tipo: 'entrada',
           cantidad: stockInicial,
           costoUnitario: insumo.costoUnitario,
@@ -231,6 +283,24 @@ export const inventarioService = {
     if (nombre && existeOtro(db.insumos, (i) => i.nombre, nombre, id)) {
       throw errorCampo('nombre', 'Ya existe un insumo con ese nombre.', 'Nombre duplicado')
     }
+    // Cambiar la unidad descuadra recetas, costos y kardex ya registrados.
+    if (
+      datos.unidad &&
+      datos.unidad !== insumo.unidad &&
+      (insumoEnRecetas(id) || db.movimientos.some((m) => m.insumoId === id))
+    ) {
+      throw errorCampo(
+        'unidad',
+        'La unidad no se puede cambiar: el insumo ya tiene recetas o movimientos.',
+        'Unidad en uso',
+      )
+    }
+    if (
+      datos.rendimientoPorcentaje !== undefined &&
+      !(datos.rendimientoPorcentaje > 0 && datos.rendimientoPorcentaje <= 100)
+    ) {
+      throw errorCampo('rendimientoPorcentaje', 'El rendimiento debe estar entre 1 % y 100 %.')
+    }
     // El stock solo cambia con movimientos.
     const { stockInicial: _s, ...resto } = clonar(datos) as Partial<Insumo> & {
       stockInicial?: number
@@ -244,7 +314,7 @@ export const inventarioService = {
   },
 
   async eliminarInsumo(id: string): Promise<void> {
-    if (db.recetas.some((r) => r.ingredientes.some((g) => g.insumoId === id))) {
+    if (insumoEnRecetas(id)) {
       throw { mensaje: 'No se puede eliminar: el insumo forma parte de al menos una receta.' }
     }
     const enTransformacion = db.transformaciones.find(
@@ -257,7 +327,7 @@ export const inventarioService = {
       }
     }
     if (db.stockDetalle.some((sd) => sd.insumoId === id && sd.cantidad > 0)) {
-      throw { mensaje: 'No se puede eliminar: todavía tiene stock detallado en algún almacén.' }
+      throw { mensaje: 'No se puede eliminar: todavía tiene stock detallado en algún zona.' }
     }
     db.insumos = db.insumos.filter((i) => i.id !== id)
     db.movimientos = db.movimientos.filter((m) => m.insumoId !== id)
@@ -278,7 +348,7 @@ export const inventarioService = {
   },
 
   /**
-   * Movimientos paginados. Filtros: `insumoId`, `almacenId`, `tipo`, y rango
+   * Movimientos paginados. Filtros: `insumoId`, `zonaId`, `tipo`, y rango
    * con `desde` y `hasta` en `YYYY-MM-DD` (hora local).
    */
   async consultarMovimientos(consulta: Consulta = {}): Promise<Paginado<Movimiento>> {
@@ -300,13 +370,13 @@ export const inventarioService = {
    * Kardex de un insumo con el saldo tras cada movimiento, del más reciente al
    * más antiguo. El saldo se reconstruye hacia atrás desde el stock actual.
    */
-  async kardex(insumoId: string, almacenId?: string): Promise<FilaKardex[]> {
+  async kardex(insumoId: string, zonaId?: string): Promise<FilaKardex[]> {
     const insumo = insumoOError(insumoId)
     const movimientos = db.movimientos
-      .filter((m) => m.insumoId === insumoId && (!almacenId || m.almacenId === almacenId))
+      .filter((m) => m.insumoId === insumoId && (!zonaId || m.zonaId === zonaId))
       .sort((a, b) => b.fecha.localeCompare(a.fecha))
-    let saldo = almacenId
-      ? (insumo.existencias.find((e) => e.almacenId === almacenId)?.cantidad ?? 0)
+    let saldo = zonaId
+      ? (insumo.existencias.find((e) => e.zonaId === zonaId)?.cantidad ?? 0)
       : insumo.stock
     const filas = movimientos.map((m) => {
       const fila = { ...m, saldo: r3(saldo) }
@@ -318,8 +388,8 @@ export const inventarioService = {
 
   async registrarMovimiento(datos: NuevoMovimiento): Promise<Movimiento> {
     const insumo = insumoOError(datos.insumoId)
-    const almacenId = datos.almacenId || almacenPrincipal(insumo)
-    const movimiento = transaccion(() => aplicar({ ...datos, almacenId }))
+    const zonaId = datos.zonaId || zonaPrincipal(insumo)
+    const movimiento = transaccion(() => aplicar({ ...datos, zonaId }))
     return latencia(movimiento)
   },
 
@@ -331,13 +401,13 @@ export const inventarioService = {
     motivo?: string
     usuarioId: string
   }): Promise<Movimiento[]> {
-    if (!datos.destinoId) throw errorCampo('destinoId', 'Elige el almacén de destino.')
+    if (!datos.destinoId) throw errorCampo('destinoId', 'Elige la zona de destino.')
     if (datos.origenId === datos.destinoId) {
-      throw errorCampo('destinoId', 'El destino debe ser distinto del origen.', 'Mismo almacén')
+      throw errorCampo('destinoId', 'El destino debe ser distinto del origen.', 'Misma zona')
     }
-    const destino = almacenOError(datos.destinoId)
-    const origen = almacenOError(datos.origenId)
-    if (!destino.activo) throw errorCampo('destinoId', 'El almacén de destino está inactivo.')
+    const destino = zonaOError(datos.destinoId)
+    const origen = zonaOError(datos.origenId)
+    if (!destino.activo) throw errorCampo('destinoId', 'La zona de destino está inactivo.')
     const referencia = `TR-${Date.now().toString(36).toUpperCase()}`
     const base = {
       insumoId: datos.insumoId,
@@ -348,13 +418,13 @@ export const inventarioService = {
     const movimientos = transaccion(() => [
       aplicar({
         ...base,
-        almacenId: origen.id,
+        zonaId: origen.id,
         tipo: 'trasladoSalida',
         motivo: datos.motivo || `Traslado a ${destino.nombre}`,
       }),
       aplicar({
         ...base,
-        almacenId: destino.id,
+        zonaId: destino.id,
         tipo: 'trasladoEntrada',
         motivo: datos.motivo || `Traslado desde ${origen.nombre}`,
       }),
@@ -365,7 +435,7 @@ export const inventarioService = {
   // ── Transformación (F4.3) ──────────────────────────────────────────────────
 
   /**
-   * Ejecuta una transformación en un almacén: consume sus entradas y da de
+   * Ejecuta una transformación en una zona: consume sus entradas y da de
    * alta lo que sale. `veces` es cuántas tandas de la receta se procesan
    * (0.5 = media tanda). La merma esperada no genera stock: es lo que se
    * pierde entre lo que entra y lo que sale.
@@ -375,7 +445,7 @@ export const inventarioService = {
    */
   async transformar(datos: {
     transformacionId: string
-    almacenId: string
+    zonaId: string
     veces: number
     usuarioId: string
   }): Promise<Movimiento[]> {
@@ -393,7 +463,7 @@ export const inventarioService = {
       ...transformacion.entradas.map((e) =>
         aplicar({
           insumoId: e.insumoId,
-          almacenId: datos.almacenId,
+          zonaId: datos.zonaId,
           tipo: 'consumoProduccion',
           cantidad: r3(e.cantidad * veces),
           motivo: transformacion.nombre,
@@ -406,7 +476,7 @@ export const inventarioService = {
         .map((sa) =>
           aplicar({
             insumoId: sa.insumoId!,
-            almacenId: datos.almacenId,
+            zonaId: datos.zonaId,
             tipo: 'produccion',
             cantidad: r3(sa.cantidad * veces),
             motivo: transformacion.nombre,
@@ -424,7 +494,7 @@ export const inventarioService = {
    */
   async producir(datos: {
     insumoId: string
-    almacenId: string
+    zonaId: string
     cantidad: number
     usuarioId: string
   }): Promise<Movimiento[]> {
@@ -436,7 +506,7 @@ export const inventarioService = {
     const salida = transformacion.salidas.find((sa) => sa.insumoId === datos.insumoId)!
     return this.transformar({
       transformacionId: transformacion.id,
-      almacenId: datos.almacenId,
+      zonaId: datos.zonaId,
       veces: datos.cantidad / salida.cantidad,
       usuarioId: datos.usuarioId,
     })
@@ -445,44 +515,6 @@ export const inventarioService = {
   /** Transformación activa de la que sale un insumo, para la ficha y el modal. */
   transformacionDe(insumoId: string): Transformacion | undefined {
     return transformacionQueProduce(insumoId)
-  },
-
-  // ── Recetas ────────────────────────────────────────────────────────────────
-
-  async listarRecetas(): Promise<Receta[]> {
-    return latencia([...db.recetas])
-  },
-
-  async obtenerReceta(productoId: string): Promise<Receta> {
-    const receta = db.recetas.find((r) => r.productoId === productoId)
-    return latencia(receta ?? { productoId, ingredientes: [] })
-  },
-
-  async guardarReceta(receta: Receta): Promise<Receta> {
-    const limpia: Receta = {
-      productoId: receta.productoId,
-      ingredientes: receta.ingredientes
-        .filter((i) => i.insumoId && Number(i.cantidad) > 0)
-        .map((i) => ({ insumoId: i.insumoId, cantidad: Number(i.cantidad) })),
-    }
-    const indice = db.recetas.findIndex((r) => r.productoId === receta.productoId)
-
-    if (limpia.ingredientes.length === 0) {
-      // Una receta sin ingredientes es lo mismo que no tener receta.
-      if (indice !== -1) db.recetas.splice(indice, 1)
-    } else if (indice === -1) {
-      db.recetas.push(limpia)
-    } else {
-      db.recetas[indice] = limpia
-    }
-
-    persistir()
-    return latencia(limpia)
-  },
-
-  /** Coste teórico de un producto según su escandallo. */
-  costeDeReceta(receta: Receta): number {
-    return costeIngredientes(receta.ingredientes)
   },
 
   /** Uso interno de compras y pedidos: aplica varios movimientos como una transacción. */

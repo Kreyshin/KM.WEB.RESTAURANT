@@ -1,4 +1,4 @@
-import { drawer, expect, fila, test } from './fixtures'
+import { drawer, elegir, expect, fila, test } from './fixtures'
 
 test.describe('Salones', () => {
   test.beforeEach(async ({ page, entrar }) => {
@@ -15,11 +15,11 @@ test.describe('Salones', () => {
     await expect(filasCuerpo.first()).toContainText('Terraza')
 
     await page.getByPlaceholder('Buscar salón').clear()
-    await page.getByLabel('Filtrar por estado').selectOption('inactivo')
+    await elegir(page.getByLabel('Filtrar por estado'), /^Inactiv/)
     await expect(filasCuerpo).toHaveCount(1)
     await expect(filasCuerpo.first()).toContainText('Barra')
 
-    await page.getByLabel('Filtrar por estado').selectOption('')
+    await elegir(page.getByLabel('Filtrar por estado'), 'Todos los estados')
     await page.getByRole('button', { name: /^Salón/ }).click() // asc
     await page.getByRole('button', { name: /^Salón/ }).click() // desc
     await expect(filasCuerpo.first()).toContainText('Terraza')

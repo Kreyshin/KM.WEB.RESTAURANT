@@ -19,7 +19,7 @@ import {
   unidadesMedida,
 } from '@/utils/formato'
 
-const catalogos = useCatalogos(['almacenes', 'insumos', 'locales', 'articulos'])
+const catalogos = useCatalogos(['zonas', 'insumos', 'locales', 'articulos'])
 const { articulo } = catalogos
 
 /** Artículo que se propone al pedir: el marcado por defecto, o el primero. */
@@ -32,13 +32,13 @@ function articuloPorDefecto(i: Insumo) {
 const servicio: ServicioCatalogo<Insumo> = {
   consultar: (c) => inventarioService.consultarInsumos(c),
   crear: ({ stock, existencias: _e, ...d }) =>
-    inventarioService.crearInsumo({ ...d, stockInicial: Number(stock) || 0 }, almacenInicial.value),
+    inventarioService.crearInsumo({ ...d, stockInicial: Number(stock) || 0 }, zonaInicial.value),
   actualizar: (id, { stock: _s, existencias: _e, ...d }) =>
     inventarioService.actualizarInsumo(id, d),
   eliminar: (id) => inventarioService.eliminarInsumo(id),
 }
 
-const almacenInicial = ref('')
+const zonaInicial = ref('')
 
 const columnas: ColumnaTabla[] = [
   { clave: 'nombre', etiqueta: 'Insumo', ordenable: true },
@@ -58,20 +58,22 @@ const opcionesCategoria: OpcionSelect[] = (
   Object.keys(etiquetaCategoriaInsumo) as CategoriaInsumo[]
 ).map((c) => ({ valor: c, etiqueta: etiquetaCategoriaInsumo[c] }))
 const opcionesAbastecimiento: OpcionSelect[] = [
-  { valor: 'directa', etiqueta: 'Conversión directa desde el artículo' },
-  { valor: 'transformacion', etiqueta: 'Sale de una transformación' },
+  { valor: 'directa', etiqueta: 'Comprable: conversión directa desde el artículo' },
+  { valor: 'transformacion', etiqueta: 'Producible: sale de una transformación' },
+  { valor: 'ambos', etiqueta: 'Comprable y producible' },
 ]
 const etiquetaAbastecimiento: Record<TipoAbastecimiento, string> = {
-  directa: 'Conversión directa',
-  transformacion: 'Transformación',
+  directa: 'Comprable',
+  transformacion: 'Producible',
+  ambos: 'Comprable y producible',
 }
-const opcionesAlmacenFiltro = computed<OpcionSelect[]>(() => [
-  { valor: '', etiqueta: 'Todos los almacenes' },
-  ...catalogos.opcionesAlmacen.value,
+const opcionesZonaFiltro = computed<OpcionSelect[]>(() => [
+  { valor: '', etiqueta: 'Todas las zonas' },
+  ...catalogos.opcionesZona.value,
 ])
 
 function nuevo(): Omit<Insumo, 'id'> {
-  almacenInicial.value = (catalogos.opcionesAlmacen.value[0]?.valor as string) ?? ''
+  zonaInicial.value = (catalogos.opcionesZona.value[0]?.valor as string) ?? ''
   return {
     nombre: '',
     unidad: 'kg',
@@ -111,7 +113,7 @@ const alertas = computed(() =>
 </script>
 
 <template>
-  <div class="mx-auto flex max-w-6xl flex-col gap-5">
+  <div class="flex w-full flex-col gap-5">
     <div
       v-if="alertas.length"
       class="rs-tono rs-tono-laton flex flex-wrap items-center gap-x-4 gap-y-1 rounded-card border px-4 py-3 text-sm"
@@ -130,7 +132,7 @@ const alertas = computed(() =>
 
     <KmCatalogo
       titulo="Insumos"
-      subtitulo="Materia prima y preparaciones, con su stock por almacén y su costo promedio."
+      subtitulo="Materia prima y preparaciones, con su stock por zona y su costo promedio."
       entidad="insumo"
       :servicio="servicio"
       :columnas="columnas"
@@ -165,10 +167,10 @@ const alertas = computed(() =>
       <template #filtros="{ consulta }">
         <div class="w-full sm:w-48">
           <KmSelect
-            :model-value="(consulta.filtros?.almacenId as string) ?? ''"
-            :opciones="opcionesAlmacenFiltro"
-            etiqueta="Filtrar por almacén"
-            @update:model-value="filtrar(consulta, 'almacenId', $event)"
+            :model-value="(consulta.filtros?.zonaId as string) ?? ''"
+            :opciones="opcionesZonaFiltro"
+            etiqueta="Filtrar por zona"
+            @update:model-value="filtrar(consulta, 'zonaId', $event)"
           />
         </div>
         <div class="w-full sm:w-44">
@@ -285,7 +287,7 @@ const alertas = computed(() =>
         </KmField>
 
         <VinculosArticulo
-          v-if="borrador.abastecimiento === 'directa'"
+          v-if="borrador.abastecimiento !== 'transformacion'"
           v-model="borrador.articulos"
           :articulos="catalogos.articulos.value"
           :opciones="catalogos.opcionesArticulo.value"
@@ -296,6 +298,50 @@ const alertas = computed(() =>
           Este insumo no se compra: sale de una transformación (despiece o preparación). Su receta y
           su costo se definen en <strong class="text-tinta">Transformaciones</strong>.
         </p>
+
+        <KmField
+          v-slot="{ id }"
+          label="Rendimiento al acondicionar"
+          ayuda="Lo que queda limpio (pescado fileteado, papa pelada). Se usa en recetas si está activo en Configuración › Recetas y costos."
+        >
+          <KmNumero
+            :id="id"
+            :model-value="borrador.rendimientoPorcentaje ?? null"
+            :min="1"
+            :max="100"
+            :decimales="1"
+            sufijo="%"
+            placeholder="100 %"
+            @update:model-value="borrador.rendimientoPorcentaje = $event ?? undefined"
+          />
+        </KmField>
+
+        <div
+          v-if="borrador.abastecimiento !== 'directa'"
+          class="grid grid-cols-2 gap-4 rounded-card border border-dashed border-linea p-4"
+        >
+          <KmField
+            v-slot="{ id }"
+            label="Vida útil al producirlo"
+            ayuda="Propone el vencimiento de cada parte de producción."
+          >
+            <KmNumero
+              :id="id"
+              :model-value="borrador.vidaUtilDias ?? null"
+              :min="0"
+              sufijo="días"
+              placeholder="Sin definir"
+              @update:model-value="borrador.vidaUtilDias = $event ?? undefined"
+            />
+          </KmField>
+          <KmField
+            v-slot="{ id }"
+            label="Aprobada por"
+            ayuda="Solo se exige si la vida útil está en modo «Validada»."
+          >
+            <KmInput :id="id" v-model="borrador.vidaUtilAprobadaPor" placeholder="Opcional" />
+          </KmField>
+        </div>
 
         <div
           v-if="!editando"
@@ -310,12 +356,8 @@ const alertas = computed(() =>
               :sufijo="etiquetaUnidad[borrador.unidad]"
             />
           </KmField>
-          <KmField v-slot="{ id }" label="En el almacén">
-            <KmSelect
-              :id="id"
-              v-model="almacenInicial"
-              :opciones="catalogos.opcionesAlmacen.value"
-            />
+          <KmField v-slot="{ id }" label="En la zona">
+            <KmSelect :id="id" v-model="zonaInicial" :opciones="catalogos.opcionesZona.value" />
           </KmField>
         </div>
         <p v-else class="text-xs text-tenue">

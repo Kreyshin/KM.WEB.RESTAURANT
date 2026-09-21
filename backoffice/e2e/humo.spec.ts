@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures'
+﻿import { expect, test } from './fixtures'
 import type { Page } from '@playwright/test'
 
 /**
@@ -77,12 +77,7 @@ test.describe('Humo: botones de cada pantalla', () => {
   test('las consultas del ERP se abren en modo detalle sin errores', async ({ page, entrar }) => {
     const errores = vigilarErrores(page)
     await entrar()
-    for (const ruta of [
-      '/compras/articulos',
-      '/compras/proveedores',
-      '/compras/marcas',
-      '/inventario/almacenes',
-    ]) {
+    for (const ruta of ['/compras/articulos', '/compras/proveedores', '/compras/marcas']) {
       await page.goto(ruta)
       await expect(page.locator('main tbody tr').first()).toBeVisible()
       await expect(page.getByRole('button', { name: /^(Nuevo|Nueva) / })).toHaveCount(0)
@@ -91,6 +86,94 @@ test.describe('Humo: botones de cada pantalla', () => {
       await page.getByRole('dialog').last().getByRole('button', { name: 'Cerrar' }).last().click()
       await expect(page.getByRole('dialog')).toHaveCount(0)
     }
+    expect(errores).toEqual([])
+  })
+
+  test('almacén y zonas, cadenas y consola de Karma sin errores', async ({ page, entrar }) => {
+    const errores = vigilarErrores(page)
+    await entrar()
+    await page.goto('/inventario/zonas')
+    await expect(page.getByText('Almacén Miraflores')).toBeVisible()
+    await page.getByRole('button', { name: 'Nueva zona' }).click()
+    await expect(page.getByRole('dialog').last()).toBeVisible()
+    await cerrarDialogo(page)
+    await page.getByRole('tab', { name: /Quién gestiona/ }).click()
+    await expect(page.locator('main tbody tr').first()).toBeVisible()
+
+    await page.goto('/configuracion/cadenas')
+    await expect(page.getByText('Configuración de Cevicherías')).toBeVisible()
+    await page.getByRole('button', { name: 'Nueva', exact: true }).click()
+    await expect(page.getByRole('dialog').last()).toBeVisible()
+    await cerrarDialogo(page)
+
+    await page.goto('/karma/integracion')
+    await expect(page.getByText('Modo de integración por capacidad')).toBeVisible()
+    await expect(page.getByText('Vínculos con el ERP')).toBeVisible()
+    expect(errores).toEqual([])
+  })
+
+  test('listas de precios: resuelve precio, descuento y reparto sin errores', async ({
+    page,
+    entrar,
+  }) => {
+    const errores = vigilarErrores(page)
+    await entrar()
+    await page.goto('/carta/listas-precios')
+    await expect(page.getByRole('heading', { name: 'Carta Miraflores' })).toBeVisible()
+    await expect(page.getByText('Reparto del combo')).toBeVisible()
+    await page.getByRole('button', { name: 'Descuento de Chicha morada · Vaso' }).click()
+    await expect(page.getByRole('dialog').last()).toBeVisible()
+    await cerrarDialogo(page)
+    await page.getByRole('button', { name: 'Nueva lista' }).click()
+    await page.getByRole('dialog').last().getByRole('button', { name: 'Guardar' }).click()
+    await expect(page.getByText('Ponle un nombre a la lista.').first()).toBeVisible()
+    await cerrarDialogo(page)
+    expect(errores).toEqual([])
+  })
+
+  test('turnos, permisos y bitácora sin errores', async ({ page, entrar }) => {
+    const errores = vigilarErrores(page)
+    await entrar()
+    await page.goto('/personal/turnos')
+    await expect(page.getByText('Ahora mismo')).toBeVisible()
+    await page.getByRole('button', { name: 'Nuevo turno' }).click()
+    await expect(page.getByRole('dialog').last()).toBeVisible()
+    await cerrarDialogo(page)
+
+    await page.goto('/personal/bitacora')
+    await expect(page.locator('main tbody tr').first()).toBeVisible()
+
+    await page.goto('/configuracion/roles')
+    await page.getByRole('button', { name: /^Cajero/ }).click()
+    await page.getByRole('switch', { name: 'Editar la carta' }).click()
+    await page.getByRole('button', { name: 'Guardar permisos' }).click()
+    await expect(page.getByText('Permisos del rol guardados.')).toBeVisible()
+
+    await page.goto('/configuracion/excepciones')
+    await expect(page.getByText('Lo da su rol').first()).toBeVisible()
+    expect(errores).toEqual([])
+  })
+
+  test('clientes y reservas sin errores', async ({ page, entrar }) => {
+    const errores = vigilarErrores(page)
+    await entrar()
+    await page.goto('/clientes')
+    await expect(page.getByText('Carla Benavides')).toBeVisible()
+    await page.getByRole('button', { name: 'Editar ficha de sala Carla Benavides' }).click()
+    await expect(page.getByRole('dialog').last()).toBeVisible()
+    await page.getByRole('button', { name: 'Guardar ficha' }).click()
+    await expect(page.getByText('Ficha de Carla Benavides guardada.')).toBeVisible()
+
+    await page.goto('/reservas')
+    await expect(page.getByText('Personas esperadas')).toBeVisible()
+    await expect(page.locator('main tbody tr').first()).toBeVisible()
+    await page.getByRole('button', { name: 'Nueva reserva' }).click()
+    await expect(page.getByRole('dialog').last()).toBeVisible()
+    await cerrarDialogo(page)
+    // Cancelar pide motivo antes de tocar la reserva.
+    await page.getByRole('button', { name: 'Cancelar' }).first().click()
+    await expect(page.getByRole('dialog').last()).toContainText('Motivo')
+    await cerrarDialogo(page)
     expect(errores).toEqual([])
   })
 
@@ -114,12 +197,25 @@ test.describe('Humo: botones de cada pantalla', () => {
 
     await page.goto('/inventario/recetas')
     await page.getByRole('button', { name: 'Editar receta Lomo saltado' }).click()
-    await page.getByRole('button', { name: 'Guardar receta' }).click()
+    await expect(page.getByText('Margen de contribución').last()).toBeVisible()
+    await expect(page.getByText('Modificadores y notas de Lomo saltado')).toBeVisible()
+    await page.getByRole('button', { name: 'Guardar modificadores y notas' }).click()
+    await expect(page.getByText('Modificadores y notas guardados.')).toBeVisible()
+    await page.getByRole('button', { name: 'Guardar versión' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Editar receta Inca Kola 500 ml' }).click()
+    await expect(page.getByText('Receta 1:1 automática')).toBeVisible()
+    await cerrarDialogo(page)
+    await page.getByRole('tab', { name: 'Combos' }).click()
+    await expect(page.getByText('Combo marino')).toBeVisible()
+    await page.getByRole('tab', { name: 'Si sube un insumo' }).click()
+    await expect(page.getByText('Cebiche clásico · Personal')).toBeVisible()
 
     await page.goto('/carta')
     await page.getByRole('button', { name: 'Categorías' }).click()
+    await expect(page.getByText('Solo en Miraflores')).toBeVisible()
     await page.getByRole('button', { name: 'Editar Postres' }).click()
+    await expect(page.getByRole('dialog').getByText('Sección', { exact: true })).toBeVisible()
     await page.getByRole('dialog').getByRole('button', { name: 'Guardar cambios' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
 

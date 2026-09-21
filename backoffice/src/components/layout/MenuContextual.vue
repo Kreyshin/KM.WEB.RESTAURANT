@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { moduloDeRuta } from './navegacion'
 import { useAuthStore } from '@/stores/auth.store'
@@ -9,28 +9,40 @@ const auth = useAuthStore()
 const ui = useUiStore()
 const route = useRoute()
 
-const modulo = computed(() => moduloDeRuta(route.name))
+/**
+ * El módulo que se muestra es el que el usuario abrió en la barra principal;
+ * si no abrió ninguno, el de la ruta actual.
+ */
+const modulo = computed(() => ui.moduloMenu ?? moduloDeRuta(route.name))
 const secciones = computed(() => modulo.value?.secciones.filter((s) => auth.puede(s.roles)) ?? [])
 
 /**
- * Por debajo de `lg` el menú se superpone al área de trabajo en vez de restarle
- * ancho, así que al elegir una sección se cierra solo.
+ * El menú de secciones es un panel flotante en todas las resoluciones: sirve
+ * para elegir adónde ir y se retira al llegar, dejando todo el ancho al trabajo.
  */
-function alElegirSeccion() {
-  if (window.innerWidth < 1024) ui.menuAbierto = false
+function cerrar() {
+  ui.menuAbierto = false
 }
+
+watch(() => route.fullPath, cerrar)
+
+function alTeclear(evento: KeyboardEvent) {
+  if (evento.key === 'Escape' && ui.menuAbierto) cerrar()
+}
+onMounted(() => window.addEventListener('keydown', alTeclear))
+onBeforeUnmount(() => window.removeEventListener('keydown', alTeclear))
 </script>
 
 <template>
-  <!-- Velo tras la barra principal, que permanece visible y accesible. -->
+  <!-- Velo sobre el área de trabajo; la barra principal sigue visible y accesible. -->
   <div
     v-if="ui.menuAbierto"
-    class="absolute inset-y-0 right-0 left-[var(--rs-rail-ancho)] z-20 bg-verde-900/45 lg:hidden"
-    @click="ui.menuAbierto = false"
+    class="absolute inset-y-0 right-0 left-[var(--rs-rail-ancho)] z-20 bg-verde-900/35"
+    @click="cerrar"
   />
 
   <aside
-    class="absolute inset-y-0 left-[var(--rs-rail-ancho)] z-30 flex shrink-0 flex-col overflow-hidden border-linea bg-panel transition-[width] duration-200 lg:static lg:shadow-none"
+    class="absolute inset-y-0 left-[var(--rs-rail-ancho)] z-30 flex shrink-0 flex-col overflow-hidden border-linea bg-panel transition-[width] duration-200"
     :class="
       ui.menuAbierto
         ? 'w-[var(--rs-menu-ancho)] max-w-[calc(100vw-var(--rs-rail-ancho))] border-r'
@@ -49,7 +61,7 @@ function alElegirSeccion() {
             :to="{ name: seccion.nombreRuta }"
             class="block rounded-control px-3.5 py-3 text-tenue transition-colors duration-200 hover:bg-seleccion hover:text-tinta"
             active-class="rs-seccion-activa"
-            @click="alElegirSeccion"
+            @click="cerrar"
           >
             <span class="block text-sm font-semibold">{{ seccion.etiqueta }}</span>
             <span v-if="seccion.descripcion" class="mt-0.5 block text-xs opacity-75">
