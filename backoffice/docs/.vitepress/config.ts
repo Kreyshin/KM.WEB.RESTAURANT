@@ -42,56 +42,13 @@ export default defineConfig({
     siteTitle: 'Mesa · Documentación',
 
     nav: [
-      { text: 'Funcional', link: '/funcional/', activeMatch: '/funcional/' },
-      { text: 'Guía técnica', link: '/guia/introduccion', activeMatch: '/guia/' },
+      { text: 'Guía', link: '/guia/introduccion', activeMatch: '/guia/' },
       { text: 'Componentes', link: '/componentes/', activeMatch: '/componentes/' },
       { text: 'Entidades', link: '/guia/entidades' },
       { text: 'Ver demo', link: DEMO, target: '_blank' },
     ],
 
     sidebar: {
-      // Documentación funcional: cómo se opera el restaurante, sin tecnología.
-      '/funcional/': [
-        {
-          text: 'Entender el sistema',
-          items: [
-            { text: 'Qué es Mesa', link: '/funcional/' },
-            { text: 'Conceptos base', link: '/funcional/conceptos' },
-            { text: 'El servicio', link: '/funcional/el-servicio' },
-            { text: 'Quién hace qué', link: '/funcional/roles' },
-          ],
-        },
-        {
-          text: 'Módulos',
-          items: [
-            { text: 'Resumen', link: '/funcional/modulos/' },
-            { text: 'Sala', link: '/funcional/modulos/sala' },
-            { text: 'Carta y precios', link: '/funcional/modulos/carta' },
-            { text: 'Inventario y recetas', link: '/funcional/modulos/inventario' },
-            { text: 'Compras', link: '/funcional/modulos/compras' },
-            { text: 'Clientes y reservas', link: '/funcional/modulos/clientes' },
-            { text: 'Configuración', link: '/funcional/modulos/configuracion' },
-          ],
-        },
-        {
-          text: 'Procesos de principio a fin',
-          items: [
-            { text: 'Una mesa', link: '/funcional/procesos/mesa' },
-            { text: 'Del plato al insumo', link: '/funcional/procesos/receta' },
-            { text: 'El precio de un plato', link: '/funcional/procesos/precio' },
-            { text: 'Una compra', link: '/funcional/procesos/compra' },
-            { text: 'Lo que se pierde', link: '/funcional/procesos/mermas' },
-          ],
-        },
-        {
-          text: 'Referencia',
-          items: [
-            { text: 'Glosario', link: '/funcional/glosario' },
-            { text: 'Qué está listo', link: '/funcional/estado' },
-            { text: 'Preguntas frecuentes', link: '/funcional/preguntas' },
-          ],
-        },
-      ],
       '/guia/': [
         {
           text: 'Empezar',

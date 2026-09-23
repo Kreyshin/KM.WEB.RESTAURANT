@@ -7,7 +7,8 @@ Back office para negocios gastronómicos: salones, mesas, carta, inventario, per
 | | |
 | --- | --- |
 | 🖥️ **Demo** | [kreyshin.github.io/KM.WEB.RESTAURANT/demo](https://kreyshin.github.io/KM.WEB.RESTAURANT/demo/) |
-| 📚 **Documentación** | [kreyshin.github.io/KM.WEB.RESTAURANT](https://kreyshin.github.io/KM.WEB.RESTAURANT/) |
+| 📚 **Documentación técnica** | [kreyshin.github.io/KM.WEB.RESTAURANT](https://kreyshin.github.io/KM.WEB.RESTAURANT/) |
+| 📖 **Guía funcional** | [kreyshin.github.io/KM.WEB.RESTAURANT/funcional](https://kreyshin.github.io/KM.WEB.RESTAURANT/funcional/) |
 
 > En la demo el acceso viene precargado y acepta cualquier contraseña. Los datos viven en tu navegador y se reinician desde **Perfil → Datos de ejemplo**.
 
@@ -38,7 +39,8 @@ Requisitos: **Node 24** o superior.
 cd backoffice
 npm install
 npm run dev        # app en http://localhost:5173
-npm run docs:dev   # documentación en local
+npm run docs:dev        # documentación técnica en local
+npm run funcional:dev   # guía funcional en local
 ```
 
 | Script | Qué hace |
@@ -48,15 +50,18 @@ npm run docs:dev   # documentación en local
 | `npm run test:e2e` | Pruebas end-to-end con Playwright (`test:e2e:ui` para verlas paso a paso) |
 | `npm run build` | Build de producción |
 | `npm run build:demo` | Build de la demo para GitHub Pages |
-| `npm run docs:build` | Build de la documentación |
+| `npm run docs:build` | Build de la documentación técnica |
+| `npm run funcional:dev` | Guía funcional en local |
+| `npm run funcional:build` | Build de la guía funcional |
 
 ## Estructura
 
 ```text
 .
-├─ .github/workflows/pages.yml   Publica docs y demo en GitHub Pages
+├─ .github/workflows/pages.yml   Publica ambas documentaciones y la demo
 └─ backoffice/
-   ├─ docs/                      Documentación (VitePress)
+   ├─ docs/                      Documentación técnica (VitePress)
+   ├─ docs-funcional/            Guía funcional, sitio aparte (VitePress)
    └─ src/
       ├─ components/ui/          Componentes base Km*
       ├─ components/layout/      Shell: barra, menú, cabecera, buscador

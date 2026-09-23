@@ -49,6 +49,8 @@ pnpm-debug.log*
 dist-demo/
 backoffice/docs/.vitepress/cache/
 backoffice/docs/.vitepress/dist/
+backoffice/docs-funcional/.vitepress/cache/
+backoffice/docs-funcional/.vitepress/dist/
 site/
 
 # Playwright
