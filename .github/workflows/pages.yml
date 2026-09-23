@@ -1,5 +1,5 @@
-# Publica en GitHub Pages tres sitios: la documentación técnica (raíz), la guía
-# funcional (/funcional/) y la demo del back office (/demo/).
+# Publica en GitHub Pages tres sitios: la guía funcional (raíz), la
+# documentación técnica (/tecnica/) y la demo del back office (/demo/).
 name: Docs y demo en GitHub Pages
 
 on:
@@ -52,8 +52,8 @@ jobs:
       - name: Unir sitios
         run: |
           mkdir -p site
-          cp -r docs/.vitepress/dist/. site/
-          cp -r docs-funcional/.vitepress/dist site/funcional
+          cp -r docs-funcional/.vitepress/dist/. site/
+          cp -r docs/.vitepress/dist site/tecnica
           cp -r dist-demo site/demo
           touch site/.nojekyll
 
