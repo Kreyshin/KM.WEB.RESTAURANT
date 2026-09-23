@@ -22,7 +22,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:reporte": "playwright show-report",
-    "test:e2e:grabar": "playwright codegen http://localhost:5173"
+    "test:e2e:grabar": "playwright codegen http://localhost:5173",
+    "funcional:dev": "vitepress dev docs-funcional",
+    "funcional:build": "vitepress build docs-funcional",
+    "funcional:preview": "vitepress preview docs-funcional"
   },
   "dependencies": {
     "@vuepic/vue-datepicker": "^14.0.0",

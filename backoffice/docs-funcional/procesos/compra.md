@@ -36,7 +36,7 @@ Se registran lote, vencimiento y ubicación en los dos modos, según lo que ese 
 Dos caminos automáticos:
 
 - **Conversión directa** — las cajas se convierten en unidades y el stock sube.
-- **Por procesar** — lo que necesita [transformación](/funcional/procesos/receta) queda apartado hasta que alguien la registre. Existe, pero aún no es un insumo usable.
+- **Por procesar** — lo que necesita [transformación](/procesos/receta) queda apartado hasta que alguien la registre. Existe, pero aún no es un insumo usable.
 
 Si el insumo lleva ubicación, la recepción deja el stock en su ubicación por defecto. Sin ella configurada, no se puede recepcionar.
 

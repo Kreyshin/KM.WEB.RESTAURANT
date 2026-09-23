@@ -4,8 +4,8 @@ Mesa es el back office de la vertical de **restaurantes** de Karma Systems: la p
 
 Cubre el ciclo de la sala —sentar, comandar, cobrar— y todo lo que hay detrás: la carta y sus precios, las recetas y su costo, el inventario de cocina y barra, y las compras que lo abastecen.
 
-::: tip Esta sección no habla de tecnología
-Aquí se explica **cómo se opera el restaurante**: el vocabulario, las pantallas y el orden en que se trabaja. Si buscas arquitectura, componentes o el modelo de datos, esa es la [guía técnica](/guia/introduccion).
+::: tip Este sitio no habla de tecnología
+Aquí se explica **cómo se opera el restaurante**: el vocabulario, las pantallas y el orden en que se trabaja. Si buscas arquitectura, componentes o el modelo de datos, eso vive en un sitio aparte: la [documentación técnica](https://kreyshin.github.io/KM.WEB.RESTAURANT/).
 :::
 
 ## Para quién es cada parte
