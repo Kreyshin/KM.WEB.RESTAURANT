@@ -5,6 +5,8 @@ import { test as base, expect, type Locator, type Page } from '@playwright/test'
  *
  * - Toda página arranca sin latencia simulada, para que las pruebas vayan rápido.
  * - `entrar(correo)` inicia sesión por la pantalla de login, como una persona.
+ *   El botón se localiza por `data-testid` porque su texto cambia con la
+ *   variante de acceso que el producto tenga activa.
  */
 
 export const cuentas = {
@@ -33,7 +35,7 @@ export const test = base.extend<Fixtures>({
       await page.goto('/login')
       await page.getByLabel('Correo').fill(correo)
       await page.getByLabel('Contraseña').fill('demo')
-      await page.getByRole('button', { name: 'Entrar' }).click()
+      await page.getByTestId('acceso-enviar').click()
       await expect(page).toHaveURL(/\/dashboard$/)
     })
   },

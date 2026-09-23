@@ -7,7 +7,7 @@ test.describe('Acceso y permisos', () => {
 
     await page.getByLabel('Correo').fill(cuentas.admin)
     await page.getByLabel('Contraseña').fill('demo')
-    await page.getByRole('button', { name: 'Entrar' }).click()
+    await page.getByTestId('acceso-enviar').click()
 
     await expect(page).toHaveURL(/\/salones$/)
     await expect(page.getByRole('heading', { level: 1, name: 'Salones' })).toBeVisible()
@@ -17,7 +17,7 @@ test.describe('Acceso y permisos', () => {
     await page.goto('/login')
     await page.getByLabel('Correo').fill('nadie@kmrestaurante.pe')
     await page.getByLabel('Contraseña').fill('demo')
-    await page.getByRole('button', { name: 'Entrar' }).click()
+    await page.getByTestId('acceso-enviar').click()
 
     await expect(page.getByText('Correo no registrado')).toBeVisible()
     await expect(page).toHaveURL(/\/login/)
