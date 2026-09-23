@@ -4,13 +4,16 @@ layout: home
 hero:
   name: Mesa
   text: Back office de restaurante
-  tagline: Documentación de KM.Restaurante — arquitectura, componentes y entidades del dominio. Todo funciona hoy con datos de ejemplo.
+  tagline: 'Documentación de KM.Restaurante: cómo se opera el restaurante y cómo está construido el back office. Todo funciona hoy con datos de ejemplo.'
   image:
     src: /favicon.svg
     alt: Llama de la vertical Restaurante
   actions:
     - theme: brand
-      text: Empezar
+      text: Documentación funcional
+      link: /funcional/
+    - theme: alt
+      text: Guía técnica
       link: /guia/introduccion
     - theme: alt
       text: Componentes
@@ -21,6 +24,10 @@ hero:
       target: _blank
 
 features:
+  - icon: ◐
+    title: Funcional, sin tecnología
+    details: El vocabulario del restaurante, pantalla por pantalla, y cinco procesos seguidos de principio a fin. Para quien opera, no para quien programa.
+    link: /funcional/
   - icon: ◈
     title: Front primero, datos simulados
     details: Cada pantalla consume un servicio. Hoy responde un mock en el navegador; mañana, la API real, sin tocar las vistas.
