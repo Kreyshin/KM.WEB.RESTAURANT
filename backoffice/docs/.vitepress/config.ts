@@ -116,7 +116,7 @@ export default defineConfig({
     sidebarMenuLabel: 'Menú',
     search: { provider: 'local' },
     footer: {
-      message: 'Back office Mesa · Un sistema Karma Corp',
+      message: 'Back office Mesa · Un sistema Karma Systems',
     },
   },
 })

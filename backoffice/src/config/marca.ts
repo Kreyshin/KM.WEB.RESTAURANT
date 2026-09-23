@@ -3,8 +3,9 @@
  *
  * Este vertical tiene lenguaje visual propio —naranja fuego, grafito y plata—
  * definido en `src/assets/main.css`. La pertenencia a la plataforma se
- * mantiene como atribución explícita («Un sistema Karma Corp») con el isotipo
- * original, que se conserva en `src/components/marca/KarmaLogo.vue`.
+ * mantiene como atribución explícita («Un sistema Karma Systems», la división
+ * de software de Karma Novum) con el isotipo corporativo, que se conserva en
+ * `src/components/marca/KarmaLogo.vue`.
  *
  * El tema de plataforma sigue disponible sin cambios en
  * `src/assets/karma/karma-identidad.css` por si el sistema debe reintegrarse.
@@ -26,7 +27,7 @@ export interface Marca {
 export const marca: Marca = {
   nombre: 'Mesa',
   descriptor: 'Gestión de restaurante',
-  plataforma: 'Un sistema Karma Corp',
+  plataforma: 'Un sistema Karma Systems',
   lema: 'El comedor, en orden.',
   capacidades: [
     'Salones y plano de mesas en tiempo real',
