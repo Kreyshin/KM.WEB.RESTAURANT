@@ -1,0 +1,315 @@
+import type { Rol } from '@/types'
+
+/**
+ * Estructura de navegación del shell Karma.
+ *
+ * La barra principal (100px) lista los MÓDULOS; el menú contextual (325px)
+ * muestra únicamente las SECCIONES del módulo activo, según la guía de
+ * identidad visual de Karma Corp.
+ */
+
+export interface SeccionNav {
+  nombreRuta: string
+  etiqueta: string
+  descripcion?: string
+  roles?: Rol[]
+}
+
+export interface ModuloNav {
+  id: string
+  etiqueta: string
+  /** Path de un icono SVG de 24×24 (stroke, sin fill). */
+  icono: string
+  secciones: SeccionNav[]
+}
+
+export const modulos: ModuloNav[] = [
+  {
+    id: 'inicio',
+    etiqueta: 'Inicio',
+    icono: 'M3 12l9-9 9 9M5 10v10h14V10',
+    secciones: [
+      { nombreRuta: 'dashboard', etiqueta: 'Dashboard', descripcion: 'Estado de la sala en vivo' },
+      {
+        nombreRuta: 'componentes',
+        etiqueta: 'Guía de componentes',
+        descripcion: 'Piezas base de la interfaz',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    id: 'sala',
+    etiqueta: 'Sala',
+    icono: 'M4 9h16M6 9v11M18 9v11M3 5h18v4H3z',
+    secciones: [
+      {
+        nombreRuta: 'salones',
+        etiqueta: 'Salones',
+        descripcion: 'Zonas físicas del local',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'mesas',
+        etiqueta: 'Mesas',
+        descripcion: 'Plano, estados y asignación',
+      },
+    ],
+  },
+  {
+    id: 'clientes',
+    etiqueta: 'Clientes',
+    icono:
+      'M16 19a4 4 0 0 0-8 0M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 21h16a1 1 0 0 0 1-1V6a3 3 0 0 0-3-3H6a3 3 0 0 0-3 3v14a1 1 0 0 0 1 1z',
+    secciones: [
+      {
+        nombreRuta: 'clientes',
+        etiqueta: 'Clientes',
+        descripcion: 'Ficha de sala sobre el cliente del ERP',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'reservas',
+        etiqueta: 'Reservas',
+        descripcion: 'Agenda del día, mesas y cupo',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    id: 'carta',
+    etiqueta: 'Carta',
+    icono: 'M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4zM8 8h7M8 12h7',
+    secciones: [
+      {
+        nombreRuta: 'carta',
+        etiqueta: 'Carta y menú',
+        descripcion: 'Productos, categorías y precio de carta',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'listas-precios',
+        etiqueta: 'Listas de precios',
+        descripcion: 'Por local, canal y temporada',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'combos',
+        etiqueta: 'Combos y menús',
+        descripcion: 'Menú del día y promociones armadas',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    id: 'inventario',
+    etiqueta: 'Inventario',
+    icono: 'M3 7l9-4 9 4v10l-9 4-9-4V7zM3 7l9 4 9-4M12 11v10',
+    secciones: [
+      {
+        nombreRuta: 'inventario',
+        etiqueta: 'Insumos',
+        descripcion: 'Stock y alertas de mínimo',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-movimientos',
+        etiqueta: 'Movimientos y kardex',
+        descripcion: 'Historial de stock por insumo',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-recetas',
+        etiqueta: 'Recetas y costos',
+        descripcion: 'Costo por plato y margen',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-produccion',
+        etiqueta: 'Producción',
+        descripcion: 'Por procesar y partes de producción',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-transformaciones',
+        etiqueta: 'Transformaciones',
+        descripcion: 'Despiece y preparaciones con su merma',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-stock-detalle',
+        etiqueta: 'Stock',
+        descripcion: 'Por insumo, lote y ubicación',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-parametros',
+        etiqueta: 'Parámetros de abastecimiento',
+        descripcion: 'Lote, vencimiento, FEFO y ubicación',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-ubicaciones',
+        etiqueta: 'Ubicaciones',
+        descripcion: 'Pasillo, estante, fila y columna',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'inv-zonas',
+        etiqueta: 'Almacén y zonas',
+        descripcion: 'Cámara, barra, despensa y quién las gestiona',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    id: 'compras',
+    etiqueta: 'Compras',
+    icono:
+      'M3 4h2l2.4 11h11.2L21 8H6.2M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z',
+    secciones: [
+      {
+        nombreRuta: 'compras-solicitudes',
+        etiqueta: 'Solicitudes de compra',
+        descripcion: 'Lo que pide cada área, en insumos',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-requerimientos',
+        etiqueta: 'Requerimientos de compra',
+        descripcion: 'Lo que el local envía al ERP y su seguimiento',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-recepcion',
+        etiqueta: 'Recepción',
+        descripcion: 'Lo que llega contra OC y los ingresos sin OC',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-articulos',
+        etiqueta: 'Artículos',
+        descripcion: 'Lo que compra el ERP · consulta',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-proveedores',
+        etiqueta: 'Proveedores',
+        descripcion: 'Maestro global del ERP · consulta',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'compras-marcas',
+        etiqueta: 'Marcas',
+        descripcion: 'Marcas de los artículos · consulta',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    id: 'administracion',
+    etiqueta: 'Admin',
+    icono: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+    secciones: [
+      {
+        nombreRuta: 'reportes',
+        etiqueta: 'Reportes y caja',
+        descripcion: 'Ventas y cierre de caja',
+        roles: ['admin', 'cajero'],
+      },
+      {
+        nombreRuta: 'facturacion',
+        etiqueta: 'Facturación SUNAT',
+        descripcion: 'Comprobantes electrónicos',
+        roles: ['admin', 'cajero'],
+      },
+      {
+        nombreRuta: 'usuarios',
+        etiqueta: 'Usuarios y roles',
+        descripcion: 'Personal y permisos',
+        roles: ['admin'],
+      },
+    ],
+  },
+  {
+    id: 'configuracion',
+    etiqueta: 'Config.',
+    icono:
+      'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
+    secciones: [
+      {
+        nombreRuta: 'config-vertical',
+        etiqueta: 'Configuración de la vertical',
+        descripcion: 'Parámetros para todos los locales',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-local',
+        etiqueta: 'Configuración por local',
+        descripcion: 'Cómo funciona cada uno de tus locales',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-roles',
+        etiqueta: 'Permisos por rol',
+        descripcion: 'Qué puede hacer cada rol del ERP',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-excepciones',
+        etiqueta: 'Excepciones por usuario',
+        descripcion: 'Ajustes a los permisos de una persona',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-cadenas',
+        etiqueta: 'Cadenas',
+        descripcion: 'Locales agrupados por concepto (opcional)',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'personal-turnos',
+        etiqueta: 'Turnos',
+        descripcion: 'Quién trabaja en cada franja del local',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'personal-bitacora',
+        etiqueta: 'Bitácora',
+        descripcion: 'Quién hizo cada acción sensible',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-canales',
+        etiqueta: 'Canales de venta',
+        descripcion: 'Salón, llevar, delivery y apps',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-areas',
+        etiqueta: 'Áreas e impresoras',
+        descripcion: 'Dónde se prepara, comanda e imprime',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'config-motivos',
+        etiqueta: 'Motivos',
+        descripcion: 'Anulación, descuento y cortesía',
+        roles: ['admin'],
+      },
+    ],
+  },
+]
+
+/** Módulo al que pertenece una ruta, para resaltar la barra principal. */
+export function moduloDeRuta(nombreRuta?: string | symbol | null): ModuloNav | undefined {
+  if (!nombreRuta) return undefined
+  return modulos.find((m) => m.secciones.some((s) => s.nombreRuta === nombreRuta))
+}
+
+export const etiquetasRol: Record<Rol, string> = {
+  admin: 'Administrador',
+  cajero: 'Cajero',
+  mesero: 'Mesero',
+  cocinero: 'Cocinero',
+}

@@ -1,0 +1,70 @@
+# Publica en GitHub Pages la documentación (raíz) y la demo del back office (/demo/).
+name: Docs y demo en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un solo despliegue a la vez; uno nuevo no cancela el que está publicando.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: backoffice
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # lastUpdated de VitePress necesita el historial de git.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backoffice/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar (formato, lint, tipos y pruebas)
+        run: npm run verify
+
+      - name: Construir demo
+        run: npm run build:demo
+
+      - name: Construir documentación
+        run: npm run docs:build
+
+      - name: Unir sitios
+        run: |
+          mkdir -p site
+          cp -r docs/.vitepress/dist/. site/
+          cp -r dist-demo site/demo
+          touch site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: backoffice/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
