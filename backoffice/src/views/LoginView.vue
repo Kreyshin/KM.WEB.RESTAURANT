@@ -57,44 +57,39 @@ const cuentasDemo = [
 <template>
   <div class="grid h-full lg:grid-cols-[1.05fr_1fr]">
     <!--
-      Portada: verde comedor con un halo de latón. Sobria, sin fotografía, con
-      el peso puesto en la tipografía —el registro de una carta bien impresa.
+      Portada: carbón con halos naranja y plata. Sobria, sin fotografía, con el
+      peso puesto en la tipografía y en la llama de la vertical.
     -->
     <div class="relative hidden flex-col justify-between overflow-hidden p-14 lg:flex">
-      <div class="absolute inset-0 bg-verde-900" />
+      <div class="absolute inset-0 bg-[#0d1014]" />
       <div
         class="absolute top-[-18rem] right-[-14rem] size-[42rem] rounded-full opacity-30 blur-3xl"
-        style="background: radial-gradient(circle, #c9a227 0%, transparent 65%)"
+        style="background: radial-gradient(circle, #f36b25 0%, transparent 65%)"
       />
       <div
         class="absolute bottom-[-16rem] left-[-12rem] size-[36rem] rounded-full opacity-40 blur-3xl"
-        style="background: radial-gradient(circle, #228764 0%, transparent 70%)"
+        style="background: radial-gradient(circle, #737c89 0%, transparent 70%)"
       />
 
-      <!-- Filigrana del isotipo, a gran escala y muy tenue. -->
-      <svg
-        class="pointer-events-none absolute right-[-6rem] bottom-[-4rem] size-[32rem] opacity-[0.06]"
-        viewBox="0 0 44 44"
-        fill="none"
+      <!-- Filigrana de la llama, a gran escala y muy tenue. -->
+      <MarcaMesa
+        :tamano="500"
+        class="pointer-events-none absolute right-[-7rem] bottom-[-5rem] opacity-[0.055] grayscale"
         aria-hidden="true"
-      >
-        <circle cx="22" cy="19.5" r="10" stroke="#fff" stroke-width="0.5" />
-        <circle cx="22" cy="19.5" r="4.4" fill="#fff" />
-        <path d="M11 34h22" stroke="#fff" stroke-width="0.5" />
-      </svg>
+      />
 
       <div class="relative flex items-center gap-3.5">
         <MarcaMesa :tamano="46" />
         <div>
-          <p class="rs-display text-xl leading-none font-semibold text-[#f0efe9]">
+          <p class="rs-display text-xl leading-none font-semibold text-[#f8f9fb]">
             {{ marca.nombre }}
           </p>
-          <p class="rs-etiqueta mt-1.5 text-[#c9a227]">{{ marca.descriptor }}</p>
+          <p class="rs-etiqueta mt-1.5 text-[#ff9145]">{{ marca.descriptor }}</p>
         </div>
       </div>
 
       <div class="relative">
-        <h1 class="rs-display max-w-lg text-[3.4rem] leading-[1.05] font-semibold text-[#f7f5ef]">
+        <h1 class="rs-display max-w-lg text-[3.4rem] leading-[1.05] font-semibold text-[#f8f9fb]">
           {{ marca.lema }}
         </h1>
 
@@ -104,9 +99,9 @@ const cuentasDemo = [
           <li
             v-for="c in marca.capacidades"
             :key="c"
-            class="flex items-start gap-3 text-sm text-[#c8d5ce]"
+            class="flex items-start gap-3 text-sm text-[#c5cad2]"
           >
-            <span class="mt-[7px] size-1 shrink-0 rounded-full bg-[#c9a227]" aria-hidden="true" />
+            <span class="mt-[7px] size-1 shrink-0 rounded-full bg-[#f36b25]" aria-hidden="true" />
             {{ c }}
           </li>
         </ul>
@@ -115,7 +110,7 @@ const cuentasDemo = [
       <!-- La pertenencia a la plataforma se mantiene explícita. -->
       <div class="relative flex items-center gap-2.5">
         <KarmaLogo :tamano="20" />
-        <p class="text-xs text-[#8fa89c]">{{ marca.plataforma }}</p>
+        <p class="text-xs text-[#929aa6]">{{ marca.plataforma }}</p>
       </div>
     </div>
 

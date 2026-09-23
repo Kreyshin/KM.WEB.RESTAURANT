@@ -38,7 +38,7 @@ function abrirModulo(id: string) {
 
 <template>
   <!--
-    Verde profundo en los dos temas: es el ancla de la identidad y no debe
+    Carbón profundo en los dos temas: es el ancla de la identidad y no debe
     depender de la preferencia de tema del usuario.
   -->
   <nav
@@ -71,7 +71,7 @@ function abrirModulo(id: string) {
           :aria-current="moduloActivo?.id === modulo.id ? 'true' : undefined"
           @click="abrirModulo(modulo.id)"
         >
-          <!-- Marca del módulo activo: filete de latón, forma además de color. -->
+          <!-- Marca del módulo activo: filete naranja, forma además de color. -->
           <span
             v-if="moduloActivo?.id === modulo.id"
             class="absolute top-1/2 left-0 h-8 w-[3px] -translate-y-1/2 rounded-r-full bg-laton"

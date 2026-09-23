@@ -7,10 +7,9 @@
 /* =============================================================================
  * Restaurante — sistema de diseño propio
  *
- * Identidad: verde profundo y latón sobre marfil. Referencia deliberada al
- * comedor de manteles y bronce, resuelta con superficies planas, aire generoso
- * y una serif de display. Nada de naranja: el calor lo aporta el marfil y el
- * metal, no un color saturado.
+ * Identidad: naranja fuego, grafito y plata, extraídos del isotipo de la
+ * vertical. Las superficies claras conservan aire y legibilidad; el carbón
+ * fija el cromo del producto y el naranja concentra acciones y foco.
  *
  * La identidad de plataforma Karma se conserva íntegra en
  * `src/assets/karma/karma-identidad.css` y en `src/components/marca/KarmaLogo.vue`,
@@ -22,37 +21,40 @@
 @custom-variant dark ([data-theme='dark'] &);
 
 :root {
-  /* Verde comedor — color de acción, identidad y disponibilidad. */
-  --rs-verde-900: #08251c;
-  --rs-verde-800: #0b2e23;
-  --rs-verde-700: #124436;
-  --rs-verde-600: #1a6b4f;
-  --rs-verde-500: #228764;
-  --rs-verde-400: #46a583;
-  --rs-verde-200: #a8d5c2;
-  --rs-verde-50: #e9f4ef;
+  /*
+   * Fuego — escala principal. Los nombres `verde` se mantienen como alias de
+   * compatibilidad para no acoplar los componentes al nombre de una paleta.
+   */
+  --rs-verde-900: #4d1a13;
+  --rs-verde-800: #742315;
+  --rs-verde-700: #9f3218;
+  --rs-verde-600: #b8401b;
+  --rs-verde-500: #f36b25;
+  --rs-verde-400: #ff9145;
+  --rs-verde-200: #ffc18a;
+  --rs-verde-50: #fff0e5;
 
-  /* Latón — acento metálico: realce, foco, estado reservado. */
-  --rs-laton-700: #7d5f1a;
-  --rs-laton-600: #a8842b;
-  --rs-laton-500: #c9a227;
-  --rs-laton-400: #d9bc5e;
-  --rs-laton-200: #eedfa8;
-  --rs-laton-50: #faf5e4;
+  /* Plata y grafito — acento metálico, información secundaria y reserva. */
+  --rs-laton-700: #343b45;
+  --rs-laton-600: #4b5563;
+  --rs-laton-500: #737c89;
+  --rs-laton-400: #aeb5c0;
+  --rs-laton-200: #d9dde3;
+  --rs-laton-50: #f4f5f7;
 
-  /* Estados: vino y pizarra, elegidos para convivir con el verde y el latón. */
-  --rs-vino: #8f2b2b;
-  --rs-vino-claro: #d98a8a;
-  --rs-pizarra: #3a6076;
-  --rs-pizarra-clara: #8fb4c9;
+  /* Estados complementarios, templados para convivir con el fuego y el acero. */
+  --rs-vino: #9f2f2f;
+  --rs-vino-claro: #e79a91;
+  --rs-pizarra: #3f6278;
+  --rs-pizarra-clara: #9ebdce;
 
-  /* Superficies — marfil */
-  --rs-bg: #f5f2ec;
+  /* Superficies — porcelana cálida */
+  --rs-bg: #f4f2ef;
   --rs-surface: #ffffff;
-  --rs-surface-2: #faf8f4;
-  --rs-text: #14201a;
-  --rs-muted: #5e6b64;
-  --rs-border: #e3ded2;
+  --rs-surface-2: #faf8f6;
+  --rs-text: #1e252d;
+  --rs-muted: #626b76;
+  --rs-border: #ded9d4;
   --rs-selection: var(--rs-verde-50);
 
   /* Roles derivados */
@@ -72,17 +74,17 @@
    * La barra principal es verde profundo en AMBOS temas. Es el rasgo que fija
    * la identidad del sistema y no depende de la preferencia del usuario.
    */
-  --rs-rail: var(--rs-verde-800);
-  --rs-rail-text: #e8ece9;
-  --rs-rail-muted: #8fa89c;
+  --rs-rail: #11151b;
+  --rs-rail-text: #f8f9fb;
+  --rs-rail-muted: #9da5b0;
 
   /* Geometría y elevación */
   --rs-radio-control: 8px;
   --rs-radio-card: 14px;
   --rs-radio-overlay: 20px;
-  --rs-sombra-panel: 0 1px 2px rgb(20 32 26 / 0.04), 0 8px 24px -12px rgb(20 32 26 / 0.14);
-  --rs-sombra-flotante: 0 12px 40px -12px rgb(20 32 26 / 0.28);
-  --rs-foco: 0 0 0 3px color-mix(in srgb, var(--rs-laton-500) 55%, transparent);
+  --rs-sombra-panel: 0 1px 2px rgb(30 37 45 / 0.05), 0 8px 24px -12px rgb(30 37 45 / 0.16);
+  --rs-sombra-flotante: 0 12px 40px -12px rgb(16 21 27 / 0.34);
+  --rs-foco: 0 0 0 3px color-mix(in srgb, var(--rs-verde-500) 34%, transparent);
 
   /* Estructura del shell */
   --rs-rail-ancho: 92px;
@@ -90,25 +92,25 @@
 }
 
 [data-theme='dark'] {
-  --rs-bg: #0c120f;
-  --rs-surface: #141c18;
-  --rs-surface-2: #18211c;
-  --rs-text: #f1f0ea;
-  --rs-muted: #99a69e;
-  --rs-border: #26312b;
-  --rs-selection: #16332a;
+  --rs-bg: #0d1014;
+  --rs-surface: #15191f;
+  --rs-surface-2: #1b2027;
+  --rs-text: #f4f5f7;
+  --rs-muted: #a6adb7;
+  --rs-border: #2c323b;
+  --rs-selection: #382019;
 
-  --rs-primary: var(--rs-verde-500);
-  --rs-primary-strong: var(--rs-verde-400);
-  --rs-laton-texto: var(--rs-laton-400);
+  --rs-primary: var(--rs-verde-400);
+  --rs-primary-strong: #ffb45f;
+  --rs-laton-texto: #c5cad2;
 
   /* El fondo de acción se mantiene en 600: en 500 el texto blanco cae a 4.45:1. */
-  --rs-accion: var(--rs-verde-600);
+  --rs-accion: #c84b1d;
   --rs-accion-hover: var(--rs-verde-500);
 
-  --rs-rail: #081a14;
-  --rs-rail-text: #e8ece9;
-  --rs-rail-muted: #7d968b;
+  --rs-rail: #090c10;
+  --rs-rail-text: #f8f9fb;
+  --rs-rail-muted: #929aa6;
 
   --rs-sombra-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   --rs-sombra-flotante: 0 12px 40px -12px rgb(0 0 0 / 0.75);
@@ -177,7 +179,7 @@ body {
   color: var(--rs-text);
 }
 
-/* Foco en latón: visible sobre marfil, sobre verde profundo y sobre carbón. */
+/* Foco naranja: visible sobre porcelana, grafito y carbón. */
 :focus-visible {
   outline: none;
   box-shadow: var(--rs-foco);
@@ -253,8 +255,8 @@ body {
 }
 
 /*
- * Fondo del área de trabajo: marfil con un velo verde muy tenue arriba y una
- * insinuación de latón abajo a la derecha. Da profundidad sin restar contraste,
+ * Fondo del área de trabajo: porcelana con un velo naranja muy tenue arriba y
+ * una insinuación de plata abajo. Da profundidad sin restar contraste,
  * porque el contenido va siempre sobre paneles opacos.
  */
 .rs-lienzo {
@@ -262,12 +264,12 @@ body {
   background-image:
     radial-gradient(
       48rem 22rem at 12% -8%,
-      color-mix(in srgb, var(--rs-verde-600) 10%, transparent),
+      color-mix(in srgb, var(--rs-verde-500) 11%, transparent),
       transparent 72%
     ),
     radial-gradient(
       38rem 20rem at 108% 108%,
-      color-mix(in srgb, var(--rs-laton-500) 12%, transparent),
+      color-mix(in srgb, var(--rs-laton-400) 18%, transparent),
       transparent 72%
     );
 }
@@ -276,24 +278,24 @@ body {
   background-image:
     radial-gradient(
       48rem 22rem at 12% -8%,
-      color-mix(in srgb, var(--rs-verde-500) 16%, transparent),
+      color-mix(in srgb, var(--rs-verde-500) 18%, transparent),
       transparent 72%
     ),
     radial-gradient(
       38rem 20rem at 108% 108%,
-      color-mix(in srgb, var(--rs-laton-500) 12%, transparent),
+      color-mix(in srgb, var(--rs-laton-400) 10%, transparent),
       transparent 72%
     );
 }
 
-/* Filete de latón: separador fino que aparece bajo la marca y en portada. */
+/* Filete fuego-plata: separador fino que aparece bajo la marca y en portada. */
 .rs-filete {
   height: 1px;
   background: linear-gradient(
     90deg,
     transparent,
-    color-mix(in srgb, var(--rs-laton-500) 70%, transparent) 20%,
-    color-mix(in srgb, var(--rs-laton-500) 70%, transparent) 80%,
+    color-mix(in srgb, var(--rs-verde-500) 78%, transparent) 20%,
+    color-mix(in srgb, var(--rs-laton-200) 72%, transparent) 80%,
     transparent
   );
 }
