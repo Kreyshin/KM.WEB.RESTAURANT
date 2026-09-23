@@ -12,7 +12,10 @@ export default defineConfig({
   base: `/${REPO}/`,
   cleanUrls: true,
   lastUpdated: true,
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: `/${REPO}/favicon.svg` }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `/${REPO}/favicon.svg` }],
+    ['meta', { name: 'theme-color', content: '#0d1014' }],
+  ],
 
   vite: {
     // Las demos importan los componentes reales del back office.
@@ -36,7 +39,7 @@ export default defineConfig({
 
   themeConfig: {
     logo: '/favicon.svg',
-    siteTitle: 'Mesa · Docs',
+    siteTitle: 'Mesa · Documentación',
 
     nav: [
       { text: 'Guía', link: '/guia/introduccion', activeMatch: '/guia/' },

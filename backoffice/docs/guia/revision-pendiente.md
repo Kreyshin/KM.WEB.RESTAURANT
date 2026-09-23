@@ -4,7 +4,7 @@ Lo construido que aún no revisa el responsable de producto. Se marca al revisar
 
 ## F4.5 · Recepción y transformación
 
-- [ ] Recepción con OC: preparar, recibir total o por detalle, lote y vencimiento cuando el insumo los controla
+- [ ] Recepción con OC (rehecha tras la revisión): el modo es de toda la OC; total a ciegas (todo o nada, rechazo con motivo) y a detalle (se cuenta y puede llegar menos); lote, vencimiento, ubicación y **serie** en los dos modos; conversión compra → stock a la vista; hoja de recepción imprimible; 7 OCs de ejemplo con cada combinación
 - [ ] Ingreso sin OC (configurable: permitido, tope y comprobante) y regularización
 - [ ] Por procesar: artículos que entran y se transforman
 - [ ] Partes de producción, modo simple y detallado; rechazo y eliminación en proceso

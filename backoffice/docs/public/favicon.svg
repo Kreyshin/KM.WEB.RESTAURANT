@@ -1,12 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <defs>
-    <linearGradient id="f" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0B2E23" />
-      <stop offset="1" stop-color="#124436" />
+    <linearGradient id="a" x1="116" y1="72" x2="233" y2="447" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffb45f"/><stop offset=".52" stop-color="#f36b25"/><stop offset="1" stop-color="#4d1a13"/>
+    </linearGradient>
+    <linearGradient id="b" x1="307" y1="76" x2="235" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/><stop offset=".58" stop-color="#aeb5c0"/><stop offset="1" stop-color="#343b45"/>
+    </linearGradient>
+    <linearGradient id="c" x1="414" y1="171" x2="326" y2="442" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffb45f"/><stop offset=".45" stop-color="#f47526"/><stop offset="1" stop-color="#5d1c12"/>
     </linearGradient>
   </defs>
-  <rect width="44" height="44" rx="13" fill="url(#f)" />
-  <circle cx="22" cy="19.5" r="10" stroke="#C9A227" stroke-width="1.6" fill="none" />
-  <circle cx="22" cy="19.5" r="4.4" fill="#D9BC5E" />
-  <path d="M11 34h22" stroke="#C9A227" stroke-width="1.6" stroke-linecap="round" opacity="0.55" />
+  <path d="M181 466C108 421 75 358 91 294C101 252 128 220 158 187C196 145 219 101 203 45C266 100 274 170 239 231C220 264 189 290 175 327C158 372 169 419 181 466Z" fill="url(#a)"/>
+  <path d="M224 472C183 424 179 374 201 327C220 288 254 258 276 220C309 165 320 108 284 42C370 106 382 199 339 274C315 316 278 345 258 386C244 415 239 445 241 474L224 472Z" fill="url(#b)"/>
+  <path d="M201 327C220 288 254 258 276 220C292 193 303 166 305 137C325 194 315 247 282 294C252 336 225 374 224 424C187 386 183 365 201 327Z" fill="#252c35"/>
+  <path d="M246 300C225 261 232 222 256 184C286 137 294 91 270 30C336 88 339 160 306 217C286 252 259 271 246 300Z" fill="#f8f9fb"/>
+  <path d="M304 465C286 420 297 376 332 342C368 307 406 281 414 218C465 289 434 374 380 415C351 437 329 454 320 476L304 465Z" fill="url(#c)"/>
+  <path d="M317 414C327 376 354 351 383 329C403 314 420 296 432 273C422 332 391 374 354 403C337 416 326 430 320 447C316 437 315 426 317 414Z" fill="#f8f9fb"/>
 </svg>

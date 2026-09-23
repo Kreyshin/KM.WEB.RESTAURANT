@@ -1,8 +1,4 @@
-/*
- * La hoja del back office define estilos globales pensados para la app
- * (alto completo, fondo marfil, tipografía). Aquí se devuelven a VitePress y
- * se aplica la marca Mesa al tema de la documentación.
- */
+/* La documentación comparte la identidad fuego, grafito y plata de Mesa. */
 
 html,
 body,
@@ -18,23 +14,63 @@ body {
 
 :root {
   --vp-font-family-base: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --vp-c-brand-1: #1a6b4f;
-  --vp-c-brand-2: #124436;
-  --vp-c-brand-3: #1a6b4f;
-  --vp-c-brand-soft: rgb(26 107 79 / 0.12);
+  --vp-font-family-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --vp-c-bg: #f4f2ef;
+  --vp-c-bg-alt: #ece8e3;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-bg-soft: #faf8f6;
+  --vp-c-text-1: #1e252d;
+  --vp-c-text-2: #626b76;
+  --vp-c-text-3: #858d97;
+  --vp-c-divider: #ded9d4;
+  --vp-c-gutter: #e7e2dd;
+  --vp-c-brand-1: #b8401b;
+  --vp-c-brand-2: #9f3218;
+  --vp-c-brand-3: #f36b25;
+  --vp-c-brand-soft: rgb(243 107 37 / 0.12);
+  --vp-button-brand-bg: #b8401b;
+  --vp-button-brand-hover-bg: #9f3218;
+  --vp-button-brand-active-bg: #742315;
+  --vp-button-brand-text: #ffffff;
+  --vp-code-color: #9f3218;
+  --vp-code-bg: rgb(77 26 19 / 0.07);
+  --vp-custom-block-tip-border: #f36b25;
+  --vp-custom-block-tip-bg: rgb(243 107 37 / 0.08);
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(120deg, #1a6b4f 30%, #a8842b);
+  --vp-home-hero-name-background: linear-gradient(120deg, #f36b25 12%, #a53518 56%, #343b45 96%);
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle,
+    rgb(243 107 37 / 0.24),
+    transparent 68%
+  );
+  --vp-home-hero-image-filter: blur(48px);
 }
 
 .dark {
-  --vp-c-bg: #0c120f;
-  --vp-c-bg-alt: #081a14;
-  --vp-c-bg-soft: #141c18;
-  --vp-c-brand-1: #46a583;
-  --vp-c-brand-2: #228764;
-  --vp-c-brand-3: #1a6b4f;
-  --vp-c-brand-soft: rgb(70 165 131 / 0.16);
-  --vp-home-hero-name-background: linear-gradient(120deg, #46a583 30%, #d9bc5e);
+  --vp-c-bg: #0d1014;
+  --vp-c-bg-alt: #090c10;
+  --vp-c-bg-elv: #15191f;
+  --vp-c-bg-soft: #1b2027;
+  --vp-c-text-1: #f4f5f7;
+  --vp-c-text-2: #a6adb7;
+  --vp-c-text-3: #7e8793;
+  --vp-c-divider: #2c323b;
+  --vp-c-gutter: #232932;
+  --vp-c-brand-1: #ff9145;
+  --vp-c-brand-2: #ffb45f;
+  --vp-c-brand-3: #f36b25;
+  --vp-c-brand-soft: rgb(243 107 37 / 0.18);
+  --vp-button-brand-bg: #c84b1d;
+  --vp-button-brand-hover-bg: #f36b25;
+  --vp-button-brand-active-bg: #ff9145;
+  --vp-code-color: #ffb45f;
+  --vp-code-bg: rgb(243 107 37 / 0.11);
+  --vp-home-hero-name-background: linear-gradient(120deg, #ffb45f 8%, #f36b25 52%, #e8ebf0 96%);
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle,
+    rgb(243 107 37 / 0.3),
+    transparent 70%
+  );
 }
 
 .VPHero .name,
@@ -42,6 +78,175 @@ body {
 .vp-doc h2 {
   font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
   letter-spacing: -0.01em;
+}
+
+/* Navegación oscura: ancla visual compartida con la barra del back office. */
+.VPNavBar {
+  background: rgb(13 16 20 / 0.9) !important;
+  border-bottom-color: rgb(255 255 255 / 0.08) !important;
+  backdrop-filter: blur(16px);
+}
+
+.VPNavBar::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #f36b25 35%, #aeb5c0 70%, transparent);
+  opacity: 0.55;
+}
+
+.VPNavBar .title,
+.VPNavBar .VPNavBarMenuLink,
+.VPNavBar .VPNavBarMenuGroup .text,
+.VPNavBar .VPSocialLink,
+.VPNavBar .VPNavBarAppearance,
+.VPNavBar .VPNavBarHamburger {
+  color: #c5cad2;
+}
+
+.VPNavBar .title:hover,
+.VPNavBar .VPNavBarMenuLink:hover,
+.VPNavBar .VPNavBarMenuLink.active {
+  color: #ff9145;
+}
+
+.VPNavBarTitle .logo {
+  width: 32px;
+  height: 32px;
+  margin-right: 10px;
+}
+
+.VPNavBarTitle .title {
+  font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.VPNavBarSearchButton {
+  border-color: rgb(255 255 255 / 0.12) !important;
+  background: rgb(255 255 255 / 0.05) !important;
+}
+
+.VPNavBarSearchButton:hover {
+  border-color: rgb(243 107 37 / 0.6) !important;
+}
+
+/* Portada: fondo editorial con calor controlado y llama protagonista. */
+.VPHome {
+  background-image:
+    radial-gradient(55rem 28rem at 6% 0%, rgb(243 107 37 / 0.1), transparent 72%),
+    radial-gradient(42rem 25rem at 100% 30%, rgb(174 181 192 / 0.15), transparent 72%);
+}
+
+.dark .VPHome {
+  background-image:
+    radial-gradient(55rem 28rem at 8% 0%, rgb(243 107 37 / 0.16), transparent 72%),
+    radial-gradient(42rem 25rem at 100% 30%, rgb(115 124 137 / 0.12), transparent 72%);
+}
+
+.VPHero .text {
+  font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  letter-spacing: -0.025em;
+}
+
+.VPHero .tagline {
+  max-width: 620px;
+  line-height: 1.7;
+}
+
+.VPHero .image-src {
+  width: min(300px, 72vw);
+  height: min(300px, 72vw);
+  filter: drop-shadow(0 24px 28px rgb(16 21 27 / 0.28));
+}
+
+.VPButton {
+  border-radius: 9px !important;
+}
+
+.VPButton.alt {
+  border-color: var(--vp-c-divider);
+  background: color-mix(in srgb, var(--vp-c-bg-elv) 82%, transparent);
+}
+
+.VPButton.alt:hover {
+  border-color: var(--vp-c-brand-3);
+  color: var(--vp-c-brand-1);
+}
+
+.VPFeature {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--vp-c-divider) !important;
+  background: color-mix(in srgb, var(--vp-c-bg-elv) 88%, transparent) !important;
+  box-shadow: 0 12px 32px -24px rgb(30 37 45 / 0.45);
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.VPFeature::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, #f36b25, #aeb5c0);
+  opacity: 0.75;
+}
+
+.VPFeature:hover {
+  border-color: color-mix(in srgb, var(--vp-c-brand-3) 48%, var(--vp-c-divider)) !important;
+  box-shadow: 0 18px 38px -24px rgb(77 26 19 / 0.4);
+  transform: translateY(-2px);
+}
+
+.VPFeature .icon {
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+}
+
+/* Lectura y navegación interior. */
+.VPSidebar {
+  background: color-mix(in srgb, var(--vp-c-bg-alt) 92%, transparent);
+}
+
+.VPSidebarItem.is-active > .item .link > .text,
+.VPDocAsideOutline .active {
+  color: var(--vp-c-brand-1) !important;
+}
+
+.vp-doc h1 {
+  color: var(--vp-c-text-1);
+}
+
+.vp-doc h2 {
+  border-top-color: var(--vp-c-divider);
+}
+
+.vp-doc a:not(.header-anchor) {
+  text-decoration-color: color-mix(in srgb, var(--vp-c-brand-1) 45%, transparent);
+  text-underline-offset: 3px;
+}
+
+.vp-doc blockquote {
+  border-left-color: var(--vp-c-brand-3);
+  background: var(--vp-c-brand-soft);
+  padding: 12px 18px;
+  border-radius: 0 10px 10px 0;
+}
+
+.vp-doc table {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.VPFooter {
+  border-top-color: var(--vp-c-divider) !important;
+  background: var(--vp-c-bg-alt) !important;
 }
 
 /* Marco de demo: el lienzo del back office dentro de la página. */

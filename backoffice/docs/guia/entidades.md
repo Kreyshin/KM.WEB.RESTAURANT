@@ -397,15 +397,16 @@ Reglas:
 
 Cómo se controla un insumo al recepcionarlo y al guardarlo. Se fijan en cualquier nivel y **gana el más específico**: `cadena → local → almacen → categoria → insumo`.
 
-| Parámetro             | Tipo                              | Qué hace                                                                           |
-| --------------------- | --------------------------------- | ---------------------------------------------------------------------------------- |
-| `controlaLote`        | boolean                           | Exige lote al recepcionar                                                          |
-| `controlaVencimiento` | boolean                           | Exige fecha de vencimiento en el lote                                              |
-| `fefo`                | boolean                           | Propone primero el lote que vence antes                                            |
-| `diasAlerta`          | number                            | Días antes del vencimiento en que se avisa                                         |
-| `bloquearVencidos`    | boolean                           | Impide sacar stock de un lote vencido                                              |
-| `controlaUbicacion`   | boolean                           | Exige ubicación al recepcionar y al mover                                          |
-| `tipoRecepcion`       | `'total' \| 'detalle' \| 'ambos'` | La línea entera, lote a lote y ubicación a ubicación, o se elige en cada recepción |
+| Parámetro             | Tipo                              | Qué hace                                                                       |
+| --------------------- | --------------------------------- | ------------------------------------------------------------------------------ |
+| `controlaLote`        | boolean                           | Exige lote al recepcionar                                                      |
+| `controlaVencimiento` | boolean                           | Exige fecha de vencimiento en el lote                                          |
+| `fefo`                | boolean                           | Propone primero el lote que vence antes                                        |
+| `diasAlerta`          | number                            | Días antes del vencimiento en que se avisa                                     |
+| `bloquearVencidos`    | boolean                           | Impide sacar stock de un lote vencido                                          |
+| `controlaUbicacion`   | boolean                           | Exige ubicación al recepcionar y al mover                                      |
+| `controlaSerie`       | boolean                           | Exige una serie por unidad recibida (gas, licor)                               |
+| `tipoRecepcion`       | `'total' \| 'detalle' \| 'ambos'` | Total: a ciegas, todo o nada. A detalle: se cuenta. Ambos: se elige al recibir |
 
 `AjusteParametros` guarda `nivel`, `referencia` (`localId`, `almacenId`, `CategoriaInsumo` o `insumoId`; vacío en `cadena`) y los `valores` fijados. Lo que no se fija se hereda. El nivel `cadena` no hereda de nadie: no admite huecos y no se elimina.
 
@@ -505,22 +506,26 @@ Reglas: una solicitud solo puede estar en un requerimiento; anular (solo en borr
 
 ### Recepcion
 
-| Campo                             | Tipo                                                                 | Notas                                              |
-| --------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------- |
-| `numero`                          | string                                                               | REC-000001                                         |
-| `almacenId`                       | string                                                               | Del local y con acceso «gestionar» del ERP         |
-| `requerimientoId` / `ordenCompra` | string?                                                              | Sin valor: ingreso sin OC                          |
-| `comprobante`                     | `{ tipo, serie, numero, monto, proveedorId?, proveedorOcasional? }`? | Solo sin OC                                        |
-| `motivo`                          | string?                                                              | Obligatorio sin OC                                 |
-| `estado`                          | `'registrada' \| 'pendienteRegularizar' \| 'regularizada'`           |                                                    |
-| `lineas[].cantidadCompra`         | number?                                                              | Unidades de compra recibidas                       |
-| `lineas[].factor`                 | number                                                               | Del vínculo insumo–artículo                        |
-| `lineas[].costoUnitario`          | number                                                               | Neto, por unidad del insumo                        |
-| `lineas[].modo`                   | `'total' \| 'detalle'`                                               | Total: una parte. A detalle: varias                |
-| `lineas[].partes[]`               | `{ cantidad, loteCodigo?, vencimiento?, ubicacionId? }`              | Lote y vencimiento solo si el insumo controla lote |
-| `lineas[].porProcesar`            | boolean                                                              | El artículo llega sin procesar                     |
+| Campo                             | Tipo                                                                      | Notas                                               |
+| --------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------- |
+| `numero`                          | string                                                                    | REC-000001                                          |
+| `almacenId`                       | string                                                                    | Del local y con acceso «gestionar» del ERP          |
+| `requerimientoId` / `ordenCompra` | string?                                                                   | Sin valor: ingreso sin OC                           |
+| `comprobante`                     | `{ tipo, serie, numero, monto, proveedorId?, proveedorOcasional? }`?      | Solo sin OC                                         |
+| `motivo`                          | string?                                                                   | Obligatorio sin OC                                  |
+| `estado`                          | `'registrada' \| 'rechazada' \| 'pendienteRegularizar' \| 'regularizada'` | Rechazada: entrega total no conforme, no entra nada |
+| `modo`                            | `'total' \| 'detalle'`?                                                   | De toda la recepción contra OC                      |
+| `motivoRechazo`                   | string?                                                                   | Solo si se rechazó                                  |
+| `lineas[].cantidadCompra`         | number?                                                                   | Unidades de compra recibidas                        |
+| `lineas[].factor`                 | number                                                                    | Del vínculo insumo–artículo                         |
+| `lineas[].costoUnitario`          | number                                                                    | Neto, por unidad del insumo                         |
+| `lineas[].cantidadEsperada`       | number?                                                                   | Pendiente al recibir: la diferencia es el faltante  |
+| `lineas[].partes[]`               | `{ cantidad, loteCodigo?, vencimiento?, ubicacionId?, series? }`          | Varias partes para repartir en lotes o ubicaciones  |
+| `lineas[].porProcesar`            | boolean                                                                   | El artículo llega sin procesar                      |
 
 La línea del requerimiento guarda `precioNeto` (de la OC) y `cantidadRecibida`.
+
+Reglas: el modo es de toda la OC en la zona elegida. Si un insumo exige detalle, se cuenta a detalle; si alguno exige total y ninguno detalle, va total; si todos admiten ambos, se elige. **Total** es a ciegas: cada línea pendiente entra completa y sin editar, o se rechaza la entrega entera (con motivo) y la OC sigue pendiente. **A detalle** admite recibir menos; el saldo sigue pendiente. En los dos modos se piden lote, vencimiento, ubicación y serie según los parámetros; una serie no se repite ni se reutiliza. Toda OC pendiente imprime su hoja de recepción.
 
 ### PorProcesar
 
