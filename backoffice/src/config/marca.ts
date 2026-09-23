@@ -28,7 +28,7 @@ export const marca: Marca = {
   nombre: 'Mesa',
   descriptor: 'Gestión de restaurante',
   plataforma: 'Un sistema Karma Systems',
-  lema: 'El comedor, en orden.',
+  lema: 'La casa llena, la operación en calma.',
   capacidades: [
     'Salones y plano de mesas en tiempo real',
     'Comandas, cocina e inventario de insumos',
