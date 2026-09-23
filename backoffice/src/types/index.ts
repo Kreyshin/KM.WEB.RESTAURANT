@@ -515,7 +515,12 @@ export interface ParametrosAbastecimiento {
   bloquearVencidos: boolean
   /** Exige ubicación al recepcionar y al mover. */
   controlaUbicacion: boolean
-  /** `total`: se recepciona la línea entera. `detalle`: lote a lote y ubicación a ubicación. */
+  /** Exige un número de serie por cada unidad recibida (balones de gas, botellas de licor). */
+  controlaSerie: boolean
+  /**
+   * `total`: a ciegas, todo lo pendiente o nada, sin editar cantidades.
+   * `detalle`: se cuenta y se puede recibir menos de lo pedido. `ambos`: se elige al recibir.
+   */
   tipoRecepcion: 'total' | 'detalle' | 'ambos'
 }
 
@@ -736,18 +741,25 @@ export interface RequerimientoCompra {
 // ── Recepción y producción (F4.5) ────────────────────────────────────────────
 
 /**
- * Una parte de lo recibido: con lote y ubicación cuando el insumo los
- * controla. Una recepción «total» tiene una sola parte por línea; «a detalle»
- * admite varias (dos lotes, dos racks).
+ * Una parte de lo recibido: con lote, ubicación o series cuando el insumo los
+ * controla. Una línea puede repartirse en varias partes (dos lotes, dos racks).
  */
 export interface ParteRecepcion {
-  /** En la unidad del insumo. */
+  /** En la unidad del insumo. Con serie, igual al número de series. */
   cantidad: number
   loteCodigo?: string
   /** `YYYY-MM-DD`. */
   vencimiento?: string
   ubicacionId?: string
+  /** Una por unidad del insumo, cuando controla serie. */
+  series?: string[]
 }
+
+/**
+ * `total`: a ciegas, se recibe todo lo pendiente tal cual o no se recibe nada.
+ * `detalle`: se cuenta y se puede recibir menos de lo pedido.
+ */
+export type ModoRecepcion = 'total' | 'detalle'
 
 export interface LineaRecepcion {
   id: string
@@ -757,11 +769,13 @@ export interface LineaRecepcion {
   lineaRequerimientoId?: string
   /** Unidades de compra recibidas (sacos, cajas). */
   cantidadCompra?: number
+  /** Unidades de compra pendientes al recibir: la diferencia con lo recibido es el faltante. */
+  cantidadEsperada?: number
   /** Unidades del insumo que rinde cada unidad de compra. */
   factor: number
   /** Costo neto por unidad del insumo. */
   costoUnitario: number
-  modo: 'total' | 'detalle'
+  modo: ModoRecepcion
   partes: ParteRecepcion[]
   /** Quedó pendiente de transformar. */
   porProcesar: boolean
@@ -780,7 +794,7 @@ export interface ComprobanteIngreso {
   proveedorOcasional?: string
 }
 
-export type EstadoRecepcion = 'registrada' | 'pendienteRegularizar' | 'regularizada'
+export type EstadoRecepcion = 'registrada' | 'rechazada' | 'pendienteRegularizar' | 'regularizada'
 
 export interface Recepcion {
   id: string
@@ -794,6 +808,10 @@ export interface Recepcion {
   comprobante?: ComprobanteIngreso
   motivo?: string
   estado: EstadoRecepcion
+  /** Contra OC: total (todo o nada) o a detalle (contado). */
+  modo?: ModoRecepcion
+  /** Por qué se rechazó una entrega que se recibía total. */
+  motivoRechazo?: string
   fecha: string
   usuarioId: string
   lineas: LineaRecepcion[]

@@ -64,7 +64,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v29'
+const CLAVE = 'km.restaurante.mock.v30'
 
 export interface Esquema {
   combos: Combo[]
@@ -1068,6 +1068,43 @@ function semilla(): Esquema {
         costoUnitario: 2.4,
         activo: true,
       },
+      // Escenarios de recepción: serie, ubicación y tipo «ambos».
+      {
+        id: 'i41',
+        nombre: 'Balón de gas GLP 10 kg',
+        unidad: 'unidad',
+        stock: 3,
+        stockMinimo: 2,
+        costoUnitario: 48,
+        activo: true,
+      },
+      {
+        id: 'i42',
+        nombre: 'Whisky Black Label 750 ml',
+        unidad: 'unidad',
+        stock: 0,
+        stockMinimo: 4,
+        costoUnitario: 170,
+        activo: true,
+      },
+      {
+        id: 'i43',
+        nombre: 'Queso fresco',
+        unidad: 'kg',
+        stock: 0,
+        stockMinimo: 3,
+        costoUnitario: 22,
+        activo: true,
+      },
+      {
+        id: 'i44',
+        nombre: 'Mantequilla 200 g',
+        unidad: 'unidad',
+        stock: 0,
+        stockMinimo: 10,
+        costoUnitario: 6.4,
+        activo: true,
+      },
     ]
 
   const ahora = Date.now()
@@ -1308,6 +1345,10 @@ function semilla(): Esquema {
     i14: 'bebidas',
     i15: 'descartables',
     i40: 'bebidas',
+    i41: 'descartables',
+    i42: 'bebidas',
+    i43: 'lacteos',
+    i44: 'lacteos',
   }
   /** Zona donde se guarda cada categoría en Miraflores. */
   const zonaPorCategoria: Record<CategoriaInsumo, string> = {
@@ -1349,6 +1390,10 @@ function semilla(): Esquema {
     i12: [{ articuloId: 'ar4', factor: 1, porDefecto: true }],
     i13: [{ articuloId: 'ar16', factor: 1, porDefecto: true }],
     i40: [{ articuloId: 'ar15', factor: 12, porDefecto: true }],
+    i41: [{ articuloId: 'ar17', factor: 1, porDefecto: true }],
+    i42: [{ articuloId: 'ar18', factor: 6, porDefecto: true }],
+    i43: [{ articuloId: 'ar19', factor: 2.5, porDefecto: true }],
+    i44: [{ articuloId: 'ar20', factor: 20, porDefecto: true }],
   }
 
   const insumos: Insumo[] = insumosBase.map((i) => {
@@ -1515,6 +1560,28 @@ function semilla(): Esquema {
       referencia: 'pescados',
       valores: { controlaVencimiento: true, fefo: true, diasAlerta: 2 },
     },
+    // El gas se recibe a ciegas, pero cada balón lleva su serie (garantía y devolución).
+    { id: 'pa4', nivel: 'insumo', referencia: 'i41', valores: { controlaSerie: true } },
+    // El licor caro se cuenta botella por botella: serie y ubicación en la vitrina con llave.
+    {
+      id: 'pa6',
+      nivel: 'insumo',
+      referencia: 'i42',
+      valores: { controlaSerie: true, controlaUbicacion: true, tipoRecepcion: 'detalle' },
+    },
+    // Lácteos frescos: quien recibe elige si confía en el proveedor o cuenta.
+    {
+      id: 'pa7',
+      nivel: 'insumo',
+      referencia: 'i43',
+      valores: { tipoRecepcion: 'ambos', controlaVencimiento: true },
+    },
+    {
+      id: 'pa8',
+      nivel: 'insumo',
+      referencia: 'i44',
+      valores: { tipoRecepcion: 'ambos', controlaVencimiento: true },
+    },
   ]
 
   const ubicaciones: Ubicacion[] = [
@@ -1576,6 +1643,16 @@ function semilla(): Esquema {
       fila: '1',
       columna: '1',
       porDefecto: true,
+      activo: true,
+    },
+    {
+      id: 'ub7',
+      zonaId: 'zn1',
+      pasillo: 'P3',
+      estante: 'Vitrina con llave',
+      fila: '1',
+      columna: '1',
+      porDefecto: false,
       activo: true,
     },
   ]
@@ -1818,6 +1895,42 @@ function semilla(): Esquema {
       proveedorId: 'pv3',
       activo: true,
     },
+    {
+      id: 'ar17',
+      codigo: 'ART-06001',
+      nombre: 'Gas GLP balón 10 kg',
+      marcaId: 'mc1',
+      unidadCompra: 'Balón',
+      proveedorId: 'pv4',
+      activo: true,
+    },
+    {
+      id: 'ar18',
+      codigo: 'ART-05020',
+      nombre: 'Whisky Black Label 750 ml',
+      marcaId: 'mc6',
+      unidadCompra: 'Caja x6',
+      proveedorId: 'pv4',
+      activo: true,
+    },
+    {
+      id: 'ar19',
+      codigo: 'ART-04010',
+      nombre: 'Queso fresco de vaca',
+      marcaId: 'mc5',
+      unidadCompra: 'Molde 2.5 kg',
+      proveedorId: 'pv5',
+      activo: true,
+    },
+    {
+      id: 'ar20',
+      codigo: 'ART-04020',
+      nombre: 'Mantequilla con sal 200 g',
+      marcaId: 'mc4',
+      unidadCompra: 'Caja x20',
+      proveedorId: 'pv4',
+      activo: true,
+    },
   ]
 
   /**
@@ -2057,7 +2170,240 @@ function semilla(): Esquema {
     ],
   })
 
-  /** Compra de mercado sin OC, esperando que administración la valide. */
+  /**
+   * Escenarios de recepción para probar cada combinación:
+   * - OC-00915: total a ciegas con serie (balones de gas) y una entrega ya rechazada.
+   * - OC-00921: tipo «ambos» con lote y vencimiento en la cámara: se elige total o a detalle.
+   * - OC-00934: a detalle con serie y ubicación (licor en vitrina con llave) junto a una bebida sin control.
+   * - OC-00940: a detalle en la cámara con el saldo de una recepción parcial anterior.
+   * - OC-00948: total simple de abarrotes con varias líneas y conversiones con decimales.
+   */
+  requerimientos.push({
+    id: 'rq4',
+    numero: 'REQ-000004',
+    localId: 'l1',
+    estado: 'despachado',
+    fecha: hace(30),
+    usuarioId: 'u1',
+    ordenCompra: 'OC-2026-00915',
+    lineas: [
+      {
+        id: 'rq4-1',
+        insumoId: 'i41',
+        articuloId: 'ar17',
+        cantidad: 4,
+        cantidadInsumo: 4,
+        proveedorId: 'pv4',
+        origen: [],
+        cantidadConvertida: 4,
+        precioNeto: 48,
+      },
+    ],
+    historial: [
+      { estado: 'borrador', fecha: hace(30), autor: 'Brandon Ríos' },
+      { estado: 'enviado', fecha: hace(29), autor: 'Brandon Ríos' },
+      { estado: 'aprobado', fecha: hace(26), autor: 'ERP' },
+      { estado: 'convertido', fecha: hace(24), autor: 'ERP', nota: 'OC-2026-00915' },
+      { estado: 'despachado', fecha: hace(20), autor: 'ERP' },
+      {
+        estado: 'despachado',
+        fecha: hace(18),
+        autor: 'Brandon Ríos',
+        nota: 'Entrega rechazada (REC-000002): un balón llegó con la válvula dañada',
+      },
+      { estado: 'despachado', fecha: hace(2), autor: 'ERP', nota: 'Nueva entrega programada' },
+    ],
+  })
+  requerimientos.push({
+    id: 'rq5',
+    numero: 'REQ-000005',
+    localId: 'l1',
+    estado: 'convertido',
+    fecha: hace(28),
+    usuarioId: 'u1',
+    ordenCompra: 'OC-2026-00921',
+    lineas: [
+      {
+        id: 'rq5-1',
+        insumoId: 'i43',
+        articuloId: 'ar19',
+        cantidad: 4,
+        cantidadInsumo: 10,
+        proveedorId: 'pv5',
+        origen: [],
+        cantidadConvertida: 4,
+        precioNeto: 57.5,
+      },
+      {
+        id: 'rq5-2',
+        insumoId: 'i44',
+        articuloId: 'ar20',
+        cantidad: 2,
+        cantidadInsumo: 40,
+        proveedorId: 'pv4',
+        origen: [],
+        cantidadConvertida: 2,
+        precioNeto: 128,
+      },
+    ],
+    historial: [
+      { estado: 'borrador', fecha: hace(28), autor: 'Brandon Ríos' },
+      { estado: 'enviado', fecha: hace(27), autor: 'Brandon Ríos' },
+      { estado: 'aprobado', fecha: hace(24), autor: 'ERP' },
+      { estado: 'convertido', fecha: hace(22), autor: 'ERP', nota: 'OC-2026-00921' },
+    ],
+  })
+  requerimientos.push({
+    id: 'rq6',
+    numero: 'REQ-000006',
+    localId: 'l1',
+    estado: 'despachado',
+    fecha: hace(26),
+    usuarioId: 'u1',
+    ordenCompra: 'OC-2026-00934',
+    lineas: [
+      {
+        id: 'rq6-1',
+        insumoId: 'i42',
+        articuloId: 'ar18',
+        cantidad: 2,
+        cantidadInsumo: 12,
+        proveedorId: 'pv4',
+        origen: [],
+        cantidadConvertida: 2,
+        precioNeto: 1020,
+      },
+      {
+        id: 'rq6-2',
+        insumoId: 'i40',
+        articuloId: 'ar15',
+        cantidad: 3,
+        cantidadInsumo: 36,
+        proveedorId: 'pv4',
+        origen: [],
+        cantidadConvertida: 3,
+        precioNeto: 26.4,
+      },
+    ],
+    historial: [
+      { estado: 'borrador', fecha: hace(26), autor: 'Brandon Ríos' },
+      { estado: 'enviado', fecha: hace(25), autor: 'Brandon Ríos' },
+      { estado: 'aprobado', fecha: hace(22), autor: 'ERP' },
+      { estado: 'convertido', fecha: hace(20), autor: 'ERP', nota: 'OC-2026-00934' },
+      { estado: 'despachado', fecha: hace(5), autor: 'ERP' },
+    ],
+  })
+  requerimientos.push({
+    id: 'rq7',
+    numero: 'REQ-000007',
+    localId: 'l1',
+    estado: 'despachado',
+    fecha: hace(24),
+    usuarioId: 'u1',
+    ordenCompra: 'OC-2026-00940',
+    lineas: [
+      {
+        id: 'rq7-1',
+        insumoId: 'i12',
+        articuloId: 'ar4',
+        cantidad: 10,
+        cantidadInsumo: 10,
+        proveedorId: 'pv2',
+        origen: [],
+        cantidadConvertida: 10,
+        precioNeto: 24,
+        cantidadRecibida: 6,
+      },
+      {
+        id: 'rq7-2',
+        insumoId: 'i1',
+        articuloId: 'ar1',
+        cantidad: 8,
+        cantidadInsumo: 8,
+        proveedorId: 'pv1',
+        origen: [],
+        cantidadConvertida: 8,
+        precioNeto: 52,
+      },
+    ],
+    historial: [
+      { estado: 'borrador', fecha: hace(24), autor: 'Brandon Ríos' },
+      { estado: 'enviado', fecha: hace(23), autor: 'Brandon Ríos' },
+      { estado: 'aprobado', fecha: hace(20), autor: 'ERP' },
+      { estado: 'convertido', fecha: hace(18), autor: 'ERP', nota: 'OC-2026-00940' },
+      { estado: 'despachado', fecha: hace(10), autor: 'ERP' },
+      {
+        estado: 'despachado',
+        fecha: hace(8),
+        autor: 'Brandon Ríos',
+        nota: 'Recepción parcial: llegaron 6 de 10 kg de calamar',
+      },
+    ],
+  })
+  requerimientos.push({
+    id: 'rq8',
+    numero: 'REQ-000008',
+    localId: 'l1',
+    estado: 'despachado',
+    fecha: hace(22),
+    usuarioId: 'u1',
+    ordenCompra: 'OC-2026-00948',
+    lineas: [
+      {
+        id: 'rq8-1',
+        insumoId: 'i4',
+        articuloId: 'ar6',
+        cantidad: 3,
+        cantidadInsumo: 150,
+        proveedorId: 'pv3',
+        origen: [],
+        cantidadConvertida: 3,
+        precioNeto: 95,
+      },
+      {
+        id: 'rq8-2',
+        insumoId: 'i5',
+        articuloId: 'ar7',
+        cantidad: 2,
+        cantidadInsumo: 40,
+        proveedorId: 'pv3',
+        origen: [],
+        cantidadConvertida: 2,
+        precioNeto: 52,
+      },
+      {
+        id: 'rq8-3',
+        insumoId: 'i9',
+        articuloId: 'ar11',
+        cantidad: 6,
+        cantidadInsumo: 30,
+        proveedorId: 'pv4',
+        origen: [],
+        cantidadConvertida: 6,
+        precioNeto: 42,
+      },
+      {
+        id: 'rq8-4',
+        insumoId: 'i13',
+        articuloId: 'ar16',
+        cantidad: 12.5,
+        cantidadInsumo: 12.5,
+        proveedorId: 'pv3',
+        origen: [],
+        cantidadConvertida: 12.5,
+        precioNeto: 6.4,
+      },
+    ],
+    historial: [
+      { estado: 'borrador', fecha: hace(22), autor: 'Brandon Ríos' },
+      { estado: 'enviado', fecha: hace(21), autor: 'Brandon Ríos' },
+      { estado: 'aprobado', fecha: hace(18), autor: 'ERP' },
+      { estado: 'convertido', fecha: hace(16), autor: 'ERP', nota: 'OC-2026-00948' },
+      { estado: 'despachado', fecha: hace(1), autor: 'ERP' },
+    ],
+  })
+
+  /** Compra de mercado sin OC y una entrega rechazada, para el historial. */
   const recepciones: Recepcion[] = [
     {
       id: 'rc1',
@@ -2083,6 +2429,34 @@ function semilla(): Esquema {
           costoUnitario: 7.12,
           modo: 'total',
           partes: [{ cantidad: 5 }],
+          porProcesar: false,
+        },
+      ],
+    },
+    {
+      id: 'rc2',
+      numero: 'REC-000002',
+      localId: 'l1',
+      zonaId: 'zn1',
+      requerimientoId: 'rq4',
+      ordenCompra: 'OC-2026-00915',
+      estado: 'rechazada',
+      modo: 'total',
+      motivoRechazo: 'Un balón llegó con la válvula dañada',
+      fecha: hace(18),
+      usuarioId: 'u1',
+      lineas: [
+        {
+          id: 'rc2-1',
+          insumoId: 'i41',
+          articuloId: 'ar17',
+          lineaRequerimientoId: 'rq4-1',
+          cantidadCompra: 0,
+          cantidadEsperada: 4,
+          factor: 1,
+          costoUnitario: 48,
+          modo: 'total',
+          partes: [],
           porProcesar: false,
         },
       ],

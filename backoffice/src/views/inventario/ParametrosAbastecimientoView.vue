@@ -51,8 +51,9 @@ const ayudaParametro: Record<Clave, string> = {
   diasAlerta: 'Con cuánta anticipación se avisa de un vencimiento.',
   bloquearVencidos: 'Un lote vencido no se puede consumir ni transferir.',
   controlaUbicacion: 'Cada ingreso se guarda en pasillo, estante y fila.',
+  controlaSerie: 'Al recepcionar se pide un número de serie por cada unidad.',
   tipoRecepcion:
-    'Total: se confirma el pedido entero. A detalle: se revisa línea por línea. Ambos: se elige en cada recepción.',
+    'Total: a ciegas, se recibe todo lo pendiente o nada. A detalle: se cuenta y se puede recibir menos. Ambos: se elige en cada recepción.',
 }
 
 /** De quién hereda cada nivel, dicho sin diagramas. */

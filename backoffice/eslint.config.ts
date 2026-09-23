@@ -13,6 +13,7 @@ export default defineConfigWithVueTs(
     ignores: [
       '**/dist/**',
       '**/dist-demo/**',
+      '**/dist-portfolio/**',
       'playwright-report/**',
       'test-results/**',
       'docs/.vitepress/cache/**',

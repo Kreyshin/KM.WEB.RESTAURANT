@@ -6,6 +6,7 @@ package-lock.json
 # Identidad de plataforma preservada: se conserva tal cual llegó.
 src/assets/karma
 dist-demo
+dist-portfolio
 docs/.vitepress/cache
 docs/.vitepress/dist
 test-results

@@ -42,6 +42,7 @@ export const parametrosPorDefecto: ParametrosAbastecimiento = {
   diasAlerta: 7,
   bloquearVencidos: true,
   controlaUbicacion: false,
+  controlaSerie: false,
   tipoRecepcion: 'total',
 }
 
@@ -71,6 +72,7 @@ export const etiquetaParametro: Record<keyof ParametrosAbastecimiento, string> =
   diasAlerta: 'Días de alerta antes de vencer',
   bloquearVencidos: 'Bloquear lotes vencidos',
   controlaUbicacion: 'Controla ubicación',
+  controlaSerie: 'Controla serie',
   tipoRecepcion: 'Tipo de recepción',
 }
 

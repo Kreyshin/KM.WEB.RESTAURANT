@@ -21,7 +21,7 @@ import {
 } from '@/services/abastecimiento.service'
 import { etiquetaEstadoRequerimiento } from '@/services/compras.service'
 import { tienePermiso, valorConfig } from '@/services/parametros.service'
-import { recepcionService, type LineaPorRecibir } from '@/services/recepcion.service'
+import { modosDeOc, recepcionService, type LineaPorRecibir } from '@/services/recepcion.service'
 import { useAuthStore } from '@/stores/auth.store'
 import { useLocalStore } from '@/stores/local.store'
 import { useUiStore } from '@/stores/ui.store'
@@ -30,6 +30,7 @@ import type {
   ComprobanteIngreso,
   EstadoRecepcion,
   LineaRecepcion,
+  ModoRecepcion,
   Recepcion,
   RequerimientoCompra,
   TipoComprobanteIngreso,
@@ -37,6 +38,11 @@ import type {
 } from '@/types'
 import type { ColumnaTabla, OpcionSelect, Pestana, TonoMesa } from '@/types/ui'
 import { etiquetaUnidad, formatearCantidad, formatearFecha, formatearSoles } from '@/utils/formato'
+import { imprimirHojaRecepcion } from '@/utils/hojaRecepcion'
+import KmFecha from '@/components/ui/KmFecha.vue'
+import KmIcono from '@/components/ui/KmIcono.vue'
+import KmModal from '@/components/ui/KmModal.vue'
+import ConversionCompra from './ConversionCompra.vue'
 
 /**
  * Recepción (F4.5): lo que llega contra una orden de compra del ERP y, si el
@@ -113,11 +119,13 @@ const pestanas = computed<Pestana[]>(() => [
 
 const tonoEstado: Record<EstadoRecepcion, TonoMesa> = {
   registrada: 'verde',
+  rechazada: 'vino',
   pendienteRegularizar: 'laton',
   regularizada: 'pizarra',
 }
 const etiquetaEstado: Record<EstadoRecepcion, string> = {
   registrada: 'Registrada',
+  rechazada: 'Entrega rechazada',
   pendienteRegularizar: 'Pendiente de regularizar',
   regularizada: 'Regularizada',
 }
@@ -174,39 +182,225 @@ function totalLinea(l: LineaRecepcion) {
   return Math.round((l.cantidadCompra ?? 0) * l.factor * 1000) / 1000
 }
 
-/** En «total» hay una sola parte que siempre suma lo recibido. */
-function sincronizarTotal(l: LineaRecepcion) {
-  if (l.modo === 'total' || l.partes.length === 1) l.partes[0]!.cantidad = totalLinea(l)
-}
-
 function sumaPartes(l: LineaRecepcion) {
   return Math.round(l.partes.reduce((t, p) => t + (p.cantidad || 0), 0) * 1000) / 1000
 }
 
+/** Con serie, una casilla por unidad: se agregan o se quitan del final. */
+function ajustarSeries(l: LineaRecepcion) {
+  if (!parametros(l.insumoId, zonaId.value).controlaSerie) return
+  for (const p of l.partes) {
+    const n = Math.max(0, Math.round(p.cantidad || 0))
+    const series = p.series ?? []
+    p.series =
+      series.length > n ? series.slice(0, n) : [...series, ...Array(n - series.length).fill('')]
+  }
+}
+
+/** Con una sola parte, esa parte es todo lo que se recibe. */
+function sincronizar(l: LineaRecepcion) {
+  if (l.partes.length === 1) l.partes[0]!.cantidad = totalLinea(l)
+  ajustarSeries(l)
+}
+
+/** Controles que pide la línea en la zona elegida. */
+function controles(l: LineaRecepcion) {
+  const p = parametros(l.insumoId, zonaId.value)
+  return {
+    lote: p.controlaLote,
+    vencimiento: p.controlaLote && p.controlaVencimiento,
+    ubicacion: p.controlaUbicacion,
+    serie: p.controlaSerie,
+    alguno: p.controlaLote || p.controlaUbicacion || p.controlaSerie,
+  }
+}
+
+/** Se puede repartir en partes cuando hay lote o ubicación que distinguir. */
+const divisible = (l: LineaRecepcion) => controles(l).lote || controles(l).ubicacion
+
+function agregarParte(l: LineaRecepcion) {
+  l.partes.push({
+    cantidad: 0,
+    ubicacionId: opcionesUbicacion(zonaId.value)[0]?.valor as string | undefined,
+    ...(controles(l).serie ? { series: [] } : {}),
+  })
+}
+
+function quitarParte(l: LineaRecepcion, i: number) {
+  l.partes.splice(i, 1)
+  sincronizar(l)
+}
+
+/** Con serie, Enter pasa a la siguiente casilla: así funciona también con lector. */
+function siguienteSerie(evento: KeyboardEvent) {
+  const actualCampo = evento.target as HTMLInputElement
+  const campos = [
+    ...(actualCampo.closest('article')?.querySelectorAll<HTMLInputElement>('input[data-serie]') ??
+      []),
+  ]
+  campos[campos.indexOf(actualCampo) + 1]?.focus()
+}
+
 // ── Recibir contra OC ──
 
+type ItemPorRecibir = { requerimiento: RequerimientoCompra; lineas: LineaPorRecibir[] }
+
 const recibirAbierto = ref(false)
-const actual = shallowRef<{ requerimiento: RequerimientoCompra; lineas: LineaPorRecibir[] } | null>(
-  null,
-)
+const actual = shallowRef<ItemPorRecibir | null>(null)
 const zonaId = ref('')
+const modo = ref<ModoRecepcion>('total')
 const lineas = ref<LineaRecepcion[]>([])
 const guardando = ref(false)
 
-function abrirRecibir(item: { requerimiento: RequerimientoCompra; lineas: LineaPorRecibir[] }) {
+const modos = computed(() =>
+  actual.value && zonaId.value
+    ? modosDeOc(actual.value.requerimiento.id, zonaId.value)
+    : { opciones: ['total'] as ModoRecepcion[], exigidoPor: undefined },
+)
+
+/** Zona donde se guardan los insumos de la OC, si el usuario la gestiona. */
+function zonaSugerida(item: ItemPorRecibir) {
+  const cuenta = new Map<string, number>()
+  for (const l of item.lineas) {
+    const zona = insumo(l.insumoId)?.existencias.find((e) =>
+      zonasGestion.value.some((z) => z.valor === e.zonaId),
+    )?.zonaId
+    if (zona) cuenta.set(zona, (cuenta.get(zona) ?? 0) + 1)
+  }
+  const [mejor] = [...cuenta.entries()].sort((a, b) => b[1] - a[1])
+  return mejor?.[0] ?? (zonasGestion.value[0]?.valor as string) ?? ''
+}
+
+function preparar() {
+  if (!actual.value || !zonaId.value) return
+  if (!modos.value.opciones.includes(modo.value)) modo.value = modos.value.opciones[0]!
+  lineas.value = recepcionService.preparar(actual.value.requerimiento.id, zonaId.value, modo.value)
+}
+
+function abrirRecibir(item: ItemPorRecibir) {
   actual.value = item
-  zonaId.value = (zonasGestion.value[0]?.valor as string) ?? ''
-  lineas.value = recepcionService.preparar(item.requerimiento.id, zonaId.value)
+  zonaId.value = zonaSugerida(item)
+  modo.value = modosDeOc(item.requerimiento.id, zonaId.value).opciones[0]!
+  preparar()
   recibirAbierto.value = true
 }
 
-watch(zonaId, (id) => {
-  if (actual.value && id)
-    lineas.value = recepcionService.preparar(actual.value.requerimiento.id, id)
-})
+watch([zonaId, modo], preparar)
 
 const pendienteDe = (lineaId?: string) =>
   actual.value?.lineas.find((l) => l.lineaId === lineaId)?.pendiente ?? 0
+
+/** Lo que falta en una línea contada a detalle, en unidades de compra. */
+const faltante = (l: LineaRecepcion) =>
+  Math.round((pendienteDe(l.lineaRequerimientoId) - (l.cantidadCompra ?? 0)) * 1000) / 1000
+
+/** Datos pendientes de una línea: lote, vencimiento, ubicación, series y reparto. */
+function avisosLinea(l: LineaRecepcion): string[] {
+  if (!(l.cantidadCompra ?? 0)) return []
+  const c = controles(l)
+  const avisos: string[] = []
+  const partes = l.partes.filter((p) => p.cantidad > 0)
+  if (c.lote && partes.some((p) => !p.loteCodigo?.trim())) avisos.push('Falta el lote')
+  if (c.vencimiento && partes.some((p) => !p.vencimiento)) avisos.push('Falta el vencimiento')
+  if (c.ubicacion && partes.some((p) => !p.ubicacionId)) avisos.push('Falta la ubicación')
+  if (c.serie) {
+    const faltan = partes.reduce((t, p) => t + (p.series ?? []).filter((s) => !s.trim()).length, 0)
+    if (faltan) avisos.push(`Faltan ${faltan} ${faltan === 1 ? 'serie' : 'series'}`)
+  }
+  if (Math.abs(sumaPartes(l) - totalLinea(l)) > 0.0005) avisos.push('Las partes no cuadran')
+  return avisos
+}
+
+const resumen = computed(() => {
+  const recibidas = lineas.value.filter((l) => (l.cantidadCompra ?? 0) > 0)
+  return {
+    costo: recibidas.reduce((t, l) => t + l.costoUnitario * totalLinea(l), 0),
+    conFaltante: lineas.value.filter((l) => faltante(l) > 0.0005).length,
+    conAvisos: lineas.value.filter((l) => avisosLinea(l).length > 0).length,
+    nada: recibidas.length === 0,
+  }
+})
+
+function imprimirHoja(item: ItemPorRecibir, zona: string, modoHoja: ModoRecepcion) {
+  const ok = imprimirHojaRecepcion({
+    ordenCompra: item.requerimiento.ordenCompra ?? item.requerimiento.numero,
+    requerimiento: item.requerimiento.numero,
+    proveedores: proveedoresDe(item.requerimiento),
+    local: localStore.local?.nombre ?? '',
+    zona: nombreZona(zona),
+    modo: modoHoja,
+    lineas: item.lineas.map((l) => {
+      const p = parametros(l.insumoId, zona)
+      const i = insumo(l.insumoId)
+      return {
+        articulo: articulo(l.articuloId)?.nombre ?? '',
+        codigo: articulo(l.articuloId)?.codigo,
+        insumo: i?.nombre ?? '',
+        unidadCompra: articulo(l.articuloId)?.unidadCompra ?? '',
+        pendiente: l.pendiente,
+        factor: l.factor,
+        unidadInsumo: i ? etiquetaUnidad[i.unidad] : '',
+        lote: p.controlaLote,
+        vencimiento: p.controlaLote && p.controlaVencimiento,
+        ubicacion: p.controlaUbicacion,
+        serie: p.controlaSerie,
+      }
+    }),
+  })
+  if (!ok) ui.error('El navegador bloqueó la ventana de impresión: permite ventanas emergentes.')
+}
+
+function imprimirDesdeLista(item: ItemPorRecibir) {
+  const zona = zonaSugerida(item)
+  imprimirHoja(item, zona, modosDeOc(item.requerimiento.id, zona).opciones[0]!)
+}
+
+const proveedoresDe = (r: RequerimientoCompra) =>
+  [...new Set(r.lineas.map((l) => nombreProveedor(l.proveedorId)))].join(', ')
+
+/** Resumen de controles de una OC en la lista, para saber qué preparar antes de abrirla. */
+function controlesOc(item: ItemPorRecibir) {
+  const zona = zonaSugerida(item)
+  const ps = item.lineas.map((l) => parametros(l.insumoId, zona))
+  return {
+    zona,
+    modos: modosDeOc(item.requerimiento.id, zona).opciones,
+    lote: ps.some((p) => p.controlaLote),
+    vencimiento: ps.some((p) => p.controlaLote && p.controlaVencimiento),
+    ubicacion: ps.some((p) => p.controlaUbicacion),
+    serie: ps.some((p) => p.controlaSerie),
+    parcial: item.requerimiento.lineas.some((l) => (l.cantidadRecibida ?? 0) > 0),
+  }
+}
+
+// ── Rechazar una entrega total ──
+
+const rechazoAbierto = ref(false)
+const motivoRechazo = ref('')
+
+async function rechazarEntrega() {
+  if (!actual.value) return
+  guardando.value = true
+  try {
+    const r = await recepcionService.rechazar(
+      {
+        localId: localStore.localId!,
+        requerimientoId: actual.value.requerimiento.id,
+        zonaId: zonaId.value,
+        motivo: motivoRechazo.value,
+      },
+      auth.usuario!.id,
+    )
+    ui.exito(`${r.numero}: entrega rechazada. No entró nada y la OC sigue pendiente.`)
+    rechazoAbierto.value = false
+    recibirAbierto.value = false
+    await cargar()
+  } catch (e) {
+    ui.error((e as ApiError).mensaje ?? 'No se pudo rechazar la entrega.')
+  } finally {
+    guardando.value = false
+  }
+}
 
 async function registrarRecepcion() {
   if (!actual.value) return
@@ -217,6 +411,7 @@ async function registrarRecepcion() {
         localId: localStore.localId!,
         requerimientoId: actual.value.requerimiento.id,
         zonaId: zonaId.value,
+        modo: modo.value,
         lineas: lineas.value,
       },
       auth.usuario!.id,
@@ -371,40 +566,112 @@ async function registrarSinOc() {
             class="flex flex-col gap-3 rounded-card border border-linea bg-panel p-4"
           >
             <div class="flex flex-wrap items-start justify-between gap-2">
-              <div>
+              <div class="min-w-0">
                 <p class="font-semibold text-tinta tabular-nums">
                   {{ item.requerimiento.ordenCompra }}
                   <span class="font-normal text-tenue">· {{ item.requerimiento.numero }}</span>
                 </p>
-                <p class="text-xs text-tenue">
-                  {{
-                    [
-                      ...new Set(
-                        item.requerimiento.lineas.map((l) => nombreProveedor(l.proveedorId)),
-                      ),
-                    ].join(', ')
-                  }}
-                </p>
+                <p class="truncate text-xs text-tenue">{{ proveedoresDe(item.requerimiento) }}</p>
               </div>
-              <KmBadge
-                :tono="item.requerimiento.estado === 'despachado' ? 'verde' : 'pizarra'"
-                punto
-              >
-                {{ etiquetaEstadoRequerimiento[item.requerimiento.estado] }}
-              </KmBadge>
+              <div class="flex flex-wrap gap-1">
+                <KmBadge v-if="controlesOc(item).parcial" tono="laton">Saldo de parcial</KmBadge>
+                <KmBadge
+                  :tono="item.requerimiento.estado === 'despachado' ? 'verde' : 'pizarra'"
+                  punto
+                >
+                  {{ etiquetaEstadoRequerimiento[item.requerimiento.estado] }}
+                </KmBadge>
+              </div>
             </div>
-            <ul class="flex flex-col gap-1 text-sm">
-              <li v-for="l in item.lineas" :key="l.lineaId" class="flex justify-between gap-3">
-                <span class="truncate text-tinta">
-                  {{ articulo(l.articuloId)?.nombre }}
-                  <KmBadge v-if="l.procesar" tono="laton">Por procesar</KmBadge>
+
+            <ul class="flex flex-col divide-y divide-linea rounded-card border border-linea">
+              <li
+                v-for="l in item.lineas"
+                :key="l.lineaId"
+                class="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+              >
+                <span class="flex min-w-0 items-center gap-2 text-tinta">
+                  <KmIcono nombre="caja" class="text-laton-texto" />
+                  <span class="truncate">{{ articulo(l.articuloId)?.nombre }}</span>
+                  <KmIcono
+                    v-if="l.procesar"
+                    nombre="procesar"
+                    class="text-vino"
+                    title="Queda por procesar"
+                  />
                 </span>
-                <span class="shrink-0 text-tenue tabular-nums">
-                  {{ l.pendiente }} {{ articulo(l.articuloId)?.unidadCompra }}
+                <span class="flex shrink-0 items-center gap-1.5 text-tenue tabular-nums">
+                  <strong class="text-tinta">{{ l.pendiente }}</strong>
+                  {{ articulo(l.articuloId)?.unidadCompra }}
+                  <KmIcono nombre="flecha" tamano="xs" />
+                  <span>
+                    {{
+                      insumo(l.insumoId)
+                        ? formatearCantidad(l.pendiente * l.factor, insumo(l.insumoId)!.unidad)
+                        : ''
+                    }}
+                  </span>
                 </span>
               </li>
             </ul>
-            <div class="flex justify-end">
+
+            <div class="flex flex-wrap items-center gap-1.5 text-xs">
+              <span
+                class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium"
+                :class="
+                  controlesOc(item).modos.length > 1
+                    ? 'rs-tono-pizarra'
+                    : controlesOc(item).modos[0] === 'total'
+                      ? 'rs-tono-verde'
+                      : 'rs-tono-laton'
+                "
+              >
+                <KmIcono
+                  :nombre="
+                    controlesOc(item).modos.length > 1
+                      ? 'dividir'
+                      : controlesOc(item).modos[0] === 'total'
+                        ? 'ojoCerrado'
+                        : 'conteo'
+                  "
+                  tamano="xs"
+                />
+                {{
+                  controlesOc(item).modos.length > 1
+                    ? 'Total o a detalle'
+                    : controlesOc(item).modos[0] === 'total'
+                      ? 'Total · a ciegas'
+                      : 'A detalle · se cuenta'
+                }}
+              </span>
+              <span v-if="controlesOc(item).lote" class="inline-flex items-center gap-1 text-tenue">
+                <KmIcono nombre="lote" tamano="xs" /> Lote
+              </span>
+              <span
+                v-if="controlesOc(item).vencimiento"
+                class="inline-flex items-center gap-1 text-tenue"
+              >
+                <KmIcono nombre="calendario" tamano="xs" /> Vence
+              </span>
+              <span
+                v-if="controlesOc(item).ubicacion"
+                class="inline-flex items-center gap-1 text-tenue"
+              >
+                <KmIcono nombre="ubicacion" tamano="xs" /> Ubicación
+              </span>
+              <span
+                v-if="controlesOc(item).serie"
+                class="inline-flex items-center gap-1 text-tenue"
+              >
+                <KmIcono nombre="serie" tamano="xs" /> Serie
+              </span>
+              <span class="ml-auto text-tenue">en {{ nombreZona(controlesOc(item).zona) }}</span>
+            </div>
+
+            <div class="flex justify-end gap-2">
+              <KmButton tamano="sm" variante="secundario" @click="imprimirDesdeLista(item)">
+                <KmIcono nombre="impresora" /> Imprimir hoja
+              </KmButton>
               <KmButton tamano="sm" :disabled="!zonasGestion.length" @click="abrirRecibir(item)">
                 Recibir
               </KmButton>
@@ -447,6 +714,9 @@ async function registrarSinOc() {
               </p>
               <p class="text-xs text-tenue">{{ fila.motivo }}</p>
             </template>
+            <template v-if="fila.estado === 'rechazada'">
+              <p class="text-xs text-vino">No entró nada: {{ fila.motivoRechazo }}</p>
+            </template>
             <p class="text-xs text-tenue">
               {{ fila.lineas.map((l) => insumo(l.insumoId)?.nombre).join(', ') }}
             </p>
@@ -481,206 +751,358 @@ async function registrarSinOc() {
     <KmDrawer
       v-model="recibirAbierto"
       :titulo="actual ? `Recibir ${actual.requerimiento.ordenCompra}` : 'Recibir'"
-      subtitulo="Ajusta lo que llegó realmente. Se puede recibir parcial y completar después."
+      :subtitulo="actual ? proveedoresDe(actual.requerimiento) : ''"
       ancho="xl"
     >
       <div v-if="actual" class="flex flex-col gap-5">
-        <div class="w-full sm:w-72">
-          <KmField v-slot="{ id }" label="Zona donde entra" requerido>
-            <KmSelect :id="id" v-model="zonaId" :opciones="zonasGestion" />
-          </KmField>
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div class="w-full sm:w-72">
+            <KmField v-slot="{ id }" label="Zona donde entra" requerido>
+              <KmSelect :id="id" v-model="zonaId" :opciones="zonasGestion" />
+            </KmField>
+          </div>
+          <KmButton variante="secundario" @click="imprimirHoja(actual, zonaId, modo)">
+            <KmIcono nombre="impresora" /> Imprimir hoja de recepción
+          </KmButton>
         </div>
+
+        <!-- Modo de la recepción: vale para toda la OC -->
+        <div role="radiogroup" aria-label="Tipo de recepción" class="grid gap-3 sm:grid-cols-2">
+          <button
+            v-for="m in ['total', 'detalle'] as const"
+            :key="m"
+            type="button"
+            role="radio"
+            :aria-checked="modo === m"
+            :disabled="!modos.opciones.includes(m)"
+            class="flex items-start gap-3 rounded-card border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+            :class="
+              modo === m
+                ? 'border-verde bg-verde/10 ring-1 ring-verde'
+                : 'border-linea hover:border-verde/60'
+            "
+            @click="modo = m"
+          >
+            <span
+              class="grid size-10 shrink-0 place-items-center rounded-control"
+              :class="modo === m ? 'bg-verde text-white' : 'bg-panel-2 text-tenue'"
+            >
+              <KmIcono :nombre="m === 'total' ? 'ojoCerrado' : 'conteo'" tamano="md" />
+            </span>
+            <span class="min-w-0">
+              <span class="block font-semibold text-tinta">
+                {{ m === 'total' ? 'Total · a ciegas' : 'A detalle · se cuenta' }}
+              </span>
+              <span class="block text-xs text-tenue">
+                {{
+                  m === 'total'
+                    ? 'Se recibe todo lo pendiente tal cual, sin editar. Si algo no está conforme, se rechaza la entrega completa.'
+                    : 'Se cuenta cada línea y se registra lo que llegó. Lo que falte queda pendiente en la OC.'
+                }}
+              </span>
+            </span>
+          </button>
+        </div>
+        <p
+          v-if="modos.opciones.length === 1 && modos.exigidoPor"
+          class="-mt-2 flex items-center gap-1.5 text-xs text-tenue"
+        >
+          <KmIcono nombre="candado" tamano="xs" />
+          Esta OC se recibe {{ modos.opciones[0] === 'total' ? 'total' : 'a detalle' }} en
+          {{ nombreZona(zonaId) }}: lo exigen los parámetros de {{ modos.exigidoPor }}.
+        </p>
 
         <article
           v-for="l in lineas"
           :key="l.id"
-          class="flex flex-col gap-3 rounded-card border border-linea p-4"
+          class="flex flex-col gap-4 rounded-card border p-4"
+          :class="avisosLinea(l).length ? 'border-laton/60' : 'border-linea'"
         >
+          <!-- Cabecera de la línea -->
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="font-semibold text-tinta">{{ articulo(l.articuloId)?.nombre }}</p>
-              <p class="text-xs text-tenue">
-                Entra como {{ insumo(l.insumoId)?.nombre }} · 1
-                {{ articulo(l.articuloId)?.unidadCompra }} = {{ l.factor }}
+              <p class="text-xs text-tenue tabular-nums">
+                {{ articulo(l.articuloId)?.codigo }} · costo neto
+                {{ formatearSoles(l.costoUnitario) }} por
                 {{ insumo(l.insumoId) ? etiquetaUnidad[insumo(l.insumoId)!.unidad] : '' }}
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-1">
-              <KmBadge v-if="parametros(l.insumoId, zonaId).controlaLote" tono="laton"
-                >Lote</KmBadge
-              >
-              <KmBadge
-                v-if="
-                  parametros(l.insumoId, zonaId).controlaLote &&
-                  parametros(l.insumoId, zonaId).controlaVencimiento
-                "
-                tono="laton"
-              >
-                Vencimiento
-              </KmBadge>
-              <KmBadge v-if="parametros(l.insumoId, zonaId).controlaUbicacion" tono="pizarra">
-                Ubicación
-              </KmBadge>
-              <KmBadge v-if="l.porProcesar" tono="vino" punto>Quedará por procesar</KmBadge>
-            </div>
-          </div>
-
-          <div class="grid gap-3 sm:grid-cols-[12rem_1fr_1fr_auto] sm:items-end">
-            <KmField
-              v-slot="{ id }"
-              :label="`Recibe (pendiente ${pendienteDe(l.lineaRequerimientoId)})`"
-            >
-              <KmNumero
-                :id="id"
-                v-model="l.cantidadCompra"
-                :min="0"
-                :max="pendienteDe(l.lineaRequerimientoId)"
-                :decimales="3"
-                :sufijo="articulo(l.articuloId)?.unidadCompra"
-                @update:model-value="sincronizarTotal(l)"
-              />
-            </KmField>
-            <div class="text-sm">
-              <p class="text-xs text-tenue">Entra al stock</p>
-              <p class="font-semibold text-tinta tabular-nums">
-                {{
-                  insumo(l.insumoId)
-                    ? formatearCantidad(totalLinea(l), insumo(l.insumoId)!.unidad)
-                    : '—'
-                }}
-              </p>
-            </div>
-            <div class="text-sm">
-              <p class="text-xs text-tenue">Costo neto por unidad</p>
-              <p class="text-tinta tabular-nums">
-                {{ formatearSoles(l.costoUnitario) }}
                 <span
                   v-if="variacion(l) !== null && Math.abs(variacion(l)!) >= 0.5"
-                  class="ml-1 text-xs"
                   :class="variacion(l)! > 0 ? 'text-vino' : 'text-verde'"
                 >
-                  {{ variacion(l)! > 0 ? '+' : '' }}{{ variacion(l)!.toFixed(1) }} % vs anterior
+                  ({{ variacion(l)! > 0 ? '+' : '' }}{{ variacion(l)!.toFixed(1) }} % vs anterior)
                 </span>
               </p>
             </div>
-            <div
-              v-if="parametros(l.insumoId, zonaId).tipoRecepcion === 'ambos'"
-              class="inline-flex h-10 rounded-control border border-linea p-0.5"
-              role="radiogroup"
-              aria-label="Tipo de recepción"
-            >
-              <button
-                v-for="m in ['total', 'detalle'] as const"
-                :key="m"
-                type="button"
-                role="radio"
-                :aria-checked="l.modo === m"
-                class="rounded-[6px] px-3 text-sm font-medium"
-                :class="l.modo === m ? 'bg-accion text-white' : 'text-tenue hover:text-tinta'"
-                @click="
-                  () => {
-                    l.modo = m
-                    if (m === 'total') {
-                      l.partes = [l.partes[0]!]
-                      sincronizarTotal(l)
-                    }
-                  }
-                "
-              >
-                {{ m === 'total' ? 'Total' : 'A detalle' }}
-              </button>
+            <div class="flex flex-wrap gap-1">
+              <KmBadge v-if="controles(l).lote" tono="laton">
+                <KmIcono nombre="lote" tamano="xs" /> Lote
+              </KmBadge>
+              <KmBadge v-if="controles(l).vencimiento" tono="laton">
+                <KmIcono nombre="calendario" tamano="xs" /> Vence
+              </KmBadge>
+              <KmBadge v-if="controles(l).ubicacion" tono="pizarra">
+                <KmIcono nombre="ubicacion" tamano="xs" /> Ubicación
+              </KmBadge>
+              <KmBadge v-if="controles(l).serie" tono="pizarra">
+                <KmIcono nombre="serie" tamano="xs" /> Serie
+              </KmBadge>
+              <KmBadge v-if="l.porProcesar" tono="vino">
+                <KmIcono nombre="procesar" tamano="xs" /> Quedará por procesar
+              </KmBadge>
             </div>
-            <KmBadge v-else tono="neutro">{{ l.modo === 'total' ? 'Total' : 'A detalle' }}</KmBadge>
           </div>
 
-          <!-- Partes: lote, vencimiento y ubicación -->
+          <!-- Cantidad: fija en total, contada a detalle -->
+          <div class="grid gap-3 lg:grid-cols-[minmax(15rem,auto)_1fr] lg:items-center">
+            <div v-if="modo === 'total'" class="flex items-center gap-3">
+              <span class="grid size-10 place-items-center rounded-control bg-panel-2 text-tenue">
+                <KmIcono nombre="candado" tamano="md" />
+              </span>
+              <div>
+                <p class="text-xs text-tenue">Se recibe tal cual</p>
+                <p class="text-lg font-semibold whitespace-nowrap text-tinta tabular-nums">
+                  {{ l.cantidadCompra }} {{ articulo(l.articuloId)?.unidadCompra }}
+                </p>
+              </div>
+            </div>
+            <div v-else class="flex flex-col gap-1.5">
+              <p class="text-xs text-tenue">
+                Llegó · pedido
+                <strong class="text-tinta tabular-nums">
+                  {{ pendienteDe(l.lineaRequerimientoId) }}
+                  {{ articulo(l.articuloId)?.unidadCompra }}
+                </strong>
+              </p>
+              <div class="flex items-center gap-2">
+                <div class="w-40">
+                  <KmNumero
+                    v-model="l.cantidadCompra"
+                    :min="0"
+                    :max="pendienteDe(l.lineaRequerimientoId)"
+                    :decimales="Number.isInteger(pendienteDe(l.lineaRequerimientoId)) ? 0 : 2"
+                    :aria-label="`Cantidad que llegó de ${articulo(l.articuloId)?.nombre}`"
+                    @update:model-value="sincronizar(l)"
+                  />
+                </div>
+                <span class="text-sm whitespace-nowrap text-tenue">
+                  {{ articulo(l.articuloId)?.unidadCompra }}
+                </span>
+              </div>
+              <p
+                class="inline-flex items-center gap-1 text-xs font-medium"
+                :class="
+                  faltante(l) > 0.0005
+                    ? (l.cantidadCompra ?? 0) > 0
+                      ? 'text-laton-texto'
+                      : 'text-vino'
+                    : 'text-verde'
+                "
+              >
+                <KmIcono :nombre="faltante(l) > 0.0005 ? 'alerta' : 'check'" tamano="xs" />
+                <template v-if="faltante(l) <= 0.0005">Completo</template>
+                <template v-else-if="!(l.cantidadCompra ?? 0)"
+                  >No llegó: todo queda pendiente</template
+                >
+                <template v-else>
+                  Faltan {{ faltante(l) }} {{ articulo(l.articuloId)?.unidadCompra }}: quedan
+                  pendientes
+                </template>
+              </p>
+            </div>
+            <ConversionCompra
+              :cantidad="l.cantidadCompra ?? 0"
+              :unidad-compra="articulo(l.articuloId)?.unidadCompra ?? ''"
+              :factor="l.factor"
+              :unidad-insumo="insumo(l.insumoId) ? etiquetaUnidad[insumo(l.insumoId)!.unidad] : ''"
+              :insumo="insumo(l.insumoId)?.nombre ?? ''"
+              :apagado="!(l.cantidadCompra ?? 0)"
+            />
+          </div>
+
+          <!-- Datos que pide el insumo: lote, vencimiento, ubicación y series -->
           <div
-            v-if="
-              l.modo === 'detalle' ||
-              parametros(l.insumoId, zonaId).controlaLote ||
-              parametros(l.insumoId, zonaId).controlaUbicacion
-            "
-            class="flex flex-col gap-2 rounded-card bg-panel-2 p-3"
+            v-if="controles(l).alguno && (l.cantidadCompra ?? 0) > 0"
+            class="flex flex-col gap-3 rounded-card bg-panel-2 p-3"
           >
             <div
               v-for="(p, i) in l.partes"
               :key="i"
-              class="grid items-end gap-2 sm:grid-cols-[9rem_1fr_11rem_1fr_2.25rem]"
+              class="flex flex-col gap-3"
+              :class="i > 0 ? 'border-t border-linea pt-3' : ''"
             >
-              <KmNumero
-                v-model="p.cantidad"
-                :min="0"
-                :decimales="3"
-                :disabled="l.modo === 'total'"
-                :sufijo="insumo(l.insumoId) ? etiquetaUnidad[insumo(l.insumoId)!.unidad] : ''"
-                aria-label="Cantidad de la parte"
-              />
-              <KmInput
-                v-if="parametros(l.insumoId, zonaId).controlaLote"
-                v-model="p.loteCodigo"
-                placeholder="Código de lote"
-              />
-              <span v-else class="text-xs text-tenue">Sin lote</span>
-              <KmInput
-                v-if="
-                  parametros(l.insumoId, zonaId).controlaLote &&
-                  parametros(l.insumoId, zonaId).controlaVencimiento
-                "
-                v-model="p.vencimiento"
-                type="date"
-              />
-              <span v-else />
-              <KmSelect
-                v-if="parametros(l.insumoId, zonaId).controlaUbicacion"
-                :model-value="p.ubicacionId ?? ''"
-                :opciones="opcionesUbicacion(zonaId)"
-                etiqueta="Ubicación"
-                @update:model-value="p.ubicacionId = ($event as string) || undefined"
-              />
-              <span v-else />
-              <KmBotonIcono
-                v-if="l.modo === 'detalle' && l.partes.length > 1"
-                icono="eliminar"
-                tono="peligro"
-                etiqueta="Quitar parte"
-                @click="l.partes.splice(i, 1)"
-              />
+              <div class="flex flex-wrap items-end gap-3">
+                <div v-if="l.partes.length > 1" class="w-36">
+                  <KmField v-slot="{ id }" :label="`Parte ${i + 1}`">
+                    <KmNumero
+                      :id="id"
+                      v-model="p.cantidad"
+                      :min="0"
+                      :decimales="controles(l).serie ? 0 : 3"
+                      :controles="false"
+                      :sufijo="insumo(l.insumoId) ? etiquetaUnidad[insumo(l.insumoId)!.unidad] : ''"
+                      @update:model-value="ajustarSeries(l)"
+                    />
+                  </KmField>
+                </div>
+                <div v-if="controles(l).lote" class="min-w-44 flex-1">
+                  <KmField v-slot="{ id }" label="Lote" requerido>
+                    <KmInput :id="id" v-model="p.loteCodigo" placeholder="Código del lote" />
+                  </KmField>
+                </div>
+                <div v-if="controles(l).vencimiento" class="w-44">
+                  <KmField v-slot="{ id }" label="Vence" requerido>
+                    <KmFecha :id="id" v-model="p.vencimiento" />
+                  </KmField>
+                </div>
+                <div v-if="controles(l).ubicacion" class="min-w-52 flex-1">
+                  <KmField v-slot="{ id }" label="Ubicación" requerido>
+                    <KmSelect
+                      :id="id"
+                      :model-value="p.ubicacionId ?? ''"
+                      :opciones="opcionesUbicacion(zonaId)"
+                      @update:model-value="p.ubicacionId = ($event as string) || undefined"
+                    />
+                  </KmField>
+                </div>
+                <KmBotonIcono
+                  v-if="l.partes.length > 1"
+                  icono="eliminar"
+                  tono="peligro"
+                  etiqueta="Quitar parte"
+                  @click="quitarParte(l, i)"
+                />
+              </div>
+
+              <div v-if="controles(l).serie && p.series?.length" class="flex flex-col gap-2">
+                <p class="flex items-center gap-1.5 text-xs text-tenue">
+                  <KmIcono nombre="serie" tamano="xs" />
+                  Una serie por unidad ·
+                  <strong class="text-tinta tabular-nums">
+                    {{ p.series.filter((s) => s.trim()).length }} de {{ p.series.length }}
+                  </strong>
+                  · Enter pasa a la siguiente
+                </p>
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  <label
+                    v-for="(_, n) in p.series"
+                    :key="n"
+                    class="flex items-center gap-2 rounded-control border bg-panel px-2"
+                    :class="p.series[n]?.trim() ? 'border-verde/60' : 'border-linea'"
+                  >
+                    <span class="w-5 text-right text-xs text-tenue tabular-nums">{{ n + 1 }}</span>
+                    <input
+                      v-model="p.series[n]"
+                      data-serie
+                      class="h-9 min-w-0 flex-1 bg-transparent text-sm text-tinta outline-none"
+                      :aria-label="`Serie ${n + 1}`"
+                      placeholder="Serie"
+                      @keydown.enter.prevent="siguienteSerie"
+                    />
+                    <KmIcono
+                      v-if="p.series[n]?.trim()"
+                      nombre="check"
+                      tamano="xs"
+                      class="text-verde"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
+
             <div
-              v-if="l.modo === 'detalle'"
-              class="flex items-center justify-between gap-3 text-xs"
+              v-if="divisible(l)"
+              class="flex flex-wrap items-center justify-between gap-3 border-t border-linea pt-3 text-xs"
             >
-              <KmButton
-                tamano="sm"
-                variante="fantasma"
-                @click="
-                  l.partes.push({
-                    cantidad: 0,
-                    ubicacionId: opcionesUbicacion(zonaId)[0]?.valor as string | undefined,
-                  })
-                "
-              >
-                Añadir parte
+              <KmButton tamano="sm" variante="fantasma" @click="agregarParte(l)">
+                <KmIcono nombre="dividir" />
+                Repartir en otro {{ controles(l).lote ? 'lote' : 'ubicación' }}
               </KmButton>
               <span
-                class="tabular-nums"
+                v-if="l.partes.length > 1"
+                class="inline-flex items-center gap-1 tabular-nums"
                 :class="
-                  Math.abs(sumaPartes(l) - totalLinea(l)) > 0.0005 ? 'text-vino' : 'text-tenue'
+                  Math.abs(sumaPartes(l) - totalLinea(l)) > 0.0005 ? 'text-vino' : 'text-verde'
                 "
               >
+                <KmIcono
+                  :nombre="Math.abs(sumaPartes(l) - totalLinea(l)) > 0.0005 ? 'alerta' : 'check'"
+                  tamano="xs"
+                />
                 Partes: {{ sumaPartes(l) }} de {{ totalLinea(l) }}
+                {{ insumo(l.insumoId) ? etiquetaUnidad[insumo(l.insumoId)!.unidad] : '' }}
               </span>
             </div>
           </div>
+
+          <p
+            v-if="avisosLinea(l).length"
+            class="flex items-center gap-1.5 text-xs text-laton-texto"
+          >
+            <KmIcono nombre="alerta" tamano="xs" />
+            {{ avisosLinea(l).join(' · ') }}
+          </p>
         </article>
       </div>
       <template #footer>
+        <p class="mr-auto text-sm text-tenue">
+          Entra por
+          <strong class="text-tinta tabular-nums">{{ formatearSoles(resumen.costo) }}</strong>
+          <template v-if="modo === 'detalle' && resumen.conFaltante">
+            · {{ resumen.conFaltante }}
+            {{ resumen.conFaltante === 1 ? 'línea queda' : 'líneas quedan' }} con saldo
+          </template>
+        </p>
         <KmButton variante="secundario" @click="recibirAbierto = false">Cancelar</KmButton>
-        <KmButton :cargando="guardando" :disabled="!zonaId" @click="registrarRecepcion">
-          Registrar recepción
+        <KmButton
+          v-if="modo === 'total'"
+          variante="peligro"
+          @click="
+            () => {
+              motivoRechazo = ''
+              rechazoAbierto = true
+            }
+          "
+        >
+          <KmIcono nombre="rechazo" /> Rechazar entrega
+        </KmButton>
+        <KmButton
+          :cargando="guardando"
+          :disabled="!zonaId || resumen.nada"
+          @click="registrarRecepcion"
+        >
+          <KmIcono nombre="check" />
+          {{ modo === 'total' ? 'Recibir todo' : 'Registrar lo contado' }}
         </KmButton>
       </template>
     </KmDrawer>
+
+    <KmModal v-model="rechazoAbierto" titulo="Rechazar la entrega" ancho="sm">
+      <div class="flex flex-col gap-3">
+        <p class="text-sm text-tenue">
+          En una recepción total es todo o nada: no entra ninguna línea y la OC sigue pendiente para
+          una nueva entrega.
+        </p>
+        <KmField v-slot="{ id }" label="Motivo" requerido>
+          <KmInput
+            :id="id"
+            v-model="motivoRechazo"
+            placeholder="Por ejemplo: un balón llegó con la válvula dañada"
+          />
+        </KmField>
+        <div class="flex justify-end gap-2">
+          <KmButton variante="secundario" @click="rechazoAbierto = false">Volver</KmButton>
+          <KmButton
+            variante="peligro"
+            :cargando="guardando"
+            :disabled="!motivoRechazo.trim()"
+            @click="rechazarEntrega"
+          >
+            Rechazar entrega
+          </KmButton>
+        </div>
+      </div>
+    </KmModal>
 
     <!-- Ingreso sin OC -->
     <KmDrawer

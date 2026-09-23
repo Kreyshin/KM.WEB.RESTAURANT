@@ -2,6 +2,7 @@
   ComprobanteIngreso,
   LineaRecepcion,
   Lote,
+  ModoRecepcion,
   PorProcesar,
   Recepcion,
   RequerimientoCompra,
@@ -23,10 +24,12 @@ import { tienePermiso, valorConfig } from './parametros.service'
 /**
  * Recepción (F4.5, D-004 y D-007).
  *
- * - **Contra OC:** se recibe lo que el ERP convirtió en orden de compra, total
- *   o a detalle y admitiendo parciales. Cada unidad de compra se convierte al
- *   insumo con el factor del artículo; lote, vencimiento y ubicación se piden
- *   solo si el insumo los controla en esa zona.
+ * - **Contra OC:** se recibe lo que el ERP convirtió en orden de compra.
+ *   **Total** es a ciegas: todo lo pendiente tal cual o se rechaza la entrega.
+ *   **A detalle** se cuenta y admite recibir menos (el saldo sigue pendiente).
+ *   Cada unidad de compra se convierte al insumo con el factor del artículo;
+ *   lote, vencimiento, ubicación y serie se piden solo si el insumo los
+ *   controla en esa zona, en cualquiera de los dos modos.
  * - **Sin OC:** compras de emergencia o de mercado, si el local lo permite.
  *   El stock entra de inmediato y el ingreso queda pendiente de regularizar.
  *
@@ -133,13 +136,47 @@ function pendientesDe(r: RequerimientoCompra): LineaPorRecibir[] {
     .filter((l) => l.pendiente > 0)
 }
 
+/** Series ya recibidas de un insumo: una serie no puede entrar dos veces. */
+function seriesRecibidas(insumoId: string) {
+  return new Set(
+    db.recepciones
+      .filter((r) => r.estado !== 'rechazada')
+      .flatMap((r) => r.lineas.filter((l) => l.insumoId === insumoId))
+      .flatMap((l) => l.partes.flatMap((p) => p.series ?? []))
+      .map((s) => s.trim().toUpperCase()),
+  )
+}
+
 function validarPartes(linea: LineaRecepcion, zonaId: string, total: number, i: number) {
   const insumo = db.insumos.find((x) => x.id === linea.insumoId)
   if (!insumo) throw errorCampo(`lineas.${i}`, 'Insumo no encontrado.')
   const p = valoresParametros({ insumoId: linea.insumoId, zonaId })
   const partes = linea.partes.filter((pt) => pt.cantidad > 0)
-  if (linea.modo === 'total' && partes.length > 1) {
-    throw errorCampo(`lineas.${i}`, `${insumo.nombre} se recibe total: una sola parte.`)
+  if (p.controlaSerie) {
+    if (!Number.isInteger(total)) {
+      throw errorCampo(
+        `lineas.${i}`,
+        `${insumo.nombre} controla serie: se recibe por unidades enteras.`,
+      )
+    }
+    const previas = seriesRecibidas(insumo.id)
+    const vistas = new Set<string>()
+    for (const pt of partes) {
+      const series = (pt.series ?? []).map((s) => s.trim()).filter(Boolean)
+      if (series.length !== pt.cantidad) {
+        throw errorCampo(
+          `lineas.${i}`,
+          `${insumo.nombre} controla serie: faltan ${pt.cantidad - series.length} de ${pt.cantidad} series.`,
+        )
+      }
+      for (const s of series) {
+        const clave = s.toUpperCase()
+        if (vistas.has(clave)) throw errorCampo(`lineas.${i}`, `La serie ${s} está repetida.`)
+        if (previas.has(clave))
+          throw errorCampo(`lineas.${i}`, `La serie ${s} ya se recibió antes.`)
+        vistas.add(clave)
+      }
+    }
   }
   const suma = r3(partes.reduce((t, pt) => t + pt.cantidad, 0))
   if (Math.abs(suma - total) > 0.0005) {
@@ -225,7 +262,36 @@ export interface DatosRecepcionOc {
   localId: string
   requerimientoId: string
   zonaId: string
+  modo: ModoRecepcion
   lineas: LineaRecepcion[]
+}
+
+export interface DatosRechazo {
+  localId: string
+  requerimientoId: string
+  zonaId: string
+  motivo: string
+}
+
+/**
+ * Modos con que se puede recibir una OC en una zona. El modo es de toda la
+ * recepción: si un insumo exige detalle, la OC se cuenta a detalle; si alguno
+ * exige total y ninguno detalle, va total; si todos admiten ambos, se elige.
+ */
+export function modosDeOc(requerimientoId: string, zonaId: string) {
+  const r = db.requerimientos.find((x) => x.id === requerimientoId)
+  const tipos = (r ? pendientesDe(r) : []).map((l) => ({
+    insumoId: l.insumoId,
+    tipo: modoRecepcion(l.insumoId, zonaId),
+  }))
+  const nombre = (id: string) => db.insumos.find((i) => i.id === id)?.nombre ?? ''
+  const detalle = tipos.find((t) => t.tipo === 'detalle')
+  if (detalle) {
+    return { opciones: ['detalle'] as ModoRecepcion[], exigidoPor: nombre(detalle.insumoId) }
+  }
+  const total = tipos.find((t) => t.tipo === 'total')
+  if (total) return { opciones: ['total'] as ModoRecepcion[], exigidoPor: nombre(total.insumoId) }
+  return { opciones: ['total', 'detalle'] as ModoRecepcion[], exigidoPor: undefined }
 }
 
 export interface DatosIngresoSinOc {
@@ -259,23 +325,36 @@ export const recepcionService = {
     )
   },
 
-  /** Propuesta de recepción: todo lo pendiente, con su modo y costo por unidad del insumo. */
-  preparar(requerimientoId: string, zonaId: string): LineaRecepcion[] {
+  /**
+   * Propuesta de recepción: todo lo pendiente con su costo por unidad del
+   * insumo. En total la cantidad queda fija; a detalle es el punto de partida
+   * del conteo.
+   */
+  preparar(requerimientoId: string, zonaId: string, modo?: ModoRecepcion): LineaRecepcion[] {
     const r = db.requerimientos.find((x) => x.id === requerimientoId)
     if (!r) return []
+    const elegido = modo ?? modosDeOc(requerimientoId, zonaId).opciones[0]!
     const porDefecto = ubicacionesService.porDefectoDe(zonaId)?.id
     return pendientesDe(r).map((l) => {
-      const modo = modoRecepcion(l.insumoId, zonaId) === 'detalle' ? 'detalle' : 'total'
+      const serie = valoresParametros({ insumoId: l.insumoId, zonaId }).controlaSerie
+      const cantidad = r3(l.pendiente * l.factor)
       return {
         id: l.lineaId,
         lineaRequerimientoId: l.lineaId,
         insumoId: l.insumoId,
         articuloId: l.articuloId,
         cantidadCompra: l.pendiente,
+        cantidadEsperada: l.pendiente,
         factor: l.factor,
         costoUnitario: r4(l.precioNeto / (l.factor || 1)),
-        modo,
-        partes: [{ cantidad: r3(l.pendiente * l.factor), ubicacionId: porDefecto }],
+        modo: elegido,
+        partes: [
+          {
+            cantidad,
+            ubicacionId: porDefecto,
+            ...(serie ? { series: Array.from({ length: Math.round(cantidad) }, () => '') } : {}),
+          },
+        ],
         porProcesar: l.procesar,
       }
     })
@@ -288,8 +367,28 @@ export const recepcionService = {
     if (r.estado !== 'convertido' && r.estado !== 'despachado') {
       throw { mensaje: 'Solo se recibe un requerimiento convertido en OC o despachado.' }
     }
+    if (!modosDeOc(r.id, datos.zonaId).opciones.includes(datos.modo)) {
+      throw {
+        mensaje: `Esta OC no se puede recibir ${datos.modo === 'total' ? 'total' : 'a detalle'} en esa zona.`,
+      }
+    }
     const pendientes = pendientesDe(r)
-    const lineas = datos.lineas.filter((l) => (l.cantidadCompra ?? 0) > 0)
+    // Total es todo o nada: cada línea pendiente entra completa, tal cual.
+    if (datos.modo === 'total') {
+      const completa = pendientes.every((p) => {
+        const l = datos.lineas.find((x) => x.lineaRequerimientoId === p.lineaId)
+        return l && Math.abs((l.cantidadCompra ?? 0) - p.pendiente) < 0.0005
+      })
+      if (!completa || datos.lineas.length !== pendientes.length) {
+        throw errorCampo(
+          'lineas',
+          'La recepción total es todo o nada: se recibe todo lo pendiente o se rechaza la entrega.',
+        )
+      }
+    }
+    const lineas = datos.lineas
+      .filter((l) => (l.cantidadCompra ?? 0) > 0)
+      .map((l) => ({ ...l, modo: datos.modo }))
     if (lineas.length === 0) throw errorCampo('lineas', 'Indica al menos una cantidad recibida.')
 
     lineas.forEach((l, i) => {
@@ -317,6 +416,7 @@ export const recepcionService = {
         requerimientoId: r.id,
         ordenCompra: r.ordenCompra,
         estado: 'registrada',
+        modo: datos.modo,
         fecha: ahora(),
         usuarioId,
         lineas: clonar(lineas).map((l) => ({ ...l, id: nuevoId('rl') })),
@@ -351,6 +451,53 @@ export const recepcionService = {
       return nueva
     })
     return latencia(clonar(recepcion))
+  },
+
+  /**
+   * Rechaza una entrega que se recibía total: no entra nada y la OC sigue
+   * pendiente. Queda registrada con su motivo para el proveedor y el ERP.
+   */
+  async rechazar(datos: DatosRechazo, usuarioId: string): Promise<Recepcion> {
+    exigirGestion(usuarioId, datos.zonaId, datos.localId)
+    const r = db.requerimientos.find((x) => x.id === datos.requerimientoId)
+    if (!r || r.localId !== datos.localId) throw { mensaje: 'Requerimiento no encontrado.' }
+    if (!datos.motivo.trim()) throw errorCampo('motivo', 'Explica por qué no se recibe la entrega.')
+    const nombre = db.usuarios.find((u) => u.id === usuarioId)?.nombre ?? 'Usuario'
+    const nueva: Recepcion = {
+      id: nuevoId('rc'),
+      numero: siguiente(
+        'REC',
+        db.recepciones.map((x) => x.numero),
+      ),
+      localId: datos.localId,
+      zonaId: datos.zonaId,
+      requerimientoId: r.id,
+      ordenCompra: r.ordenCompra,
+      estado: 'rechazada',
+      modo: 'total',
+      motivoRechazo: datos.motivo.trim(),
+      fecha: ahora(),
+      usuarioId,
+      lineas: recepcionService
+        .preparar(r.id, datos.zonaId, 'total')
+        .map((l) => ({ ...l, id: nuevoId('rl'), cantidadCompra: 0, partes: [] })),
+    }
+    db.recepciones.push(nueva)
+    r.historial.push({
+      estado: r.estado,
+      fecha: ahora(),
+      autor: nombre,
+      nota: `Entrega rechazada (${nueva.numero}): ${nueva.motivoRechazo}`,
+    })
+    registrar({
+      usuarioId,
+      localId: datos.localId,
+      modulo: 'Compras',
+      accion: 'Entrega rechazada',
+      detalle: `${r.ordenCompra ?? r.numero} · ${nueva.motivoRechazo}`,
+    })
+    persistir()
+    return latencia(clonar(nueva))
   },
 
   async ingresoSinOc(datos: DatosIngresoSinOc, usuarioId: string): Promise<Recepcion> {
@@ -438,6 +585,7 @@ export const recepcionService = {
   /** Costo neto por unidad del insumo en cada recepción, de la más reciente a la más antigua. */
   historialPrecios(insumoId: string) {
     return db.recepciones
+      .filter((r) => r.estado !== 'rechazada')
       .flatMap((r) =>
         r.lineas
           .filter((l) => l.insumoId === insumoId)
