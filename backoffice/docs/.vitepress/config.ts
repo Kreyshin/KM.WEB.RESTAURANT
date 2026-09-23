@@ -9,11 +9,11 @@ export default defineConfig({
   lang: 'es-PE',
   title: 'Mesa',
   description: 'Documentación del back office de KM.Restaurante',
-  base: `/${REPO}/`,
+  base: `/${REPO}/tecnica/`,
   cleanUrls: true,
   lastUpdated: true,
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: `/${REPO}/favicon.svg` }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `/${REPO}/tecnica/favicon.svg` }],
     ['meta', { name: 'theme-color', content: '#0d1014' }],
   ],
 

@@ -2,25 +2,24 @@ import { defineConfig } from 'vitepress'
 
 const REPO = 'KM.WEB.RESTAURANT'
 const DEMO = `https://kreyshin.github.io/${REPO}/demo/`
-const TECNICA = `https://kreyshin.github.io/${REPO}/`
 
 /**
- * Sitio de documentación FUNCIONAL, independiente del técnico.
+ * Sitio de documentación FUNCIONAL. Es la portada del proyecto: vive en la raíz
+ * de GitHub Pages porque es lo que necesita quien opera el restaurante —sala,
+ * cocina, almacén, administración— o quien evalúa el alcance.
  *
- * Vive en `/funcional/` y no comparte navegación con la guía técnica: aquí no
- * se habla de arquitectura, componentes ni modelo de datos. El lector es quien
- * opera el restaurante —sala, cocina, almacén, administración—, o quien
- * necesita entender el alcance antes de decidir.
+ * No enlaza con la documentación técnica ni comparte navegación con ella: ese
+ * sitio se dirige a otro público y vive aparte, en `/tecnica/`.
  */
 export default defineConfig({
   lang: 'es-PE',
   title: 'Mesa',
   description: 'Cómo funciona el back office de restaurante de KM.Restaurante',
-  base: `/${REPO}/funcional/`,
+  base: `/${REPO}/`,
   cleanUrls: true,
   lastUpdated: true,
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: `/${REPO}/funcional/favicon.svg` }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `/${REPO}/favicon.svg` }],
     ['meta', { name: 'theme-color', content: '#0d1014' }],
   ],
 
@@ -34,7 +33,6 @@ export default defineConfig({
       { text: 'Procesos', link: '/procesos/mesa', activeMatch: '/procesos/' },
       { text: 'Glosario', link: '/glosario' },
       { text: 'Ver demo', link: DEMO, target: '_blank' },
-      { text: 'Documentación técnica', link: TECNICA, target: '_blank' },
     ],
 
     sidebar: [

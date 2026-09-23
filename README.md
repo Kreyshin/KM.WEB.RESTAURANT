@@ -6,9 +6,9 @@ Back office para negocios gastronómicos: salones, mesas, carta, inventario, per
 
 | | |
 | --- | --- |
+| 📖 **Guía funcional** | [kreyshin.github.io/KM.WEB.RESTAURANT](https://kreyshin.github.io/KM.WEB.RESTAURANT/) |
+| 📚 **Documentación técnica** | [kreyshin.github.io/KM.WEB.RESTAURANT/tecnica](https://kreyshin.github.io/KM.WEB.RESTAURANT/tecnica/) |
 | 🖥️ **Demo** | [kreyshin.github.io/KM.WEB.RESTAURANT/demo](https://kreyshin.github.io/KM.WEB.RESTAURANT/demo/) |
-| 📚 **Documentación técnica** | [kreyshin.github.io/KM.WEB.RESTAURANT](https://kreyshin.github.io/KM.WEB.RESTAURANT/) |
-| 📖 **Guía funcional** | [kreyshin.github.io/KM.WEB.RESTAURANT/funcional](https://kreyshin.github.io/KM.WEB.RESTAURANT/funcional/) |
 
 > En la demo el acceso viene precargado y acepta cualquier contraseña. Los datos viven en tu navegador y se reinician desde **Perfil → Datos de ejemplo**.
 
@@ -85,17 +85,17 @@ npm run funcional:dev   # guía funcional en local
 | F7–F8 · Operación | Ventas, caja y comprobantes | ⏳ |
 | F9–F10 · Análisis | Reportes, pulido y entidades | ⏳ |
 
-Detalle en el [roadmap](https://kreyshin.github.io/KM.WEB.RESTAURANT/guia/roadmap).
+Detalle en el [roadmap](https://kreyshin.github.io/KM.WEB.RESTAURANT/tecnica/guia/roadmap).
 
 ## Contribuir
 
-1. Sigue la receta de [crear un módulo nuevo](https://kreyshin.github.io/KM.WEB.RESTAURANT/guia/nuevo-modulo): tipo → semilla → servicio → vista → ruta.
-2. Reutiliza los [componentes Km*](https://kreyshin.github.io/KM.WEB.RESTAURANT/componentes/) antes de crear uno nuevo.
-3. Ejecuta `npm run verify` y `npm run test:e2e`. Guía: [Testing y QA](https://kreyshin.github.io/KM.WEB.RESTAURANT/guia/testing).
+1. Sigue la receta de [crear un módulo nuevo](https://kreyshin.github.io/KM.WEB.RESTAURANT/tecnica/guia/nuevo-modulo): tipo → semilla → servicio → vista → ruta.
+2. Reutiliza los [componentes Km*](https://kreyshin.github.io/KM.WEB.RESTAURANT/tecnica/componentes/) antes de crear uno nuevo.
+3. Ejecuta `npm run verify` y `npm run test:e2e`. Guía: [Testing y QA](https://kreyshin.github.io/KM.WEB.RESTAURANT/tecnica/guia/testing).
 4. Cada push a `main` verifica y publica la documentación y la demo.
 
 ## Más información
 
-- [Documentación completa](https://kreyshin.github.io/KM.WEB.RESTAURANT/)
+- [Guía funcional](https://kreyshin.github.io/KM.WEB.RESTAURANT/) · [Documentación técnica](https://kreyshin.github.io/KM.WEB.RESTAURANT/tecnica/)
 - [Sistema de diseño y contrastes](backoffice/README.md)
-- [Entidades del dominio](https://kreyshin.github.io/KM.WEB.RESTAURANT/guia/entidades)
+- [Entidades del dominio](https://kreyshin.github.io/KM.WEB.RESTAURANT/tecnica/guia/entidades)
