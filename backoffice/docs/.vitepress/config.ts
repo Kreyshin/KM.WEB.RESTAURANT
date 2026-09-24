@@ -90,6 +90,7 @@ export default defineConfig({
             { text: 'KmCatalogo', link: '/componentes/catalogo' },
             { text: 'KmTable y paginación', link: '/componentes/tabla' },
             { text: 'KmTabs', link: '/componentes/tabs' },
+            { text: 'KmAyuda', link: '/componentes/ayuda' },
             { text: 'KmDrawer', link: '/componentes/drawer' },
             { text: 'KmModal y KmConfirm', link: '/componentes/modal' },
             { text: 'KmFecha y KmRangoFechas', link: '/componentes/fechas' },
