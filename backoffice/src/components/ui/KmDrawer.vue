@@ -39,7 +39,7 @@ onBeforeUnmount(() => {
           :aria-label="titulo"
           class="rs-drawer-panel relative flex h-full w-full flex-col border-l border-linea bg-panel"
           :class="anchos[ancho]"
-          style="box-shadow: var(--rs-sombra-flotante)"
+          style="box-shadow: var(--ts-sombra-flotante)"
         >
           <header class="flex items-start justify-between gap-4 border-b border-linea px-6 py-4">
             <div class="min-w-0">
@@ -83,11 +83,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .rs-drawer-enter-active,
 .rs-drawer-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--km-mov-normal) var(--km-curva);
 }
 .rs-drawer-enter-active .rs-drawer-panel,
 .rs-drawer-leave-active .rs-drawer-panel {
-  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--km-mov-lento) var(--km-curva);
 }
 .rs-drawer-enter-from,
 .rs-drawer-leave-to {
