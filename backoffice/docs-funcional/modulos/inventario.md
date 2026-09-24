@@ -76,3 +76,23 @@ Se heredan **empresa → cadena → local → almacén → categoría → insumo
 ## Movimientos y kardex
 
 El histórico por insumo: qué entró, qué salió, cuándo y por qué. Es de consulta: los movimientos los generan la venta, la producción, la recepción y las mermas.
+
+## Cómo se mira la despensa
+
+Un cocinero no busca una fila: **camina** la cámara, el almacén seco y la
+barra. Por eso los insumos se abren en tarjetas y cada una dice dos cosas que
+una tabla no cuenta bien:
+
+- **Cuánto queda respecto de su mínimo**, con una barra en la que el mínimo
+  siempre cae a media barra. Así «por debajo de la mitad» significa lo mismo en
+  un saco de arroz que en un limón.
+- **Dónde está**, repartido por zona: _17,6 L en Despensa · 6 L en Barra_. Es
+  el dato que decide si hay que pedir o solo hay que ir a buscarlo.
+
+::: tip Solo se marca la excepción
+Los insumos en orden no llevan insignia. En una rejilla, repetir «Normal» diez
+veces tapa justo el que está bajo mínimo.
+:::
+
+La tabla sigue a un clic en el interruptor de la derecha, y el sistema recuerda
+la elección.
