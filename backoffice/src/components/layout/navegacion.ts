@@ -54,6 +54,11 @@ export const modulos: ModuloNav[] = [
         etiqueta: 'Mesas',
         descripcion: 'Plano, estados y asignación',
       },
+      {
+        nombreRuta: 'reloj-servicio',
+        etiqueta: 'Reloj del servicio',
+        descripcion: 'Turnos, rotación y quién espera en la puerta',
+      },
     ],
   },
   {

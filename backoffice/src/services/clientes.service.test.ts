@@ -148,3 +148,62 @@ describe('reservas', () => {
     expect(agenda.pendientes).toBe(1)
   })
 })
+
+/**
+ * El reloj del servicio.
+ *
+ * Mover una reserva de mesa es el gesto del jefe de sala, y las dos cosas que
+ * tiene que impedir son las que se descubren con la gente de pie: sentar a
+ * seis en una mesa de cuatro, y poner dos grupos a la misma hora en el mismo
+ * sitio.
+ */
+describe('mover una reserva de mesa', () => {
+  it('mueve la reserva sin tocarle la hora', async () => {
+    const reserva = await reservasService.crear(base, ADMIN)
+
+    const movida = await reservasService.moverAMesa(reserva.id, ['m4'], ADMIN)
+
+    expect(movida.mesaIds).toEqual(['m4'])
+    expect(movida.hora).toBe(reserva.hora)
+    expect(movida.duracionMin).toBe(reserva.duracionMin)
+  })
+
+  it('no sienta a más gente de la que cabe', async () => {
+    const pequena = db.mesas.reduce((a, b) => (a.capacidad <= b.capacidad ? a : b))
+    const reserva = await reservasService.crear(
+      { ...base, personas: pequena.capacidad + 4, mesaIds: ['m4'] },
+      ADMIN,
+    )
+
+    await expect(reservasService.moverAMesa(reserva.id, [pequena.id], ADMIN)).rejects.toMatchObject(
+      { mensaje: expect.stringContaining('dan para') },
+    )
+  })
+
+  it('no pone dos grupos a la vez en la misma mesa', async () => {
+    const primera = await reservasService.crear({ ...base, mesaIds: ['m4'] }, ADMIN)
+    const segunda = await reservasService.crear({ ...base, hora: '17:30', mesaIds: ['m3'] }, ADMIN)
+
+    await expect(reservasService.moverAMesa(segunda.id, ['m4'], ADMIN)).rejects.toMatchObject({
+      mensaje: expect.stringContaining(primera.nombreContacto),
+    })
+  })
+
+  it('una reserva cancelada ya no se mueve', async () => {
+    const reserva = await reservasService.crear(base, ADMIN)
+    await reservasService.cambiarEstado(reserva.id, 'cancelada', ADMIN, 'Cambio de planes')
+
+    await expect(reservasService.moverAMesa(reserva.id, ['m4'], ADMIN)).rejects.toMatchObject({
+      mensaje: expect.stringContaining('ya no se mueve'),
+    })
+  })
+
+  it('mover exige el mismo permiso que gestionar', async () => {
+    const reserva = await reservasService.crear(base, ADMIN)
+    const mesero = db.usuarios.find((u) => u.rol === 'mesero')!
+
+    await expect(reservasService.moverAMesa(reserva.id, ['m4'], mesero.id)).rejects.toMatchObject({
+      mensaje: expect.stringContaining('permiso'),
+    })
+  })
+})

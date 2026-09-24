@@ -491,3 +491,127 @@ body {
 .dp--input:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--rs-primary) 22%, transparent);
 }
+
+/* ── El reloj del servicio ───────────────────────────────────────────────────
+ *
+ * Mesas en filas, el servicio en columnas de cuarto de hora. El eje de tiempo
+ * de un restaurante no son días: son los minutos de un turno, y de ahí salen
+ * la rotación y la respuesta a la única pregunta de la puerta —«¿cuánto hay
+ * que esperar?»—. La franja vive aquí porque es un objeto de la vertical, como
+ * la mesa del plano.
+ */
+
+.rs-reloj-celda {
+  border-right: 1px solid var(--rs-border);
+  border-bottom: 1px solid var(--rs-border);
+}
+
+/* Cada hora en punto pesa más que sus cuartos: la vista se ancla en ellas. */
+.rs-reloj-hora {
+  border-right-color: color-mix(in srgb, var(--rs-muted) 45%, transparent);
+}
+
+/* Ahora: la línea que se mueve. Es lo que convierte el plano en un reloj. */
+.rs-reloj-ahora {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--rs-verde-500);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--rs-verde-500) 70%, transparent);
+  z-index: 25;
+  pointer-events: none;
+}
+
+.rs-reloj-ahora::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background-color: var(--rs-verde-500);
+}
+
+/* Fuera del servicio: la cocina está cerrada y se nota. */
+.rs-reloj-cerrado {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--rs-muted) 14%, transparent) 0 5px,
+    transparent 5px 10px
+  );
+}
+
+.rs-turno {
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: grab;
+  touch-action: none;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    filter 140ms ease;
+}
+
+.rs-turno:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 2px 10px -2px rgb(0 0 0 / 0.3);
+}
+
+.rs-turno:focus-visible {
+  outline: none;
+  box-shadow: var(--rs-foco);
+}
+
+.rs-turno-arrastrando {
+  cursor: grabbing;
+  z-index: 30;
+  transform: scale(1.02);
+  box-shadow: 0 10px 22px -6px rgb(0 0 0 / 0.45);
+}
+
+.rs-turno-pendiente {
+  background-color: color-mix(in srgb, var(--rs-laton-500) 20%, var(--rs-surface));
+  border-color: color-mix(in srgb, var(--rs-laton-500) 52%, var(--rs-surface));
+  border-style: dashed;
+  color: color-mix(in srgb, var(--rs-laton-700) 88%, var(--rs-text));
+}
+
+.rs-turno-confirmada {
+  background-color: var(--rs-pizarra);
+  border-color: var(--rs-pizarra);
+  color: #ffffff;
+}
+
+/* Sentada: el fuego de la casa. Es la mesa que está trabajando ahora. */
+.rs-turno-sentada {
+  background-color: var(--rs-verde-600);
+  border-color: var(--rs-verde-700);
+  color: #ffffff;
+}
+
+/* Mesa candidata para el grupo que espera en la puerta. */
+.rs-reloj-candidata {
+  background-color: color-mix(in srgb, var(--rs-verde-500) 8%, transparent);
+  box-shadow: inset 3px 0 0 0 var(--rs-verde-500);
+}
+
+.rs-reloj-destino {
+  background-color: color-mix(in srgb, var(--rs-pizarra) 12%, transparent);
+  box-shadow: inset 0 0 0 2px var(--rs-pizarra);
+}
+
+.rs-reloj-destino-vetado {
+  background-color: color-mix(in srgb, var(--rs-vino) 12%, transparent);
+  box-shadow: inset 0 0 0 2px var(--rs-vino);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-turno {
+    transition: none;
+  }
+  .rs-turno-arrastrando {
+    transform: none;
+  }
+}

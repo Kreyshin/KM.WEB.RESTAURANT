@@ -45,6 +45,12 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Mesas' },
       },
       {
+        path: 'mesas/reloj',
+        name: 'reloj-servicio',
+        component: () => import('@/views/mesas/RelojServicioView.vue'),
+        meta: { titulo: 'Reloj del servicio' },
+      },
+      {
         path: 'carta',
         name: 'carta',
         component: () => import('@/views/carta/CartaView.vue'),
