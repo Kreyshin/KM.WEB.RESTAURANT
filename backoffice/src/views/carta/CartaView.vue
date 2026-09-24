@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmButton from '@/components/ui/KmButton.vue'
@@ -31,7 +32,7 @@ const ui = useUiStore()
 
 const categorias = ref<Categoria[]>([])
 const productos = ref<Producto[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 
 const vista = ref<'productos' | 'categorias'>('productos')
 /** '' significa «todas las categorías». */
@@ -133,7 +134,7 @@ function precioMostrado(p: Producto) {
 }
 
 async function cargar() {
-  cargando.value = true
+  iniciar()
   try {
     ;[categorias.value, productos.value, canales.value] = await Promise.all([
       cartaService.listarCategorias(),
@@ -143,7 +144,7 @@ async function cargar() {
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudo cargar la carta.')
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 

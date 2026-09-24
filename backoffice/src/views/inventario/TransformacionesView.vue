@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmButton from '@/components/ui/KmButton.vue'
@@ -40,11 +41,11 @@ const catalogos = useCatalogos(['insumos', 'zonas', 'locales'])
 const { insumo, opcionesInsumo, opcionesZona } = catalogos
 
 const transformaciones = shallowRef<Transformacion[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 const error = ref('')
 
 async function cargar() {
-  cargando.value = true
+  iniciar()
   error.value = ''
   try {
     transformaciones.value = await transformacionesService.todos()
@@ -52,7 +53,7 @@ async function cargar() {
   } catch (e) {
     error.value = (e as ApiError).mensaje ?? 'No se pudieron cargar las transformaciones.'
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 
