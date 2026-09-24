@@ -90,6 +90,66 @@ async function cargar() {
 
 Y en la plantilla se atenúan **los datos, no los mandos**: quien acaba de pulsar un botón sigue pudiendo escribir en el buscador mientras llega la respuesta.
 
+## Una acción no recarga: sustituye
+
+`useCarga` arregla el parpadeo, pero no el problema de fondo. Si después de aprobar **una línea** la pantalla vuelve a pedir **la orden entera**, se sigue repintando todo por cambiar un campo. Atenuado o no, se lee como una recarga.
+
+### La mutación devuelve el estado nuevo
+
+Un servicio que contesta «hecho» obliga a quien llamó a volver a preguntar por lo que él mismo acaba de provocar: dos viajes y un repintado completo. Devolviendo la entidad **ya resuelta**, la vista sustituye lo que tiene y Vue repinta solo lo que cambió de verdad.
+
+```ts
+// Antes: dos viajes y la pantalla entera se rehace.
+await ordenesService.alternarItem(id, itemId)
+await cargar()
+
+// Ahora: un viaje, y solo cambia lo que cambió.
+orden.value = await ordenesService.alternarItem(id, itemId)
+```
+
+En un listado es lo mismo, sustituyendo el elemento dentro del array:
+
+```ts
+function sustituir(actualizada: OrdenResuelta) {
+  const i = ordenes.value.findIndex((o) => o.id === actualizada.id)
+  if (i >= 0) ordenes.value[i] = actualizada
+}
+```
+
+### La ocupación es de la fila, no de la pantalla
+
+Un único `trabajando` global apaga todos los botones por tocar uno. Se guarda **qué** está esperando respuesta:
+
+```ts
+const lineaOcupada = ref<string | null>(null)
+```
+
+Y esa fila se marca con el filo, no atenuándola: atenuar dice _«esto ya no vale»_; el filo dice _«estoy en ello»_, y el resto de la pantalla sigue viva.
+
+### Lo que se mueve, se mueve
+
+Una lista que cambia de tamaño sin transición salta de golpe, y un salto se lee como un repintado. `TransitionGroup` con su clase `-move` da el FLIP: lo que se va se encoge, lo que se queda **se desliza** a su sitio nuevo.
+
+```vue
+<TransitionGroup tag="ul" name="rs-linea">
+  <li v-for="item in items" :key="item.id" class="rs-linea">…</li>
+</TransitionGroup>
+```
+
+Dos detalles que marcan la diferencia: el elemento que sale se saca del flujo (`position: absolute` en `-leave-active`) para que los de abajo empiecen a subir ya, y **salir dura menos que entrar** — nadie quiere esperar a que se vaya algo que ya cerró.
+
+::: tip Cómo se comprueba
+Con el navegador abierto, marcar las filas antes de la acción y contar cuántas sobreviven:
+
+```js
+document.querySelectorAll('.rs-linea').forEach((el, i) => (el.dataset.testigo = 'f' + i))
+// …acción…
+;[...document.querySelectorAll('.rs-linea')].filter((el) => el.dataset.testigo).length
+```
+
+Si el número baja, se están recreando filas que no cambiaron.
+:::
+
 ## Postura
 
 El tamaño de un control no es una constante del kit: lo pone **el cuerpo que usa la pantalla**.

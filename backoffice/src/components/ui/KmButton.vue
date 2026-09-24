@@ -25,9 +25,9 @@ const props = withDefaults(
 
 const variantes: Record<Variante, string> = {
   primario: 'bg-accion text-white hover:bg-accion-hover',
-  secundario: 'bg-panel text-tinta border border-linea hover:border-verde hover:text-verde',
+  secundario: 'bg-panel text-tinta border border-linea hover:border-acero hover:text-acero',
   fantasma: 'text-tenue hover:bg-seleccion hover:text-tinta',
-  peligro: 'bg-vino text-white hover:brightness-110',
+  peligro: 'bg-ambar text-white hover:brightness-110',
 }
 
 /**
@@ -44,8 +44,8 @@ const tamanos: Record<Tamano, string> = {
 }
 
 const clases = computed(() => [
-  'inline-flex items-center justify-center rounded-control font-semibold tracking-[0.01em]',
-  'transition-colors duration-200 disabled:opacity-50 disabled:pointer-events-none',
+  'km-boton inline-flex items-center justify-center rounded-control font-semibold tracking-[0.01em]',
+  'disabled:opacity-50 disabled:pointer-events-none',
   variantes[props.variante],
   tamanos[props.tamano],
   props.bloque ? 'w-full' : '',
@@ -71,3 +71,25 @@ const clases = computed(() => [
     <slot />
   </button>
 </template>
+
+<style scoped>
+/*
+ * El botón contesta antes de que llegue la respuesta.
+ *
+ * Con solo `transition-colors`, entre el clic y el dato no pasa nada: el botón
+ * se queda quieto y la pantalla parece colgada, aunque sean 200 ms. El hundido
+ * al pulsar es la confirmación de que el clic entró, y llega en el acto.
+ */
+.km-boton {
+  transition:
+    background-color var(--km-mov-rapido) var(--km-curva),
+    border-color var(--km-mov-rapido) var(--km-curva),
+    color var(--km-mov-rapido) var(--km-curva),
+    transform var(--km-mov-rapido) var(--km-curva),
+    filter var(--km-mov-rapido) var(--km-curva);
+}
+
+.km-boton:active:not(:disabled) {
+  transform: scale(0.97);
+}
+</style>
