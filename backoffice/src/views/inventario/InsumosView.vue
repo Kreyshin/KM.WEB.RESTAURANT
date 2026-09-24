@@ -20,7 +20,7 @@ import {
 } from '@/utils/formato'
 
 const catalogos = useCatalogos(['zonas', 'insumos', 'locales', 'articulos'])
-const { articulo } = catalogos
+const { articulo, nombreZona } = catalogos
 
 /** Artículo que se propone al pedir: el marcado por defecto, o el primero. */
 function articuloPorDefecto(i: Insumo) {
@@ -110,6 +110,32 @@ function filtrar(consulta: Consulta, campo: string, valor: string | number | und
 const alertas = computed(() =>
   catalogos.insumos.value.filter((i) => i.activo && estadoStock(i.stock, i.stockMinimo) !== 'ok'),
 )
+
+/**
+ * Nivel de la barra. El mínimo se sitúa siempre a media barra: así «por debajo
+ * de la mitad» significa lo mismo en un saco de harina que en un limón, por
+ * mucho que sus cantidades no se parezcan en nada.
+ */
+function nivel(i: Insumo) {
+  const tope = Math.max(i.stockMinimo * 2, i.stock, 1)
+  return Math.min(100, (i.stock / tope) * 100)
+}
+
+/**
+ * Dónde está físicamente el insumo. Es el dato que no cabe en una tabla y el
+ * que de verdad se necesita: un cocinero no busca una fila, camina la cámara,
+ * el almacén seco y la barra, y quiere saber en cuál de los tres mirar.
+ */
+function reparto(i: Insumo) {
+  return i.existencias
+    .filter((e) => e.cantidad > 0)
+    .map((e) => ({
+      zona: nombreZona(e.zonaId),
+      cantidad: e.cantidad,
+      porcentaje: i.stock > 0 ? (e.cantidad / i.stock) * 100 : 0,
+    }))
+    .sort((a, b) => b.cantidad - a.cantidad)
+}
 </script>
 
 <template>
@@ -140,6 +166,7 @@ const alertas = computed(() =>
       :validar="validar"
       :nombre-de="(i: Insumo) => i.nombre"
       :orden="{ campo: 'nombre', direccion: 'asc' }"
+      vista-por-defecto="tarjetas"
       :exportacion="[
         { etiqueta: 'Insumo', valor: (i: Insumo) => i.nombre },
         { etiqueta: 'Categoría', valor: (i: Insumo) => etiquetaCategoriaInsumo[i.categoria] },
@@ -219,6 +246,102 @@ const alertas = computed(() =>
         <span class="text-tenue tabular-nums">{{
           formatearSoles(fila.stock * fila.costoUnitario)
         }}</span>
+      </template>
+
+      <!--
+        La tarjeta de despensa. Lo que se mira no es el nombre: es cuánto queda
+        respecto del mínimo y en qué zona está, que es lo que decide si hay que
+        pedir o solo hay que ir a buscarlo.
+      -->
+      <template #tarjeta="{ fila, editar, eliminar }">
+        <article
+          class="group flex flex-col rounded-card border bg-panel p-4 transition-colors"
+          :class="
+            estadoStock(fila.stock, fila.stockMinimo) === 'agotado'
+              ? 'border-vino/45'
+              : estadoStock(fila.stock, fila.stockMinimo) === 'bajo'
+                ? 'border-verde/45'
+                : 'border-linea hover:border-laton'
+          "
+        >
+          <header class="flex items-start justify-between gap-3">
+            <p class="min-w-0 truncate font-medium text-tinta">{{ fila.nombre }}</p>
+            <KmBadge tono="neutro">{{ etiquetaCategoriaInsumo[fila.categoria] }}</KmBadge>
+          </header>
+
+          <div class="mt-4">
+            <div class="flex items-baseline justify-between">
+              <p class="rs-display text-2xl leading-none font-semibold text-tinta tabular-nums">
+                {{ formatearCantidad(fila.stock, fila.unidad) }}
+              </p>
+              <p class="text-[11px] text-tenue tabular-nums">
+                mín. {{ formatearCantidad(fila.stockMinimo, fila.unidad) }}
+              </p>
+            </div>
+
+            <div class="relative mt-2 h-2 overflow-hidden rounded-full bg-panel-2">
+              <div
+                class="h-full rounded-full transition-[width] duration-500"
+                :class="
+                  estadoStock(fila.stock, fila.stockMinimo) === 'agotado'
+                    ? 'bg-vino'
+                    : estadoStock(fila.stock, fila.stockMinimo) === 'bajo'
+                      ? 'bg-laton'
+                      : 'bg-verde'
+                "
+                :style="{ width: `${nivel(fila)}%` }"
+              />
+              <span class="absolute inset-y-0 left-1/2 w-px bg-tinta/35" aria-hidden="true" />
+            </div>
+          </div>
+
+          <!--
+            Solo se marca la excepción. En una rejilla de doce, una insignia
+            «Normal» repetida diez veces tapa justo la que hay que ver; lo
+            normal ya lo dicen la cifra y la barra.
+          -->
+          <div v-if="estadoStock(fila.stock, fila.stockMinimo) !== 'ok'" class="mt-3">
+            <KmBadge :tono="tonoEstado[estadoStock(fila.stock, fila.stockMinimo)]" punto>
+              {{ textoEstado[estadoStock(fila.stock, fila.stockMinimo)] }}
+            </KmBadge>
+          </div>
+
+          <!-- Dónde está: el reparto por zona, en una sola línea. -->
+          <ul v-if="reparto(fila).length" class="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+            <li v-for="z in reparto(fila)" :key="z.zona" class="text-[11px] text-tenue">
+              <span class="font-semibold text-tinta">
+                {{ formatearCantidad(z.cantidad, fila.unidad) }}
+              </span>
+              en {{ z.zona }}
+            </li>
+          </ul>
+          <p v-else class="mt-3 text-[11px] text-tenue">Sin existencias en ninguna zona.</p>
+
+          <footer class="mt-auto flex items-end justify-between gap-3 pt-4">
+            <p class="text-sm text-tinta tabular-nums">
+              {{ formatearSoles(fila.stock * fila.costoUnitario) }}
+              <span class="text-[11px] text-tenue">valorizado</span>
+            </p>
+            <span
+              class="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+            >
+              <KmBotonIcono
+                icono="editar"
+                etiqueta="Editar"
+                :contexto="fila.nombre"
+                @click="editar"
+              />
+              <KmBotonIcono
+                v-if="eliminar"
+                icono="eliminar"
+                etiqueta="Eliminar"
+                :contexto="fila.nombre"
+                tono="peligro"
+                @click="eliminar"
+              />
+            </span>
+          </footer>
+        </article>
       </template>
 
       <template #formulario="{ borrador, errores, editando }">
