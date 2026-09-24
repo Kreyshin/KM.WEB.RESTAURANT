@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmBusqueda from '@/components/ui/KmBusqueda.vue'
@@ -58,12 +59,12 @@ const { insumos, insumo, articulo, proveedores, nombreProveedor } = catalogos
 const requerimientos = shallowRef<RequerimientoCompra[]>([])
 const solicitudes = shallowRef<SolicitudCompra[]>([])
 const areas = shallowRef<Area[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 const error = ref('')
 
 async function cargar() {
   if (!localStore.localId) return
-  cargando.value = true
+  iniciar()
   error.value = ''
   try {
     const [reqs, sols, todas] = await Promise.all([
@@ -78,7 +79,7 @@ async function cargar() {
   } catch (e) {
     error.value = (e as ApiError).mensaje ?? 'No se pudieron cargar los requerimientos.'
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 

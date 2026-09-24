@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBusqueda from '@/components/ui/KmBusqueda.vue'
 import KmCard from '@/components/ui/KmCard.vue'
@@ -26,7 +27,7 @@ const localStore = useLocalStore()
 
 const registros = shallowRef<RegistroAuditoria[]>([])
 const usuarios = shallowRef<Usuario[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 const puedeVer = computed(() => tienePermiso(auth.usuario?.id, 'personal.auditoria'))
 
 const modulos: ModuloAuditoria[] = [
@@ -72,7 +73,7 @@ const nombreLocal = (id?: string) =>
   id ? (localStore.locales.find((l) => l.id === id)?.nombre ?? id) : '—'
 
 async function cargar() {
-  cargando.value = true
+  iniciar()
   registros.value = await auditoriaService.listar({
     modulo: (modulo.value || undefined) as ModuloAuditoria | undefined,
     usuarioId: usuarioId.value || undefined,
@@ -81,7 +82,7 @@ async function cargar() {
     hasta: rango.value.hasta || undefined,
     buscar: buscar.value,
   })
-  cargando.value = false
+  terminar()
 }
 
 onMounted(async () => {

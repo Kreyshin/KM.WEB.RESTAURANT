@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmButton from '@/components/ui/KmButton.vue'
@@ -49,12 +50,12 @@ const acceso = useAccesoZonas(zonas)
 const transformaciones = shallowRef<Transformacion[]>([])
 const partes = shallowRef<ParteProduccion[]>([])
 const porProcesar = shallowRef<PorProcesar[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 const error = ref('')
 
 async function cargar() {
   if (!localStore.localId) return
-  cargando.value = true
+  iniciar()
   error.value = ''
   try {
     const [ts, ps, pp] = await Promise.all([
@@ -69,7 +70,7 @@ async function cargar() {
   } catch (e) {
     error.value = (e as ApiError).mensaje ?? 'No se pudo cargar la producción.'
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 watch(() => localStore.localId, cargar, { immediate: true })

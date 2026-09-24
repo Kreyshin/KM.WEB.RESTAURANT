@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmEstado from '@/components/ui/KmEstado.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
@@ -16,16 +17,16 @@ const props = defineProps<{ alcance: AlcanceParametro; localId?: string; cadenaI
 
 const ui = useUiStore()
 const valores = ref<ValorParametro[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 
 const enLocal = computed(() => props.alcance === 'local' && (!!props.localId || !!props.cadenaId))
 
 async function cargar() {
-  cargando.value = true
+  iniciar()
   valores.value = await parametrosService.valores(
     enLocal.value ? { localId: props.localId, cadenaId: props.cadenaId } : {},
   )
-  cargando.value = false
+  terminar()
 }
 onMounted(cargar)
 watch(() => [props.localId, props.cadenaId], cargar)

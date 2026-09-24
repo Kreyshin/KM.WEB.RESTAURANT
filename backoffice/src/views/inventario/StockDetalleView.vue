@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBusqueda from '@/components/ui/KmBusqueda.vue'
 import KmButton from '@/components/ui/KmButton.vue'
@@ -51,7 +52,7 @@ type Descuadre = { insumo: Insumo; zonaId: string; principal: number; detallado:
 
 const detalle = shallowRef<FilaStockDetalle[]>([])
 const descuadres = shallowRef<Descuadre[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 const error = ref('')
 const vista = ref<Vista>('insumo')
 const agrupacion = ref<Agrupacion>('total')
@@ -60,7 +61,7 @@ const zonaId = ref('')
 const vencimiento = ref<'' | 'porVencer' | 'vencido'>('')
 
 async function cargar() {
-  cargando.value = true
+  iniciar()
   error.value = ''
   try {
     await catalogos.recargar()
@@ -73,7 +74,7 @@ async function cargar() {
   } catch (e) {
     error.value = (e as ApiError).mensaje ?? 'No se pudo cargar el stock.'
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 

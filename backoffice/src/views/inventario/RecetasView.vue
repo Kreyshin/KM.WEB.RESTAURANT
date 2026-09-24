@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmBusqueda from '@/components/ui/KmBusqueda.vue'
@@ -68,12 +69,12 @@ const insumos = shallowRef<Insumo[]>([])
 const canales = shallowRef<CanalVenta[]>([])
 const productos = shallowRef<Producto[]>([])
 const auth = useAuthStore()
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 const canalId = ref('cv1')
 const hoy = new Date().toISOString().slice(0, 10)
 
 async function cargar() {
-  cargando.value = true
+  iniciar()
   try {
     ;[vendibles.value, recetas.value, insumos.value, canales.value, productos.value] =
       await Promise.all([
@@ -87,7 +88,7 @@ async function cargar() {
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudieron cargar las recetas.')
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 watch(() => localStore.localId, cargar, { immediate: true })

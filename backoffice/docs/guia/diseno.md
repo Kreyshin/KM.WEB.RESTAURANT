@@ -46,6 +46,50 @@ La serif se reserva para títulos y cifras; formularios y tablas siempre en sans
 
 `KmBadge` y los estados usan `rs-tono-*`, que mezclan el color con la superficie activa (`color-mix`) para servir en claro y oscuro con un solo token: `verde`, `laton`, `vino`, `pizarra`, `neutro`.
 
+## Movimiento
+
+Un control que cambia de estado tiene que **contestar antes de que el dedo se levante**. Por debajo de unos 120 ms la respuesta se siente instantánea; por encima de 250 ms, lenta. Por eso hay tres duraciones, no una:
+
+| Token             | Valor   | Para qué                                                   |
+| ----------------- | ------- | ---------------------------------------------------------- |
+| `--km-mov-rapido` | `110ms` | La respuesta al dedo: hover, hundido, color de un check    |
+| `--km-mov-normal` | `180ms` | El cambio de estado en sí: el trazo de una marca, un panel |
+| `--km-mov-lento`  | `280ms` | Lo que entra o sale de pantalla                            |
+| `--km-curva`      | —       | `ease-out`: sale rápido y frena. Nunca `linear`            |
+| `--km-rebote`     | —       | Con sobrepaso. Solo para lo que **aparece**, nunca colores |
+
+### Dos reglas
+
+**Lo que cambia de estado se dibuja, no se enciende.** Un check que pasa de transparente a blanco cambia sin que el ojo vea el gesto: parece que la pantalla se repintó. Trazando la línea —`stroke-dashoffset`— el control contesta al dedo y se entiende qué acaba de pasar.
+
+**Quien pide menos movimiento no pide un poco menos: pide ninguno.** Las tres duraciones se ponen a `0ms` en la raíz bajo `prefers-reduced-motion`, así que ningún componente tiene que acordarse.
+
+## Cargar no es refrescar
+
+::: warning El error que se siente como recargar la página
+El patrón de siempre —`cargando = true` y esconder el contenido— está bien la primera vez, cuando no hay nada que enseñar. Repetirlo tras cada acción hace desaparecer y volver la pantalla entera: se pierde el scroll, parpadea el layout, y aprobar una línea de S/ 38 se siente como recargar la página, aunque el dato tarde 200 ms.
+:::
+
+`useCarga()` separa los dos casos:
+
+- **`cargando`** solo es cierto mientras no hay nada en pantalla. Ahí sí toca el mensaje de carga.
+- **`refrescando`** se levanta en las veces siguientes. La vista lo usa para atenuar lo que ya está —clase `rs-refrescando`— **sin desmontarlo**. Nada cambia de sitio, así que el ojo no pierde la línea que estaba leyendo.
+
+```ts
+const { cargando, refrescando, iniciar, terminar } = useCarga()
+
+async function cargar() {
+  iniciar()
+  try {
+    datos.value = await servicio.listar()
+  } finally {
+    terminar()
+  }
+}
+```
+
+Y en la plantilla se atenúan **los datos, no los mandos**: quien acaba de pulsar un botón sigue pudiendo escribir en el buscador mientras llega la respuesta.
+
 ## Postura
 
 El tamaño de un control no es una constante del kit: lo pone **el cuerpo que usa la pantalla**.

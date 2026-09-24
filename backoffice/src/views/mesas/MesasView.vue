@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmButton from '@/components/ui/KmButton.vue'
@@ -25,7 +26,7 @@ const ui = useUiStore()
 const salones = ref<Salon[]>([])
 const mesas = ref<Mesa[]>([])
 const meseros = ref<Usuario[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 
 const vista = ref<'plano' | 'lista'>('plano')
 const salonActivo = ref<string>('')
@@ -88,7 +89,7 @@ function nombreMesero(id?: string) {
 }
 
 async function cargar() {
-  cargando.value = true
+  iniciar()
   try {
     ;[salones.value, mesas.value, meseros.value] = await Promise.all([
       salonesService.listar(),
@@ -101,7 +102,7 @@ async function cargar() {
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudieron cargar las mesas.')
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 
