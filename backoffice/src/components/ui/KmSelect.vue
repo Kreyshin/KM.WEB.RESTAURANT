@@ -183,7 +183,7 @@ onBeforeUnmount(() => cerrar(false))
       :aria-controls="abierto ? idLista : undefined"
       :aria-label="etiqueta ?? ($attrs['aria-label'] as string | undefined)"
       :aria-invalid="invalido || undefined"
-      class="rs-campo flex min-h-10 w-full items-center rounded-control border bg-panel py-2 pr-9 pl-3 text-left text-sm transition-colors duration-200 disabled:bg-panel-2 disabled:text-tenue"
+      class="rs-campo flex min-h-[var(--km-toque,2.5rem)] w-full items-center rounded-control border bg-panel py-2 pr-9 pl-3 text-left text-[length:var(--km-texto,0.875rem)] transition-colors duration-200 disabled:bg-panel-2 disabled:text-tenue"
       :class="[
         invalido ? 'border-vino' : abierto ? 'border-verde' : 'border-linea focus:border-verde',
         seleccionada ? 'text-tinta' : 'text-tenue',

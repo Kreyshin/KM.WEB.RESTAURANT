@@ -121,7 +121,7 @@ const botonControl =
 
 <template>
   <div
-    class="rs-campo flex h-10 w-full items-stretch overflow-hidden rounded-control border bg-panel text-sm transition-colors duration-200"
+    class="rs-campo flex h-[var(--km-toque,2.5rem)] w-full items-stretch overflow-hidden rounded-control border bg-panel text-[length:var(--km-texto,0.875rem)] transition-colors duration-200"
     :class="[
       invalido ? 'border-vino' : 'border-linea focus-within:border-verde',
       disabled ? 'bg-panel-2 opacity-70' : '',
