@@ -615,3 +615,25 @@ body {
     transform: none;
   }
 }
+
+/* ── Postura ─────────────────────────────────────────────────────────────────
+ *
+ * Quién usa esto y desde dónde. Es la pregunta que el kit no se hacía: todas
+ * las verticales Karma asumían el mismo cuerpo —alguien sentado con ratón a
+ * 60 cm— y eso no es cierto en ninguna de las tres.
+ *
+ * En Restaurante el cuerpo es otro: **de pie, con una mano ocupada, y con la
+ * pantalla del pase a metro y medio**. Por eso el modo operación agranda: el
+ * objetivo táctil sube a 52 px —muy por encima del mínimo— y el texto a 16 px,
+ * que es lo que se lee de lejos sin acercarse.
+ *
+ * Fuera de este modo no cambia nada: quien edita la carta o cuadra una compra
+ * está sentado, como en cualquier otra vertical.
+ */
+.rs-operacion {
+  --km-toque: 3.25rem;
+  --km-texto: 1rem;
+  --km-fila: 1.25rem;
+  /* Altura de fila de las rejillas de tiempo del reloj. */
+  --km-celda: 2.75rem;
+}

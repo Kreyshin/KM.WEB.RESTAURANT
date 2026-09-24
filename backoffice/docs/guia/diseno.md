@@ -45,3 +45,46 @@ La serif se reserva para títulos y cifras; formularios y tablas siempre en sans
 ## Tonos de estado
 
 `KmBadge` y los estados usan `rs-tono-*`, que mezclan el color con la superficie activa (`color-mix`) para servir en claro y oscuro con un solo token: `verde`, `laton`, `vino`, `pizarra`, `neutro`.
+
+## Postura
+
+El tamaño de un control no es una constante del kit: lo pone **el cuerpo que usa la pantalla**.
+
+Hasta aquí todas las verticales Karma asumían el mismo: alguien sentado, con ratón, a 60 cm. No es cierto en ninguna de las tres. Quien usa el pase de un restaurante está de pie con una mano ocupada; quien rellena una hoja de ingreso lo hace con guantes sobre una tablet; quien mira un rack de hotel está sentado y quiere ver dos semanas de golpe.
+
+### El mecanismo
+
+Cuatro variables CSS, con valor por defecto. Fuera del modo operación **nada cambia**: quien edita la carta o cuadra una compra sigue sentado en la oficina, igual en las tres verticales.
+
+| Variable     | Qué dimensiona                         | Por defecto |
+| ------------ | -------------------------------------- | ----------- |
+| `--km-toque` | Alto mínimo de botón, campo y select   | `2.5rem`    |
+| `--km-texto` | Texto de controles y tablas            | `0.875rem`  |
+| `--km-fila`  | Relleno vertical de fila en `KmTable`  | `0.875rem`  |
+| `--km-celda` | Alto de fila en las rejillas de tiempo | —           |
+
+El kit las consume con fallback (`min-h-[var(--km-toque,2.5rem)]`), así que un componente fuera de una zona de operación se comporta exactamente como antes.
+
+### Activarlo
+
+Se pone la clase de postura de la vertical en la raíz de la pantalla:
+
+```vue
+<div class="rs-operacion flex flex-col gap-4">
+```
+
+### Los tres perfiles
+
+| Vertical        | Cuerpo                                    | Toque | Texto |
+| --------------- | ----------------------------------------- | ----- | ----- |
+| **Restaurante** | De pie, una mano, el pase a metro y medio | 52 px | 16 px |
+| **Hotel**       | Sentada, ratón, muchas filas a la vez     | 36 px | 13 px |
+| **Taller**      | De pie en la bahía, con guantes           | 48 px | 15 px |
+
+::: tip No es «hacerlo todo más grande»
+Hotel va en la dirección contraria: **aprieta**. En un mostrador, ver una noche más vale más que un botón más gordo, y el dedo no es ahí el instrumento. Los 36 px siguen muy por encima del mínimo de objetivo táctil.
+:::
+
+### Qué queda fuera
+
+`KmButton` con `tamano="sm"` no escala: es el botón de una fila de tabla, no un objetivo táctil. Si una acción se va a pulsar con guantes, no debe ser `sm` — en el tablero de bahías ese fue exactamente el error que el perfil sacó a la luz.

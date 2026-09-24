@@ -72,6 +72,10 @@ npm run funcional:dev   # guía funcional en local
       └─ views/                  Una carpeta por módulo
 ```
 
+### Postura
+
+El tamaño de los controles no es una constante del kit: lo pone la postura desde la que se usa cada pantalla. Las pantallas de operación llevan la clase de postura de su vertical y el kit lee la escala (`--km-toque`, `--km-texto`, `--km-fila`, `--km-celda`); el resto del back office no cambia, porque quien configura catálogos está sentado en la oficina en las tres. No es «todo más grande»: Hospedaje **aprieta**, porque en un mostrador ver una noche más vale más que un botón más gordo.
+
 ## Estado
 
 | Fase | Objetivo | Estado |

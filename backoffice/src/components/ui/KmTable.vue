@@ -44,7 +44,7 @@ function ariaSort(campo: string) {
 
 <template>
   <div class="overflow-x-auto">
-    <table class="w-full min-w-[44rem] border-collapse text-sm">
+    <table class="w-full min-w-[44rem] border-collapse text-[length:var(--km-texto,0.875rem)]">
       <thead>
         <tr class="border-b border-linea">
           <th
@@ -99,7 +99,7 @@ function ariaSort(campo: string) {
         <!-- Esqueleto de carga: mantiene la altura de la tabla estable -->
         <template v-else-if="cargando && filas.length === 0">
           <tr v-for="n in 4" :key="`skel-${n}`" class="border-b border-linea">
-            <td v-for="c in columnas" :key="c.clave" class="px-4 py-3.5">
+            <td v-for="c in columnas" :key="c.clave" class="px-4 py-[var(--km-fila,0.875rem)]">
               <div class="h-3.5 w-2/3 animate-pulse rounded bg-linea" />
             </td>
           </tr>
@@ -123,7 +123,7 @@ function ariaSort(campo: string) {
             <td
               v-for="c in columnas"
               :key="c.clave"
-              class="px-4 py-3.5 align-middle"
+              class="px-4 py-[var(--km-fila,0.875rem)] align-middle"
               :class="c.clase"
             >
               <slot :name="`col-${c.clave}`" :fila="fila">

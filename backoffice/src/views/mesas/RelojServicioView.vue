@@ -327,7 +327,7 @@ function esperaDe(minutos: number | null | undefined) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="rs-operacion flex flex-col gap-4">
     <header class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h2 class="rs-titulo-pagina text-tinta">El servicio de hoy</h2>
@@ -456,7 +456,7 @@ function esperaDe(minutos: number | null | undefined) {
             <div
               v-for="f in franjas"
               :key="f.min"
-              class="rs-reloj-celda h-9"
+              class="rs-reloj-celda h-[var(--km-celda,2.25rem)]"
               :class="[
                 f.enPunto ? 'rs-reloj-hora' : '',
                 m.estado === 'inactiva' ? 'rs-reloj-cerrado' : '',

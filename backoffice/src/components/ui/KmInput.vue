@@ -27,7 +27,7 @@ const modelo = defineModel<string | number>()
     :max="max"
     :autocomplete="autocomplete"
     :aria-invalid="invalido || undefined"
-    class="rs-campo min-h-10 w-full rounded-control border bg-panel px-3 py-2 text-sm text-tinta transition-colors duration-200 placeholder:text-tenue/70 disabled:bg-panel-2 disabled:text-tenue"
+    class="rs-campo min-h-[var(--km-toque,2.5rem)] w-full rounded-control border bg-panel px-3 py-2 text-[length:var(--km-texto,0.875rem)] text-tinta transition-colors duration-200 placeholder:text-tenue/70 disabled:bg-panel-2 disabled:text-tenue"
     :class="invalido ? 'border-vino' : 'border-linea focus:border-verde'"
   />
 </template>

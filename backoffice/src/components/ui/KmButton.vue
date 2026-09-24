@@ -30,11 +30,17 @@ const variantes: Record<Variante, string> = {
   peligro: 'bg-vino text-white hover:brightness-110',
 }
 
-/** Alturas mínimas de 40px en md/lg: objetivo táctil cómodo en sala. */
+/**
+ * El tamaño del control no es una constante del kit: lo pone la postura desde
+ * la que se usa la pantalla. Fuera del modo operación valen los 40px de
+ * siempre; dentro, cada vertical impone los suyos (ver `--km-toque` en
+ * `assets/main.css`). `sm` se queda fijo: es el botón de una fila de tabla,
+ * no un objetivo táctil.
+ */
 const tamanos: Record<Tamano, string> = {
   sm: 'px-3 py-1.5 text-xs gap-1.5',
-  md: 'px-4 min-h-10 py-2 text-sm gap-2',
-  lg: 'px-6 min-h-11 py-2.5 text-sm gap-2',
+  md: 'px-4 min-h-[var(--km-toque,2.5rem)] py-2 text-[length:var(--km-texto,0.875rem)] gap-2',
+  lg: 'px-6 min-h-[calc(var(--km-toque,2.5rem)+0.25rem)] py-2.5 text-[length:var(--km-texto,0.875rem)] gap-2',
 }
 
 const clases = computed(() => [
