@@ -295,6 +295,56 @@ export const reservasService = {
     return latencia(clonar(reserva))
   },
 
+  /**
+   * Mover una reserva de mesa sin tocar la hora.
+   *
+   * Es el gesto del jefe de sala: la de las 21:00 pasa de la M-4 a la M-7
+   * porque han juntado dos grupos. Se comprueba el choque contra lo que ya hay
+   * en esa mesa a esa hora, y también el aforo: sentar a seis en una mesa de
+   * cuatro es un problema que se descubre con la gente de pie.
+   */
+  async moverAMesa(id: string, mesaIds: string[], usuarioId: string): Promise<Reserva> {
+    const reserva = db.reservas.find((r) => r.id === id)
+    if (!reserva) throw { mensaje: 'Reserva no encontrada.' }
+    exigirGestion(usuarioId)
+    if (!vive(reserva)) throw { mensaje: 'Una reserva cancelada o no vino ya no se mueve.' }
+
+    const mesas = db.mesas.filter((m) => mesaIds.includes(m.id))
+    if (!mesas.length) throw { mensaje: 'Elige al menos una mesa.' }
+
+    const inactiva = mesas.find((m) => m.estado === 'inactiva')
+    if (inactiva) throw { mensaje: `La mesa ${inactiva.codigo} está fuera de servicio.` }
+
+    const aforo = mesas.reduce((s, m) => s + m.capacidad, 0)
+    if (aforo < reserva.personas) {
+      throw {
+        mensaje: `Esas mesas dan para ${aforo} y la reserva es de ${reserva.personas}.`,
+      }
+    }
+
+    const inicio = minutos(reserva.hora)
+    const fin = inicio + reserva.duracionMin
+    const choque = db.reservas.find(
+      (r) =>
+        r.id !== id &&
+        r.fecha === reserva.fecha &&
+        vive(r) &&
+        r.mesaIds.some((m) => mesaIds.includes(m)) &&
+        minutos(r.hora) < fin &&
+        minutos(r.hora) + r.duracionMin > inicio,
+    )
+    if (choque) {
+      throw {
+        mensaje: `Esa mesa ya la tiene ${choque.nombreContacto} a las ${choque.hora}.`,
+      }
+    }
+
+    reserva.mesaIds = [...new Set(mesaIds)]
+    reflejarEnMesas(reserva)
+    persistir()
+    return latencia(clonar(reserva))
+  },
+
   /** Resumen del día: reservas, personas esperadas y cupo del local. */
   async agenda(localId: string, fecha: string) {
     const delDia = db.reservas.filter((r) => r.localId === localId && r.fecha === fecha)

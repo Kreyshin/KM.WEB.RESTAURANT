@@ -50,6 +50,7 @@ export default defineConfig({
         items: [
           { text: 'Resumen', link: '/modulos/' },
           { text: 'Sala', link: '/modulos/sala' },
+          { text: 'Reloj del servicio', link: '/modulos/reloj-servicio' },
           { text: 'Carta y precios', link: '/modulos/carta' },
           { text: 'Inventario y recetas', link: '/modulos/inventario' },
           { text: 'Compras', link: '/modulos/compras' },
