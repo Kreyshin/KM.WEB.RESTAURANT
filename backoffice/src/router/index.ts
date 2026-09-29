@@ -265,8 +265,8 @@ const rutas: RouteRecordRaw[] = [
       {
         path: 'reportes',
         name: 'reportes',
-        component: () => import('@/views/EnConstruccionView.vue'),
-        meta: { titulo: 'Reportes y caja', roles: ['admin', 'cajero'] },
+        component: () => import('@/views/reportes/ReportesView.vue'),
+        meta: { titulo: 'Reportes', roles: ['admin', 'cajero'] },
       },
       {
         path: 'usuarios',

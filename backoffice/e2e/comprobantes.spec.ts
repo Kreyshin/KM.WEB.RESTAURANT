@@ -27,8 +27,8 @@ test.describe('Comprobantes', () => {
     await expect(page.getByText(/Boleta B001-18343 emitida/)).toBeVisible()
 
     await page.goto('/facturacion')
-    await expect(page.getByText('B001-18343')).toBeVisible()
-    await expect(page.getByText('Aceptado')).toBeVisible()
+    const fila = page.getByRole('row').filter({ hasText: 'B001-18343' })
+    await expect(fila).toContainText('Aceptado')
   })
 
   test('sin ventas pendientes lo dice, y no finge trabajo', async ({ page }) => {
@@ -63,7 +63,11 @@ test.describe('Comprobantes', () => {
   test('anular emite una nota de crédito que anula la venta', async ({ page }) => {
     await cobrarLaCuenta(page)
     await page.goto('/facturacion')
-    await page.getByRole('button', { name: 'Nota de crédito' }).click()
+    await page
+      .getByRole('row')
+      .filter({ hasText: 'B001-18343' })
+      .getByRole('button', { name: 'Nota de crédito' })
+      .click()
 
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toContainText('devuelve al almacén lo que se consumió')
@@ -71,6 +75,6 @@ test.describe('Comprobantes', () => {
     await dialogo.getByRole('button', { name: 'Emitir nota' }).click()
 
     await expect(page.getByText(/BC01-58 emitida/)).toBeVisible()
-    await expect(page.getByText('Anulación de la operación')).toBeVisible()
+    await expect(page.getByText('Anulación de la operación').first()).toBeVisible()
   })
 })

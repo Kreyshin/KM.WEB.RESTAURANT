@@ -58,6 +58,7 @@ export default defineConfig({
           { text: 'Reparto y promociones', link: '/modulos/delivery' },
           { text: 'Ventas y caja', link: '/modulos/caja' },
           { text: 'Facturación', link: '/modulos/facturacion' },
+          { text: 'Reportes', link: '/modulos/reportes' },
           { text: 'Configuración', link: '/modulos/configuracion' },
         ],
       },

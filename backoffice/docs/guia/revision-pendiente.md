@@ -101,3 +101,12 @@ Lo construido que aún no revisa el responsable de producto. Se marca al revisar
 - [ ] Envío, rechazo con código y mensaje, corrección y reintento con contador de intentos
 - [ ] Nota de crédito total (anula la venta y devuelve stock) y parcial
 - [ ] Emisión automática al cobrar, configurable por local
+
+## F9 · Reportes
+
+- [ ] Admin › Reportes: ingreso neto frente a lo cobrado, y lo que no es ingreso (recargo y propinas)
+- [ ] Reparto por canal con su comisión, por día y por hora del servicio
+- [ ] Rentabilidad por plato: margen, food cost contra objetivo, clases A/B/C y avisos de «sin receta»
+- [ ] Consumo teórico contra real, con la diferencia valorizada y las mermas aparte
+- [ ] Periodo y canal como filtros, y exportación de la pestaña que se mira
+- [ ] Semilla de tres semanas de ventas: ¿los números se parecen a los de un local de verdad?

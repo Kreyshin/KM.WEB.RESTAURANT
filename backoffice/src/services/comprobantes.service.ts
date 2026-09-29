@@ -219,19 +219,24 @@ export const comprobantesService = {
       localId?: string
       estado?: EstadoComprobante
       tipo?: TipoComprobante
-      fecha?: string
+      /** AAAA-MM-DD, ambos incluidos. Sin rango se devuelve todo. */
+      desde?: string
+      hasta?: string
     } = {},
   ): Promise<Comprobante[]> {
     return latencia(
       clonar(
         db.comprobantes
-          .filter(
-            (c) =>
+          .filter((c) => {
+            const dia = c.fecha.slice(0, 10)
+            return (
               (!filtro.localId || c.localId === filtro.localId) &&
               (!filtro.estado || c.estado === filtro.estado) &&
               (!filtro.tipo || c.tipo === filtro.tipo) &&
-              (!filtro.fecha || c.fecha.slice(0, 10) === filtro.fecha),
-          )
+              (!filtro.desde || dia >= filtro.desde) &&
+              (!filtro.hasta || dia <= filtro.hasta)
+            )
+          })
           .sort((a, b) => b.fecha.localeCompare(a.fecha)),
       ),
     )

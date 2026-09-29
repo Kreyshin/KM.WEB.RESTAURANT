@@ -37,7 +37,7 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 | F6.2 · Delivery y promociones     | Zonas de reparto y reglas de promociones para el POS        | ✅                     |
 | F7 · Ventas y caja                | Pedido, comanda, cuenta y cobro                             | 🔨 Línea base hecha    |
 | F8 · Comprobantes                 | Boletas, facturas y notas de crédito                        | ✅ (envío simulado)    |
-| F9 · Reportes                     | Ventas, rentabilidad por plato, consumo y mermas            | ⏳                     |
+| F9 · Reportes                     | Ventas, rentabilidad por plato, consumo y mermas            | ✅                     |
 | F10 · Pulido                      | Accesibilidad, rendimiento y diccionario de entidades       | ⏳                     |
 
 ### F4 · Abastecimiento, al detalle
@@ -57,8 +57,9 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 
 ## 3. Lo siguiente
 
-1. **Criticar F7 y F8** — la línea base estándar ya funciona; lo que chirríe se refactoriza (D-012, D-013).
-2. **F9 · Reportes** — ventas, rentabilidad por plato, consumo y mermas.
+1. **Criticar F7, F8 y F9** — la línea base estándar ya funciona; lo que chirríe se refactoriza (D-012, D-013, D-014).
+2. **Congelar el costo en la línea de venta**, que es lo que hoy desvía el margen histórico (D-014).
+3. **F10 · Pulido** — accesibilidad, rendimiento y diccionario de entidades.
 
 ## 4. Decisiones abiertas
 
