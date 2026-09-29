@@ -261,7 +261,7 @@ Regla: no se elimina un salón con mesas o áreas.
 
 ### RegistroAuditoria
 
-`{ fecha, usuarioId?, autor, modulo, accion, detalle, localId? }`. Módulos: Permisos, Turnos, Integración, Recetas, Precios, Compras, Inventario. Se escribe desde los servicios y solo se consulta.
+`{ fecha, usuarioId?, autor, modulo, accion, detalle, localId? }`. Módulos: Permisos, Turnos, Integración, Recetas, Precios, Compras, Inventario, Reservas, Delivery, Promociones, Ventas, Caja. Se escribe desde los servicios y solo se consulta.
 
 ## Carta
 
@@ -553,6 +553,124 @@ Reglas: el modo es de toda la OC en la zona elegida. Si un insumo exige detalle,
 ### Configuración de la vertical
 
 `configuracion.vertical[clave]` y `configuracion.locales[localId][clave]`: el valor del local gana sobre el de la cadena y este sobre el valor por defecto de la definición. Parámetros de F4.5: `recepcion.sinOc.permitido`, `recepcion.sinOc.tope`, `recepcion.sinOc.comprobante`, `produccion.modo` (por local) y `produccion.vidaUtil` (cadena). Insumo suma `vidaUtilDias` y `vidaUtilAprobadaPor`; el vínculo con el artículo, `procesar`; el lote, `origen` y `referencia`; `abastecimiento` admite `'ambos'`.
+
+## Delivery y promociones (F6.2, D-011)
+
+### ZonaReparto
+
+| Campo               | Tipo     | Notas                                                                     |
+| ------------------- | -------- | ------------------------------------------------------------------------- |
+| `localId`           | string   | → Local; la cobertura depende de dónde está la cocina                     |
+| `distritos`         | string[] | Un distrito solo puede estar en una zona **del mismo local**              |
+| `costoEnvio`        | number   | Soles                                                                     |
+| `pedidoMinimo`      | number   | 0: sin mínimo. Por debajo, el pedido se bloquea                           |
+| `tiempoEstimadoMin` | number   | Minutos prometidos al cliente, puerta a puerta                            |
+| `envioGratisDesde`  | number?  | Debe ser mayor que el pedido mínimo; sin valor, el envío siempre se cobra |
+| `nota`              | string?  | «Solo hasta las 21:00»                                                    |
+| `activa`            | boolean  | Inactiva deja de cubrir sus distritos sin perder su configuración         |
+
+Solo aplica al **reparto propio** (canal de tipo _delivery_): las apps de delivery ponen su
+logística y cobran su comisión. **Parámetros por local:** `delivery.fueraDeCobertura` (avisar o
+bloquear), `delivery.cobrarEnvio`. **Permiso:** `delivery.zonas`.
+
+La consulta `cobertura(local, distrito, cuenta)` devuelve el estado (`cubierto`,
+`bajoMinimo`, `fueraDeCobertura`), el costo del envío ya con el envío gratis aplicado, el tiempo
+estimado, cuánto falta para el mínimo, si bloquea y una explicación en castellano: es lo que el POS
+enseña al cajero.
+
+### Promocion
+
+| Campo                         | Tipo                                                            | Notas                                                 |
+| ----------------------------- | --------------------------------------------------------------- | ----------------------------------------------------- |
+| `codigo`, `nombre`            | string                                                          | Código único                                          |
+| `localIds`, `canalIds`        | string[]                                                        | Vacío: alcanza a todos                                |
+| `desde`, `hasta`              | AAAA-MM-DD?                                                     | Vigencia                                              |
+| `dias`                        | DiaSemana[]                                                     | 0 = lunes … 6 = domingo; vacío: todos                 |
+| `horaDesde`, `horaHasta`      | HH:mm?                                                          | Las dos o ninguna; puede cruzar medianoche            |
+| `activacion`                  | automatica, cupon                                               |                                                       |
+| `cupon`                       | código, usosMaximos, usosPorCliente, usados                     | El código no se repite entre promociones              |
+| `condicion`                   | ninguna, montoMinimo (monto), unidades (cantidad + conjunto)    | El conjunto son vendibles o categorías                |
+| `beneficio`                   | porcentaje, monto, precioFijo, nxm, productoGratis, envioGratis | Lista cerrada: cada uno es otra línea del comprobante |
+| `topeMonto`, `topePorcentaje` | number                                                          | 0: sin tope                                           |
+| `combinable`                  | boolean                                                         | Solo surte efecto si se permite acumular              |
+| `prioridad`                   | number                                                          | Manda la mayor cuando no se acumulan                  |
+| `activa`                      | boolean                                                         |                                                       |
+
+**Cómo se elige:** con `promociones.acumular` apagado entra una sola —la de mayor prioridad y, a
+igual prioridad, la que más beneficia al cliente—; encendido se suman las combinables, y la primera
+no combinable corta la suma. Después se aplica el tope de cada promoción y, por último,
+`promociones.topeCuentaPorcentaje` del local, que recorta desde la de menor prioridad.
+**Permiso:** `promociones.editar`. Crear, editar, activar y borrar quedan en la bitácora.
+
+**N×M** regala las unidades **más baratas** del conjunto. **El producto gratis no descuenta:** el
+POS agrega su línea sin cobrarla. **El envío gratis** solo tiene efecto en un canal de reparto
+propio.
+
+### ReglasPuntos
+
+| Campo            | Tipo     | Notas                                   |
+| ---------------- | -------- | --------------------------------------- |
+| `activo`         | boolean  | Apagado, la caja no menciona puntos     |
+| `solesPorPunto`  | number   | Soles de consumo que valen un punto     |
+| `valorPunto`     | number   | Soles que descuenta un punto al canjear |
+| `canjeMinimo`    | number   | Puntos                                  |
+| `caducidadMeses` | number   | 0: no caducan                           |
+| `canalIds`       | string[] | Vacío: todos acumulan                   |
+
+Solo las reglas, para que el POS sepa qué mostrar. **El saldo de puntos de cada cliente no se
+guarda en la vertical:** la fidelización es otro sistema (D-007, D-011).
+
+## Ventas y caja (F7, D-012) _(línea base preliminar)_
+
+### Pedido y LineaPedido
+
+| Campo                   | Tipo                              | Notas                                                     |
+| ----------------------- | --------------------------------- | --------------------------------------------------------- |
+| `numero`                | number                            | Correlativo por instalación; es como se llama a la cuenta |
+| `localId`, `canalId`    | string                            | → Local, → CanalVenta                                     |
+| `atencion`              | mesa, mostrador, llevar, delivery | Sale del tipo del canal (D-001); no se teclea             |
+| `mesaIds`               | string[]                          | Solo en salón; una mesa no admite dos cuentas abiertas    |
+| `distrito`, `direccion` | string?                           | Delivery: el distrito decide la zona de reparto (D-011)   |
+| `cupon`                 | string?                           | Se pasa tal cual a la evaluación de promociones           |
+| `estado`                | abierto, cobrado, anulado         |                                                           |
+| `divididoDe`            | string?                           | Cuenta madre, si salió de una división                    |
+
+Cada línea lleva `vendibleId`, el **nombre con el que se cobró**, cantidad, precio unitario,
+modificadores con su recargo, nota y `estado`: `pendiente` → `comandada` → (`anulada`). Quitar una
+pendiente la borra; anular una comandada exige motivo, permiso y queda en la bitácora.
+
+### Comanda
+
+`{ numero, pedidoId, areaId, areaNombre, lineaIds, enviada, estado }`. Al comandar, las líneas
+pendientes se agrupan por el área que las prepara (D-004) y cada área recibe **su propio número**.
+Estados: enviada → enPreparacion → lista → entregada. Si un producto no tiene área que lo prepare,
+no se comanda nada y se avisa cuál es.
+
+### TotalesPedido
+
+El orden del cálculo, que es donde se equivocan los sistemas: **consumo → promociones → recargo al
+consumo → envío**. El recargo se calcula sobre el consumo ya rebajado y **no** sobre el envío; el
+IGV se desglosa del total según si los precios lo incluyen. Se guardan también las promociones
+aplicadas y las descartadas con su motivo, para poder explicar la cuenta.
+
+### Venta
+
+`{ numero, pedidoId, sesionCajaId?, totales, propina, pagos[], vuelto, comprobante, estado }`.
+Se emite **nota de venta** (serie del local); la boleta o factura electrónica es F8. Varios medios
+de pago en la misma cuenta; los que lo piden exigen referencia; solo el efectivo da vuelto. Anular
+una venta pide motivo, deja el pedido en `anulado` y se anota en la bitácora.
+
+### SesionCaja y ResumenCaja
+
+`{ localId, usuarioId, abierta, fondoInicial, cerrada?, conteo[], diferencia, estado }`. El
+`ResumenCaja` da ventas, total vendido, propinas, lo cobrado por medio y el **efectivo esperado**
+(fondo + efectivo cobrado − vueltos). Al cerrar se guarda el conteo por medio con su diferencia.
+**Parámetros por local:** `ventas.propinaSugerida`, `caja.exigirSesion`, `caja.cierreCiego`.
+**Permisos:** `ventas.tomarPedido`, `ventas.anularLinea`, `ventas.cobrar`, `ventas.anularVenta`,
+`caja.gestionar`.
+
+**Todavía no hace:** descontar stock por venta, comanda en tiempo real hacia un KDS, ICBPER y
+emisión electrónica.
 
 ## Retiradas
 

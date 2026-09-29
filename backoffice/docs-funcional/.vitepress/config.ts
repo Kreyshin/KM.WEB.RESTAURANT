@@ -55,6 +55,8 @@ export default defineConfig({
           { text: 'Inventario y recetas', link: '/modulos/inventario' },
           { text: 'Compras', link: '/modulos/compras' },
           { text: 'Clientes y reservas', link: '/modulos/clientes' },
+          { text: 'Reparto y promociones', link: '/modulos/delivery' },
+          { text: 'Ventas y caja', link: '/modulos/caja' },
           { text: 'Configuración', link: '/modulos/configuracion' },
         ],
       },

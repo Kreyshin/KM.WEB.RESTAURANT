@@ -197,6 +197,18 @@ const rutas: RouteRecordRaw[] = [
         meta: { titulo: 'Reservas', roles: ['admin'] },
       },
       {
+        path: 'delivery/zonas',
+        name: 'delivery-zonas',
+        component: () => import('@/views/delivery/ZonasRepartoView.vue'),
+        meta: { titulo: 'Zonas de reparto', roles: ['admin'] },
+      },
+      {
+        path: 'promociones',
+        name: 'promociones',
+        component: () => import('@/views/delivery/PromocionesView.vue'),
+        meta: { titulo: 'Promociones y cupones', roles: ['admin'] },
+      },
+      {
         path: 'personal/turnos',
         name: 'personal-turnos',
         component: () => import('@/views/personal/TurnosView.vue'),
@@ -237,6 +249,18 @@ const rutas: RouteRecordRaw[] = [
         name: 'config-motivos',
         component: () => import('@/views/configuracion/MotivosView.vue'),
         meta: { titulo: 'Motivos', roles: ['admin'] },
+      },
+      {
+        path: 'caja',
+        name: 'caja',
+        component: () => import('@/views/ventas/CajaView.vue'),
+        meta: { titulo: 'Caja', roles: ['admin', 'cajero'] },
+      },
+      {
+        path: 'caja/arqueo',
+        name: 'caja-arqueo',
+        component: () => import('@/views/ventas/ArqueoView.vue'),
+        meta: { titulo: 'Arqueo de caja', roles: ['admin', 'cajero'] },
       },
       {
         path: 'reportes',

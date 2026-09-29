@@ -79,6 +79,18 @@ export const modulos: ModuloNav[] = [
         descripcion: 'Agenda del día, mesas y cupo',
         roles: ['admin'],
       },
+      {
+        nombreRuta: 'delivery-zonas',
+        etiqueta: 'Zonas de reparto',
+        descripcion: 'Cobertura, envío y tiempo prometido',
+        roles: ['admin'],
+      },
+      {
+        nombreRuta: 'promociones',
+        etiqueta: 'Promociones',
+        descripcion: 'Reglas, cupones y puntos que lee el POS',
+        roles: ['admin'],
+      },
     ],
   },
   {
@@ -217,9 +229,21 @@ export const modulos: ModuloNav[] = [
     icono: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
     secciones: [
       {
+        nombreRuta: 'caja',
+        etiqueta: 'Caja',
+        descripcion: 'Cuentas abiertas, comandas y cobro',
+        roles: ['admin', 'cajero'],
+      },
+      {
+        nombreRuta: 'caja-arqueo',
+        etiqueta: 'Arqueo de caja',
+        descripcion: 'Apertura con fondo y cierre contando',
+        roles: ['admin', 'cajero'],
+      },
+      {
         nombreRuta: 'reportes',
-        etiqueta: 'Reportes y caja',
-        descripcion: 'Ventas y cierre de caja',
+        etiqueta: 'Reportes',
+        descripcion: 'Ventas y rentabilidad',
         roles: ['admin', 'cajero'],
       },
       {

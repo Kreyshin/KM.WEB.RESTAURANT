@@ -179,6 +179,79 @@ const definiciones: DefinicionParametro[] = [
     tipo: 'numero',
     porDefecto: 5,
   },
+  {
+    clave: 'delivery.fueraDeCobertura',
+    etiqueta: 'Pedido fuera de cobertura',
+    descripcion:
+      'Avisar: se acepta el pedido advirtiendo que ese distrito no tiene zona. Bloquear: no se deja cobrar.',
+    alcance: 'local',
+    grupo: 'Delivery',
+    tipo: 'opcion',
+    opciones: [
+      { valor: 'avisar', etiqueta: 'Avisar' },
+      { valor: 'bloquear', etiqueta: 'Bloquear' },
+    ],
+    porDefecto: 'avisar',
+  },
+  {
+    clave: 'delivery.cobrarEnvio',
+    etiqueta: 'Cobrar el envío',
+    descripcion:
+      'Sin esto, el reparto propio no cobra envío en ningún caso, aunque la zona tenga costo.',
+    alcance: 'local',
+    grupo: 'Delivery',
+    tipo: 'booleano',
+    porDefecto: true,
+  },
+  {
+    clave: 'promociones.acumular',
+    etiqueta: 'Acumular promociones',
+    descripcion:
+      'Sin esto, en cada cuenta entra una sola promoción: la de mayor prioridad. Con esto, entran todas las marcadas como combinables.',
+    alcance: 'vertical',
+    grupo: 'Promociones',
+    tipo: 'booleano',
+    porDefecto: false,
+  },
+  {
+    clave: 'promociones.topeCuentaPorcentaje',
+    etiqueta: 'Tope de descuento por cuenta',
+    descripcion:
+      'Porcentaje máximo que pueden rebajar todas las promociones juntas. 0: solo manda el tope de cada promoción.',
+    alcance: 'local',
+    grupo: 'Promociones',
+    tipo: 'numero',
+    porDefecto: 0,
+  },
+  {
+    clave: 'ventas.propinaSugerida',
+    etiqueta: 'Propina sugerida',
+    descripcion:
+      'Porcentaje que la caja propone al cobrar. El cliente manda: se puede cambiar o quitar.',
+    alcance: 'local',
+    grupo: 'Ventas',
+    tipo: 'numero',
+    porDefecto: 10,
+  },
+  {
+    clave: 'caja.exigirSesion',
+    etiqueta: 'Exigir caja abierta para cobrar',
+    descripcion: 'Sin caja abierta no se cobra. Apagado en locales que no hacen arqueo por turno.',
+    alcance: 'local',
+    grupo: 'Ventas',
+    tipo: 'booleano',
+    porDefecto: true,
+  },
+  {
+    clave: 'caja.cierreCiego',
+    etiqueta: 'Cierre de caja a ciegas',
+    descripcion:
+      'Quien cuenta no ve lo que el sistema espera hasta haber contado. Es lo que hace que el arqueo mida algo.',
+    alcance: 'local',
+    grupo: 'Ventas',
+    tipo: 'booleano',
+    porDefecto: true,
+  },
 ]
 
 const permisos: PermisoVertical[] = [
@@ -271,6 +344,48 @@ const permisos: PermisoVertical[] = [
     etiqueta: 'Ver la bitácora',
     modulo: 'Personal',
     descripcion: 'Quién hizo cada acción sensible y cuándo.',
+  },
+  {
+    clave: 'delivery.zonas',
+    etiqueta: 'Editar zonas de reparto',
+    modulo: 'Delivery',
+    descripcion: 'Cobertura, costo de envío, pedido mínimo y tiempo prometido por zona.',
+  },
+  {
+    clave: 'promociones.editar',
+    etiqueta: 'Editar promociones',
+    modulo: 'Promociones',
+    descripcion: 'Crear y cambiar promociones, cupones y las reglas de puntos.',
+  },
+  {
+    clave: 'ventas.tomarPedido',
+    etiqueta: 'Tomar pedidos',
+    modulo: 'Ventas',
+    descripcion: 'Abrir cuentas, añadir productos, comandar, mover de mesa y dividir.',
+  },
+  {
+    clave: 'ventas.anularLinea',
+    etiqueta: 'Anular un producto comandado',
+    modulo: 'Ventas',
+    descripcion: 'Quitar de la cuenta algo que ya está en cocina, con motivo.',
+  },
+  {
+    clave: 'ventas.cobrar',
+    etiqueta: 'Cobrar',
+    modulo: 'Ventas',
+    descripcion: 'Cerrar la cuenta con uno o varios medios de pago.',
+  },
+  {
+    clave: 'ventas.anularVenta',
+    etiqueta: 'Anular una venta',
+    modulo: 'Ventas',
+    descripcion: 'Dejar sin efecto una venta ya cobrada, con motivo.',
+  },
+  {
+    clave: 'caja.gestionar',
+    etiqueta: 'Abrir y cerrar caja',
+    modulo: 'Ventas',
+    descripcion: 'Apertura con fondo y cierre con arqueo por medio de pago.',
   },
 ]
 
