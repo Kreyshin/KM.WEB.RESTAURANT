@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 
 export type IconoAccion =
   | 'editar'
@@ -76,6 +76,12 @@ async function mostrar() {
   if (props.disabled || !boton.value) return
   visible.value = true
   await nextTick()
+  // El botón puede haberse ido mientras tanto: al abrir un panel o al
+  // recargarse la lista, el foco dispara esto sobre algo que ya no está.
+  if (!boton.value) {
+    visible.value = false
+    return
+  }
   const r = boton.value.getBoundingClientRect()
   const ancho = tooltip.value?.offsetWidth ?? 0
   const margen = 8
@@ -90,6 +96,9 @@ async function mostrar() {
 function ocultar() {
   visible.value = false
 }
+
+// El tooltip vive en <body>: si el botón desaparece, se va con él.
+onBeforeUnmount(ocultar)
 </script>
 
 <template>

@@ -16,7 +16,7 @@ Fases de **front-end** sobre datos de ejemplo. Una fase no empieza sin los maest
 | F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir       | ⚠️ Por decidir |
 | F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados  | ✅ Hecha       |
 | F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas            | ✅ Hecha       |
-| F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades       | Pendiente      |
+| F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades       | ✅ Hecha       |
 
 \* La semilla realista se amplía en cada fase, cuando existan sus entidades.
 
@@ -362,6 +362,36 @@ propina y el recargo van aparte y la comisión de las apps se enseña sin restar
 - [x] Exportación a CSV y Excel de la pestaña que se está mirando
 - [ ] Congelar el costo en la línea de venta, para que el margen histórico no se mueva
 - [ ] Reporte de caja por turno y por cajero _(cuando haya varios turnos con datos)_
+
+## F10 · Pulido y entidades
+
+Tres frentes, medidos antes de tocar nada.
+
+**Accesibilidad**
+
+- [x] Diálogos con nombre propio: se anuncian por su título, no como «dialog» a secas
+- [x] El foco entra al abrirlos, queda atrapado dentro y vuelve al botón que los abrió
+- [x] Escape cierra modal y panel, y devuelve el scroll al cuerpo
+- [x] El menú de una mesa se abre con Shift+F10 o la tecla de menú, y al cerrarse el foco
+      vuelve a la mesa en vez de caer al principio de la página
+- [x] Los interruptores de parámetros se llaman como su parámetro, no «Sí» y «No» (F8)
+- [x] Barrido por las pantallas: controles con nombre, campos con etiqueta, un solo `h1`
+      y su `main` por pantalla, sin ids duplicados
+- [ ] Repasar con un lector de pantalla real, que un barrido automático no sustituye
+
+**Rendimiento**
+
+- [x] Medido primero: los reportes sobre tres semanas tardan 24–28 ms; ahí no había problema
+- [x] El problema era la tabla larga: `KmTable` pinta por tandas de 150 con «mostrar más»
+- [x] Mil filas pasan de 340 ms a 51 ms, y al cambiar el filtro se vuelve a la primera tanda
+- [ ] Virtualizar de verdad, si alguna pantalla llega a necesitar miles de filas a la vez
+
+**Diccionario de entidades**
+
+- [x] Una prueba vigila que toda entidad del modelo esté en `entidades.md` y que no
+      queden documentadas las que ya no existen
+- [x] Encontró 27 sin documentar y una sección fantasma (`Receta`, sustituida por
+      `RecetaEstandar`): documentadas las 27, borrada la fantasma
 
 ## Pendientes de revisión
 

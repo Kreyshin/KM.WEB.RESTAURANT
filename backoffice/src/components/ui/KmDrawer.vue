@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, watch } from 'vue'
+import { useId, useTemplateRef } from 'vue'
+import { useDialogo } from '@/composables/useDialogo'
 
 withDefaults(
   defineProps<{ titulo?: string; subtitulo?: string; ancho?: 'sm' | 'md' | 'lg' | 'xl' }>(),
@@ -9,22 +10,11 @@ withDefaults(
 const abierto = defineModel<boolean>({ required: true })
 
 const anchos = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl', xl: 'max-w-6xl' } as const
+const idTitulo = useId()
 
-function alPresionarTecla(e: KeyboardEvent) {
-  if (e.key === 'Escape') abierto.value = false
-}
-
-// Igual que KmModal: bloquea el scroll del body y escucha Escape mientras está abierto.
-watch(abierto, (esta) => {
-  document.body.style.overflow = esta ? 'hidden' : ''
-  if (esta) window.addEventListener('keydown', alPresionarTecla)
-  else window.removeEventListener('keydown', alPresionarTecla)
-})
-
-onBeforeUnmount(() => {
-  document.body.style.overflow = ''
-  window.removeEventListener('keydown', alPresionarTecla)
-})
+// Igual que KmModal: Escape, foco atrapado y devuelto al cerrar (F10).
+const panel = useTemplateRef<HTMLElement>('panel')
+useDialogo(abierto, () => (abierto.value = false), panel)
 </script>
 
 <template>
@@ -34,16 +24,19 @@ onBeforeUnmount(() => {
         <div class="rs-drawer-velo absolute inset-0 bg-black/45" @click="abierto = false" />
 
         <aside
+          ref="panel"
           role="dialog"
           aria-modal="true"
-          :aria-label="titulo"
+          :aria-labelledby="titulo ? idTitulo : undefined"
+          :aria-label="titulo ? undefined : 'Panel'"
+          tabindex="-1"
           class="rs-drawer-panel relative flex h-full w-full flex-col border-l border-linea bg-panel"
           :class="anchos[ancho]"
           style="box-shadow: var(--rs-sombra-flotante)"
         >
           <header class="flex items-start justify-between gap-4 border-b border-linea px-6 py-4">
             <div class="min-w-0">
-              <h2 class="rs-titulo-seccion text-tinta">{{ titulo }}</h2>
+              <h2 :id="idTitulo" class="rs-titulo-seccion text-tinta">{{ titulo }}</h2>
               <p v-if="subtitulo" class="mt-0.5 text-xs text-tenue">{{ subtitulo }}</p>
             </div>
             <button

@@ -1,5 +1,7 @@
 # Revisión pendiente
 
+La lista completa con casillas está en REVISION.md, en la raíz del repositorio. Aquí queda el detalle por fase.
+
 Lo construido que aún no revisa el responsable de producto. Se marca al revisarlo; lo que no pase vuelve como corrección al roadmap.
 
 ## F4.5 · Recepción y transformación

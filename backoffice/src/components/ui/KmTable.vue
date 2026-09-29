@@ -1,16 +1,25 @@
 <script setup lang="ts" generic="T extends { id: string }">
+import { computed, ref, watch } from 'vue'
 import KmEstado from './KmEstado.vue'
 import type { Orden } from '@/types'
 import type { ColumnaTabla } from '@/types/ui'
 
-defineProps<{
-  columnas: ColumnaTabla[]
-  filas: T[]
-  cargando?: boolean
-  mensajeVacio?: string
-  /** Mensaje de error de carga; sustituye al cuerpo de la tabla. */
-  error?: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    columnas: ColumnaTabla[]
+    filas: T[]
+    cargando?: boolean
+    mensajeVacio?: string
+    /** Mensaje de error de carga; sustituye al cuerpo de la tabla. */
+    error?: string | null
+    /**
+     * Filas que se pintan de entrada (F10). Más allá, el navegador tarda y
+     * nadie lee mil filas seguidas: se muestran por tandas.
+     */
+    limiteInicial?: number
+  }>(),
+  { limiteInicial: 150 },
+)
 
 const orden = defineModel<Orden | undefined>('orden')
 const emit = defineEmits<{ reintentar: [] }>()
@@ -19,6 +28,17 @@ defineSlots<{
   [key: `col-${string}`]: (props: { fila: T }) => unknown
   vacio?: () => unknown
 }>()
+
+const visibles = ref(props.limiteInicial)
+// Al cambiar el conjunto (otro filtro, otro orden) se vuelve a la primera tanda.
+watch(
+  () => props.filas,
+  () => (visibles.value = props.limiteInicial),
+)
+
+const filasVisibles = computed(() => props.filas.slice(0, visibles.value))
+const ocultas = computed(() => Math.max(0, props.filas.length - visibles.value))
+const mostrarMas = () => (visibles.value += props.limiteInicial)
 
 /**
  * Valor que se pinta cuando la columna no define slot propio.
@@ -115,7 +135,7 @@ function ariaSort(campo: string) {
 
         <template v-else>
           <tr
-            v-for="fila in filas"
+            v-for="fila in filasVisibles"
             :key="fila.id"
             class="border-b border-linea transition-[colors,opacity] duration-150 last:border-0 hover:bg-seleccion"
             :class="cargando ? 'opacity-60' : ''"
@@ -129,6 +149,20 @@ function ariaSort(campo: string) {
               <slot :name="`col-${c.clave}`" :fila="fila">
                 {{ valorPorDefecto(fila, c.clave) }}
               </slot>
+            </td>
+          </tr>
+          <tr v-if="ocultas">
+            <td :colspan="columnas.length" class="px-4 py-3 text-center">
+              <button
+                type="button"
+                class="text-sm font-semibold text-verde hover:underline"
+                @click="mostrarMas"
+              >
+                Mostrar {{ Math.min(ocultas, limiteInicial) }} más
+              </button>
+              <span class="ml-2 text-xs text-tenue tabular-nums">
+                {{ filasVisibles.length }} de {{ filas.length }}
+              </span>
             </td>
           </tr>
         </template>

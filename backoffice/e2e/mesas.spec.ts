@@ -46,7 +46,10 @@ test.describe('Plano de mesas', () => {
     await page.reload()
     await expect(mesa(page, 'M-02')).toBeVisible()
     const recargada = (await mesa(page, 'M-02').boundingBox())!
-    expect(Math.abs(recargada.x - final.x)).toBeLessThan(3)
+    // La posición se guarda en % con un decimal, así que al repintar puede
+    // moverse un par de píxeles. Lo que se comprueba es que siga donde se
+    // soltó, no que cuadre al píxel: el margen es una fracción de celda (36 px).
+    expect(Math.abs(recargada.x - final.x)).toBeLessThan(6)
   })
 
   test('un clic simple abre la edición de la mesa', async ({ page }) => {

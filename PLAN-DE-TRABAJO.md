@@ -38,7 +38,7 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 | F7 · Ventas y caja                | Pedido, comanda, cuenta y cobro                             | 🔨 Línea base hecha    |
 | F8 · Comprobantes                 | Boletas, facturas y notas de crédito                        | ✅ (envío simulado)    |
 | F9 · Reportes                     | Ventas, rentabilidad por plato, consumo y mermas            | ✅                     |
-| F10 · Pulido                      | Accesibilidad, rendimiento y diccionario de entidades       | ⏳                     |
+| F10 · Pulido                      | Accesibilidad, rendimiento y diccionario de entidades       | ✅                     |
 
 ### F4 · Abastecimiento, al detalle
 
@@ -57,9 +57,9 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 
 ## 3. Lo siguiente
 
-1. **Criticar F7, F8 y F9** — la línea base estándar ya funciona; lo que chirríe se refactoriza (D-012, D-013, D-014).
+1. **Revisar todo lo construido** con [REVISION.md](REVISION.md): es la lista con casillas para marcar.
 2. **Congelar el costo en la línea de venta**, que es lo que hoy desvía el margen histórico (D-014).
-3. **F10 · Pulido** — accesibilidad, rendimiento y diccionario de entidades.
+3. **Pantalla de Usuarios**, el KDS en tiempo real (decisión C) y el envío real al OSE (decisión D).
 
 ## 4. Decisiones abiertas
 
@@ -78,8 +78,8 @@ datos reales están al final del [roadmap](backoffice/docs/guia/roadmap.md).
 
 Acompaña a todas las fases, no es una fase.
 
-- **Accesibilidad** — contrastes medidos; falta auditar teclado y lector de pantalla en el plano de mesas.
-- **Rendimiento** — virtualizar tablas cuando la carta pase de ~200 productos.
+- **Accesibilidad** — contrastes medidos y teclado auditado en F10; falta un repaso con lector de pantalla real.
+- **Rendimiento** — medido en F10: las tablas largas se pintan por tandas; virtualizar solo si hiciera falta.
 - **CI/CD** — `npm run verify` en cada push; publicación de docs y demo ya automatizada.
 - **Semilla realista** — se amplía en cada fase, con las entidades de esa fase.
 - **Observabilidad** — registro de errores de cliente (con backend).

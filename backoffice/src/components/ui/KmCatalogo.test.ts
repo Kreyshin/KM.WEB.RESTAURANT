@@ -172,7 +172,8 @@ describe('KmCatalogo', () => {
     await screen.findByText('Rappi')
 
     await usuario.click(screen.getByRole('button', { name: 'Eliminar Rappi' }))
-    const dialogo = screen.getByRole('dialog', { name: '' })
+    // El diálogo se anuncia con su título, no como un «dialog» sin nombre (F10).
+    const dialogo = screen.getByRole('dialog', { name: 'Eliminar canal' })
     expect(dialogo).toHaveTextContent('¿Eliminar «Rappi»?')
     expect(servicio.eliminar).not.toHaveBeenCalled()
 

@@ -462,14 +462,6 @@ Regla: la suma del detalle por insumo y almacén debe cuadrar con el stock princ
 
 Reglas: el stock de un almacén nunca queda negativo. Traslados y transformaciones se aplican como transacción: si un movimiento falla, no se guarda ninguno.
 
-### Receta
-
-| Campo                     | Tipo   | Notas                   |
-| ------------------------- | ------ | ----------------------- |
-| `productoId`              | string | → Producto (1 a 1)      |
-| `ingredientes[].insumoId` | string | → Insumo                |
-| `ingredientes[].cantidad` | number | En la unidad del insumo |
-
 ## Compras
 
 ### SolicitudCompra
@@ -725,6 +717,43 @@ toman el mismo `FiltroReporte` (`localId`, `desde`, `hasta`, `canalId?`).
 
 **Cuidado conocido:** el costo es el de la receta vigente al consultar, no el del día de la venta;
 congelarlo en la línea vendida es lo primero de la lista (D-014).
+
+## Piezas de otras entidades
+
+No tienen vida propia: existen dentro de la entidad que las contiene, y se
+documentan aquí para que el diccionario no deje agujeros.
+
+**Sala y carta**
+
+- `DisponibilidadHoraria` — franjas en las que un producto o una categoría se ofrece.
+- `EfectoModificador` — lo que un modificador suma o quita de la receta (`insumoId`, `cantidad`, `unidad`, `efecto`).
+- `ProductoVendible` — todo lo que se puede cobrar (producto, presentación, adicional o combo) con su clave estable `p:`/`v:`/`m:`/`c:`.
+- `DescuentoLinea` — descuento de una línea de lista de precios, con su vigencia.
+- `ComandaArea` — qué recibe un área: todos los productos, o ciertas categorías y productos.
+
+**Accesos e integración**
+
+- `AccesoAlmacen`, `AccesoZona`, `AccesoCadena` — nivel de acceso de una persona; el del almacén viene del ERP y en la vertical solo se recorta.
+- `ConfigIntegracion` y `CambioModoIntegracion` — modo por capacidad y el historial de sus cambios, con motivo (D-009).
+- `VinculoErp` — puente entre un registro de la vertical y su identificador en el ERP.
+- `ValoresConfiguracion` — los valores de los parámetros por empresa, cadena y local.
+
+**Compras y producción**
+
+- `LineaSolicitud`, `LineaRequerimiento`, `EventoRequerimiento` — líneas de lo que pide un área o un local, y el rastro de su tramitación.
+- `ParteRecepcion`, `LineaRecepcion`, `ComprobanteIngreso` — lo recibido, línea a línea, y el documento del ingreso sin orden de compra.
+- `EntradaParte`, `SalidaParte` — lo que entra y sale en un parte de producción.
+
+**Recetas**
+
+- `PasoFicha` y `FichaTecnica` — pasos con tiempo, temperatura y equipo, porciones, conservación y tolerancia de peso.
+- `IngredienteReceta` — insumo y cantidad; hoy solo lo usan las entradas de una transformación.
+
+**Comercial y ventas**
+
+- `MedioPago` — efectivo, tarjeta, billetera, transferencia o crédito, con su comisión y si pide referencia.
+- `SerieComprobante` — serie y correlativo por local y tipo de comprobante; el dato es del ERP.
+- `CondicionPromocion`, `BeneficioPromocion`, `CuponPromocion` — lo que exige, lo que da y el cupón de una promoción (D-011).
 
 ## Retiradas
 
