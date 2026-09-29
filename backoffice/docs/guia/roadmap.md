@@ -15,7 +15,7 @@ Fases de **front-end** sobre datos de ejemplo. Una fase no empieza sin los maest
 | F6 · Clientes y promociones       | Maestros  | Clientes, reservas, delivery y reglas de promociones        | ✅ Hecha       |
 | F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir       | ⚠️ Por decidir |
 | F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados  | ✅ Hecha       |
-| F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas            | Pendiente      |
+| F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas            | ✅ Hecha       |
 | F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades       | Pendiente      |
 
 \* La semilla realista se amplía en cada fase, cuando existan sus entidades.
@@ -343,6 +343,25 @@ enchufe el OSE real (decisión D). La vertical emite; quien declara es el ERP.
 - [x] Permisos separados para emitir y para anular
 - [ ] Envío real a un OSE _(decisión D)_
 - [ ] Resumen diario de boletas, comunicación de baja y notas de débito
+
+## F9 · Reportes
+
+Lo decidido en D-014 se nota en cada cifra: la anulada no existe, el ingreso se mide neto, la
+propina y el recargo van aparte y la comisión de las apps se enseña sin restarla de la venta.
+
+- [x] Semilla con tres semanas de ventas —fines de semana fuertes, lunes flojos, alguna anulada—
+      y sus movimientos de consumo, para que los reportes tengan algo que decir
+- [x] Ventas: ingreso neto, IGV, cobrado, cuentas, ticket medio y gasto por comensal
+- [x] Reparto por canal con su comisión, por día y por hora del servicio
+- [x] Una nota de crédito parcial rebaja su venta; una total la saca del reporte
+- [x] Rentabilidad por plato: unidades, ingreso neto, costo, margen y food cost contra su objetivo
+- [x] Clasificación A, B y C por aporte al margen
+- [x] Los platos sin receta se marcan y no entran en el food cost, en vez de fingir costo cero
+- [x] Consumo teórico (recetas) frente a real (almacén), con la diferencia valorizada al costo
+- [x] Mermas registradas en su propia columna
+- [x] Exportación a CSV y Excel de la pestaña que se está mirando
+- [ ] Congelar el costo en la línea de venta, para que el margen histórico no se mueva
+- [ ] Reporte de caja por turno y por cajero _(cuando haya varios turnos con datos)_
 
 ## Pendientes de revisión
 

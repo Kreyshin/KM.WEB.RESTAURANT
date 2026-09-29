@@ -709,6 +709,23 @@ cuál falta. **Parámetros por local:** `comprobantes.emisionAutomatica`,
 **Todavía no hace:** envío real a un OSE, resumen diario de boletas, comunicación de baja y notas
 de débito.
 
+## Reportes (F9, D-014)
+
+No son entidades guardadas: se calculan sobre las ventas, los pedidos y los movimientos. Todos
+toman el mismo `FiltroReporte` (`localId`, `desde`, `hasta`, `canalId?`).
+
+- **`ResumenVentas`**: cuentas, comensales, total cobrado, ingreso neto, IGV, recargo al consumo,
+  propinas, descuentos, ticket medio, gasto por comensal y las anuladas —contadas, no sumadas—,
+  con desglose `porDia`, `porCanal` (con su comisión) y `porHora`.
+- **`ResumenPlatos`**: por vendible, unidades, ingreso neto, costo de la receta vigente, margen,
+  food cost real contra su objetivo y clase `A`/`B`/`C` por aporte al margen. Los `sinReceta` se
+  cuentan aparte y no entran en el food cost global.
+- **`ResumenConsumo`**: por insumo, consumo `teorico` (lo que dicen las recetas de lo vendido),
+  `real` (salidas del almacén con motivo «Venta»), `merma` y la `diferencia` valorizada al costo.
+
+**Cuidado conocido:** el costo es el de la receta vigente al consultar, no el del día de la venta;
+congelarlo en la línea vendida es lo primero de la lista (D-014).
+
 ## Retiradas
 
 Existieron en la versión autónoma y se retiraron porque pertenecen al ERP, aún no aplican o quedaron sustituidas: `OrdenCompra`, `TomaInventario`, `PedidoInterno` y las unidades de pedido y recepción del insumo (F4.1); `Preparacion` y `Insumo.proveedorId` (F4.3, sustituidos por `Transformacion` y por el proveedor del artículo).

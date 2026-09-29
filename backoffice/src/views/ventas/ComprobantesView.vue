@@ -8,6 +8,7 @@ import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'
 import KmModal from '@/components/ui/KmModal.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
+import KmRangoFechas from '@/components/ui/KmRangoFechas.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import KmSwitch from '@/components/ui/KmSwitch.vue'
 import KmTable from '@/components/ui/KmTable.vue'
@@ -32,7 +33,7 @@ import type {
   TipoDocumento,
   Venta,
 } from '@/types'
-import type { ColumnaTabla, OpcionSelect, Pestana, TonoMesa } from '@/types/ui'
+import type { ColumnaTabla, OpcionSelect, Pestana, RangoFechas, TonoMesa } from '@/types/ui'
 import { formatearHora, formatearSoles } from '@/utils/formato'
 
 /**
@@ -44,6 +45,17 @@ import { formatearHora, formatearSoles } from '@/utils/formato'
 const ui = useUiStore()
 const auth = useAuthStore()
 const localStore = useLocalStore()
+
+const hoy = new Date()
+const iso = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+// Un local lleva cientos de comprobantes: se mira una semana, no la historia.
+const rango = ref<RangoFechas>({
+  desde: iso(new Date(hoy.getTime() - 6 * 86_400_000)),
+  hasta: iso(hoy),
+})
+const estado = ref<EstadoComprobante | ''>('')
 
 const comprobantes = shallowRef<Comprobante[]>([])
 const pendientes = shallowRef<Venta[]>([])
@@ -62,7 +74,12 @@ async function cargar() {
   cargando.value = true
   try {
     const [cs, vs] = await Promise.all([
-      comprobantesService.listar({ localId: localStore.localId }),
+      comprobantesService.listar({
+        localId: localStore.localId,
+        desde: rango.value.desde,
+        hasta: rango.value.hasta,
+        estado: estado.value || undefined,
+      }),
       comprobantesService.ventasSinComprobante(localStore.localId),
     ])
     comprobantes.value = cs
@@ -73,7 +90,14 @@ async function cargar() {
     cargando.value = false
   }
 }
-watch(() => localStore.localId, cargar, { immediate: true })
+watch([() => localStore.localId, rango, estado], cargar, { immediate: true, deep: true })
+
+const opcionesEstado = computed<OpcionSelect[]>(() => [
+  { valor: '', etiqueta: 'Todos los estados' },
+  ...(['porEnviar', 'enviado', 'aceptado', 'rechazado', 'observado'] as EstadoComprobante[]).map(
+    (e) => ({ valor: e, etiqueta: etiquetaEstadoComprobante[e] }),
+  ),
+])
 
 const pestana = ref<'emitidos' | 'pendientes'>('emitidos')
 const pestanas = computed<Pestana[]>(() => [
@@ -294,9 +318,17 @@ async function emitirNota() {
             >
           </div>
         </div>
-        <KmButton :disabled="!puedeEmitir || !porEnviar.length" @click="enviarTodos">
-          Enviar pendientes {{ porEnviar.length ? `(${porEnviar.length})` : '' }}
-        </KmButton>
+        <div class="flex flex-wrap items-end gap-3">
+          <KmField label="Periodo">
+            <KmRangoFechas v-model="rango" />
+          </KmField>
+          <KmField v-slot="{ id }" label="Estado">
+            <KmSelect :id="id" v-model="estado" :opciones="opcionesEstado" />
+          </KmField>
+          <KmButton :disabled="!puedeEmitir || !porEnviar.length" @click="enviarTodos">
+            Enviar pendientes {{ porEnviar.length ? `(${porEnviar.length})` : '' }}
+          </KmButton>
+        </div>
       </div>
 
       <div class="px-6 pt-4 pb-6">

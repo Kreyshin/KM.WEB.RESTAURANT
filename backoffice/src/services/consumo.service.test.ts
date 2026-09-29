@@ -152,9 +152,11 @@ describe('lo anulado vuelve al almacén', () => {
 
   it('el movimiento queda en el kardex con la cuenta que lo originó', async () => {
     await cobrarCuenta()
-    const salidas = db.movimientos.filter((m) => m.motivo?.startsWith('Venta · cuenta'))
+    // La semilla trae ventas de semanas pasadas con sus propias salidas: lo que
+    // se comprueba es que la cuenta recién cobrada deje la suya.
+    const salidas = db.movimientos.filter((m) => m.motivo === 'Venta · cuenta 1041')
     expect(salidas.length).toBeGreaterThan(0)
-    expect(salidas[0].referencia).toBe('1041')
-    expect(salidas[0].tipo).toBe('salida')
+    expect(salidas.every((m) => m.referencia === '1041')).toBe(true)
+    expect(salidas.every((m) => m.tipo === 'salida')).toBe(true)
   })
 })

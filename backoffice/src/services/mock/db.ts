@@ -64,6 +64,9 @@ import type {
   Venta,
   SesionCaja,
   Comprobante,
+  LineaPedido,
+  TipoAtencion,
+  UnidadMedida,
 } from '@/types'
 import { ilustracionCombo, imagenPlato } from './ilustraciones'
 import { simularRed } from './red'
@@ -72,7 +75,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v32'
+const CLAVE = 'km.restaurante.mock.v35'
 
 export interface Esquema {
   combos: Combo[]
@@ -452,6 +455,7 @@ function semilla(): Esquema {
   ]
 
   const series: SerieComprobante[] = [
+    // El correlativo lo mueve la historia de ventas: se ajusta más abajo.
     { id: 'sr1', localId: 'l1', tipo: 'boleta', serie: 'B001', correlativo: 18342, activo: true },
     { id: 'sr2', localId: 'l1', tipo: 'factura', serie: 'F001', correlativo: 2431, activo: true },
     { id: 'sr3', localId: 'l1', tipo: 'notaCredito', serie: 'BC01', correlativo: 57, activo: true },
@@ -1124,6 +1128,7 @@ function semilla(): Esquema {
     ]
 
   const ahora = Date.now()
+  const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
   const hoyIso = new Date(ahora).toISOString().slice(0, 10)
   const hace = (horas: number) => new Date(ahora - horas * 3600_000).toISOString()
 
@@ -3289,6 +3294,271 @@ function semilla(): Esquema {
     },
   ]
 
+  /**
+   * Historia de ventas de las últimas tres semanas (F9). Sin pasado, un reporte
+   * no dice nada: aquí hay fines de semana más fuertes, un delivery que crece y
+   * platos que se venden mucho y dejan poco.
+   *
+   * El generador es determinista a propósito: la demo y las pruebas ven siempre
+   * los mismos números.
+   */
+  function historiaDeVentas() {
+    let semilla = 20260929
+    /** Aleatorio reproducible entre 0 y 1. */
+    const azar = () => {
+      semilla = (semilla * 1103515245 + 12345) % 2147483648
+      return semilla / 2147483648
+    }
+    const entre = (min: number, max: number) => min + Math.floor(azar() * (max - min + 1))
+    const elegir = <T>(lista: T[]) => lista[Math.floor(azar() * lista.length)]!
+
+    const carta = [
+      { vendibleId: 'v:v1', nombre: 'Cebiche clásico · Personal', precio: 42, peso: 9 },
+      { vendibleId: 'v:v2', nombre: 'Cebiche clásico · Fuente', precio: 76, peso: 3 },
+      { vendibleId: 'p:p6', nombre: 'Lomo saltado', precio: 48, peso: 8 },
+      { vendibleId: 'p:p9', nombre: 'Arroz con mariscos', precio: 54, peso: 5 },
+      { vendibleId: 'p:p4', nombre: 'Tiradito de lenguado', precio: 46, peso: 4 },
+      { vendibleId: 'p:p1', nombre: 'Causa limeña', precio: 24, peso: 5 },
+      { vendibleId: 'v:v3', nombre: 'Chicha morada · Vaso', precio: 12, peso: 10 },
+      { vendibleId: 'p:p14', nombre: 'Pisco sour', precio: 26, peso: 6 },
+      { vendibleId: 'p:p11', nombre: 'Suspiro limeño', precio: 18, peso: 3 },
+    ]
+    const bolsa = carta.flatMap((p) => Array.from({ length: p.peso }, () => p))
+    const canales = ['cv1', 'cv1', 'cv1', 'cv2', 'cv3', 'cv3', 'cv4']
+    const medios = ['mp1', 'mp2', 'mp3', 'mp4']
+
+    const pedidosHist: Pedido[] = []
+    const ventasHist: Venta[] = []
+    let numeroPedido = 900
+    let numeroVenta = 500
+    let correlativo = 800
+
+    for (let dia = 21; dia >= 1; dia--) {
+      const fecha = new Date(ahora - dia * 86_400_000)
+      const diaSemana = fecha.getDay()
+      // Viernes y sábado llenan; los lunes son flojos.
+      const base = diaSemana === 5 || diaSemana === 6 ? 14 : diaSemana === 1 ? 5 : 9
+      const cuentas = entre(base - 2, base + 3)
+
+      for (let i = 0; i < cuentas; i++) {
+        const canalId = elegir(canales)
+        const atencion: TipoAtencion =
+          canalId === 'cv1' ? 'mesa' : canalId === 'cv2' ? 'llevar' : 'delivery'
+        const hora = atencion === 'mesa' && azar() < 0.55 ? entre(12, 15) : entre(19, 22)
+        const marca = new Date(fecha)
+        marca.setHours(hora, entre(0, 59), 0, 0)
+
+        const comensales = atencion === 'mesa' ? entre(1, 5) : 1
+        const cuantas = Math.max(1, Math.min(5, comensales + entre(-1, 2)))
+        const lineas: LineaPedido[] = []
+        for (let l = 0; l < cuantas; l++) {
+          const item = elegir(bolsa)
+          lineas.push({
+            id: `lh${numeroPedido}-${l}`,
+            vendibleId: item.vendibleId,
+            nombre: item.nombre,
+            cantidad: entre(1, 2),
+            precioUnitario: item.precio,
+            modificadorIds: [],
+            recargoModificadores: 0,
+            estado: 'comandada',
+            usuarioId: 'u2',
+            creada: marca.toISOString(),
+            consumoRegistrado: true,
+          })
+        }
+
+        numeroPedido += 1
+        numeroVenta += 1
+        correlativo += 1
+
+        const pedido: Pedido = {
+          id: `pdh${numeroPedido}`,
+          numero: numeroPedido,
+          localId: 'l1',
+          canalId,
+          atencion,
+          mesaIds: [],
+          comensales: atencion === 'mesa' ? comensales : undefined,
+          distrito: atencion === 'delivery' ? 'Miraflores' : undefined,
+          lineas,
+          estado: 'cobrado',
+          abierto: marca.toISOString(),
+          usuarioId: 'u2',
+        }
+
+        const subtotal = r2(
+          lineas.reduce((s, l) => s + (l.precioUnitario + l.recargoModificadores) * l.cantidad, 0),
+        )
+        const costoEnvio = atencion === 'delivery' && canalId === 'cv3' ? 6 : 0
+        const recargoConsumo = canalId === 'cv1' ? r2(subtotal * 0.1) : 0
+        const total = r2(subtotal + recargoConsumo + costoEnvio)
+        const valorVenta = r2(total / 1.18)
+        const propina = canalId === 'cv1' && azar() < 0.3 ? r2(subtotal * 0.05) : 0
+        const medioPagoId = elegir(medios)
+
+        ventasHist.push({
+          id: `vth${numeroVenta}`,
+          numero: numeroVenta,
+          pedidoId: pedido.id,
+          localId: 'l1',
+          canalId,
+          fecha: marca.toISOString(),
+          usuarioId: 'u4',
+          totales: {
+            subtotal,
+            descuentoPromociones: 0,
+            costoEnvio,
+            descuentoEnvio: 0,
+            recargoPorcentaje: canalId === 'cv1' ? 10 : 0,
+            recargoConsumo,
+            total,
+            tasaIgv: 18,
+            valorVenta,
+            igv: r2(total - valorVenta),
+            promociones: [],
+            descartadas: [],
+          },
+          propina,
+          pagos: [
+            {
+              medioPagoId,
+              nombre:
+                medioPagoId === 'mp1'
+                  ? 'Efectivo'
+                  : medioPagoId === 'mp2'
+                    ? 'Tarjeta Visa'
+                    : medioPagoId === 'mp3'
+                      ? 'Tarjeta Mastercard'
+                      : 'Yape',
+              monto: r2(total + propina),
+            },
+          ],
+          vuelto: 0,
+          comprobante: { tipo: 'boleta', serie: 'B001', numero: correlativo },
+          // Una de cada veinte se anula: los reportes tienen que saber excluirlas.
+          estado: azar() < 0.05 ? 'anulada' : 'cobrada',
+          motivoAnulacion: undefined,
+        })
+        pedidosHist.push(pedido)
+      }
+    }
+
+    for (const venta of ventasHist)
+      if (venta.estado === 'anulada') venta.motivoAnulacion = 'Error de digitación en caja'
+
+    return { pedidosHist, ventasHist }
+  }
+
+  /**
+   * Movimientos de salida de las ventas históricas (F9). Sin ellos el reporte
+   * de consumo diría que no salió nada del almacén, que es peor que no decir
+   * nada. Se genera con una desviación sobre la receta —porciones generosas,
+   * mermas sin anotar— para que la comparación teórico contra real enseñe algo.
+   */
+  function consumoHistorico(pedidosHist: Pedido[], ventasHist: Venta[]) {
+    /** Conversión mínima: la semilla escribe las recetas en g y ml. */
+    const aUnidadDelInsumo = (cantidad: number, de: UnidadMedida, a: UnidadMedida) => {
+      if (de === a) return cantidad
+      if (de === 'g' && a === 'kg') return cantidad / 1000
+      if (de === 'kg' && a === 'g') return cantidad * 1000
+      if (de === 'ml' && a === 'l') return cantidad / 1000
+      if (de === 'l' && a === 'ml') return cantidad * 1000
+      return cantidad
+    }
+
+    const movimientosVenta: Movimiento[] = []
+    let n = 0
+
+    for (const venta of ventasHist) {
+      if (venta.estado !== 'cobrada') continue
+      const pedido = pedidosHist.find((p) => p.id === venta.pedidoId)
+      if (!pedido) continue
+      const dia = venta.fecha.slice(0, 10)
+
+      for (const linea of pedido.lineas) {
+        const receta = recetasEstandar.find((r) => r.vendibleId === linea.vendibleId)
+        const version = receta?.versiones
+          .filter((v) => v.vigenteDesde <= dia)
+          .sort((a, b) => b.vigenteDesde.localeCompare(a.vigenteDesde) || b.numero - a.numero)[0]
+        if (!version) continue
+
+        for (const l of version.lineas) {
+          const insumo = insumos.find((i) => i.id === l.insumoId)
+          if (!insumo) continue
+          // El cocinero sirve entre lo justo y un 10 % de más.
+          const desviacion = 1 + ((n % 7) - 2) / 40
+          const cantidad = aUnidadDelInsumo(l.cantidad, l.unidad, insumo.unidad) * linea.cantidad
+          n += 1
+          movimientosVenta.push({
+            id: `mvh${venta.numero}-${n}`,
+            insumoId: insumo.id,
+            zonaId: insumo.existencias[0]?.zonaId ?? 'zn1',
+            tipo: 'salida',
+            cantidad: Math.round(cantidad * desviacion * 1000) / 1000,
+            costoUnitario: insumo.costoUnitario,
+            motivo: `Venta · cuenta ${pedido.numero}`,
+            referencia: String(pedido.numero),
+            usuarioId: 'u4',
+            fecha: venta.fecha,
+          })
+        }
+      }
+    }
+    return movimientosVenta
+  }
+
+  /**
+   * Los comprobantes de la historia (F8). Un restaurante emite por cada venta:
+   * dejar doscientas sin comprobante haría parecer que Facturación está en
+   * llamas. Las dos últimas quedan por enviar, para que se vea ese estado.
+   */
+  function comprobantesHistoricos(ventasHist: Venta[]): Comprobante[] {
+    const cobradas = ventasHist.filter((v) => v.estado === 'cobrada')
+    return cobradas.map((venta, i) => {
+      const porEnviar = i >= cobradas.length - 2
+      return {
+        id: `cph${venta.numero}`,
+        tipo: 'boleta',
+        serie: venta.comprobante.serie,
+        numero: venta.comprobante.numero,
+        localId: venta.localId,
+        ventaId: venta.id,
+        fecha: venta.fecha,
+        usuarioId: 'u4',
+        receptor: {},
+        totales: {
+          valorVenta: venta.totales.valorVenta,
+          igv: venta.totales.igv,
+          tasaIgv: venta.totales.tasaIgv,
+          recargoConsumo: venta.totales.recargoConsumo,
+          total: venta.totales.total,
+        },
+        estado: porEnviar ? 'porEnviar' : 'aceptado',
+        intentos: porEnviar ? 0 : 1,
+        respuesta: porEnviar
+          ? undefined
+          : {
+              codigo: '0',
+              mensaje: 'La factura o boleta ha sido aceptada.',
+              fecha: venta.fecha,
+              cdr: `R-${venta.comprobante.serie}-${venta.comprobante.numero}`,
+            },
+      }
+    })
+  }
+
+  const { pedidosHist, ventasHist } = historiaDeVentas()
+
+  // El correlativo de la serie es uno solo: la historia termina justo donde la
+  // serie dice que va (18342), y la próxima boleta sale con el siguiente.
+  const ultimaBoleta = series.find((x) => x.id === 'sr1')!.correlativo
+  ventasHist.forEach((venta, i) => {
+    venta.comprobante.numero = ultimaBoleta - (ventasHist.length - 1 - i)
+  })
+  const movimientosHist = consumoHistorico(pedidosHist, ventasHist)
+  const comprobantesHist = comprobantesHistoricos(ventasHist)
+
   return {
     combos,
     permisosPorRol: {
@@ -3316,11 +3586,11 @@ function semilla(): Esquema {
     zonasReparto,
     promociones,
     reglasPuntos,
-    pedidos,
+    pedidos: [...pedidosHist, ...pedidos],
     comandas,
-    ventas: [],
+    ventas: ventasHist,
     sesionesCaja,
-    comprobantes: [],
+    comprobantes: comprobantesHist,
     listasPrecios,
     zonas,
     proveedores,
@@ -3341,7 +3611,7 @@ function semilla(): Esquema {
     categorias,
     productos,
     insumos,
-    movimientos,
+    movimientos: [...movimientos, ...movimientosHist],
     recetasEstandar,
     ubicaciones,
     lotes,

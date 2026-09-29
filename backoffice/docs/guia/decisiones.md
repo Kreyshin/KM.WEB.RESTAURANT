@@ -409,3 +409,32 @@ estados y las reglas estén construidos cuando se enchufe la integración real (
 **A validar con el contador y con el ERP:** si la emisión la hace esta vertical o la centraliza el
 ERP; el resumen diario de boletas; la comunicación de baja y sus plazos; y las notas de débito,
 que aquí todavía no existen.
+
+## D-014 · Qué cuenta como venta en los reportes
+
+**Contexto.** Un reporte miente sin querer: basta sumar lo que no toca. Antes de dibujar nada hay
+que decidir qué entra en cada cifra, y que la pantalla lo diga en vez de dejarlo a la intuición.
+
+**Decisión.**
+
+1. **La venta anulada no existe** para el análisis. Si tiene nota de crédito total, tampoco. Una
+   nota parcial rebaja el importe de su venta, no genera una venta negativa.
+2. **El ingreso se mide neto**, sin IGV: es lo comparable con el costo. El total con impuestos se
+   muestra al lado porque es lo que entró en caja, pero no es el ingreso.
+3. **La propina no es ingreso del restaurante** y va en su propia columna. El **recargo al consumo**
+   tampoco es venta de comida: se reporta aparte, porque su destino es el personal.
+4. **La comisión de las apps es gasto, no menor venta** (D-010). Se muestra junto al canal para
+   que se vea lo que queda, sin tocar el ingreso.
+5. **El costo del plato es el de su receta vigente** al momento de mirar, no el del día de la
+   venta: la vertical todavía no congela el costo en cada línea. Se avisa en la pantalla, porque
+   con precios de insumo movidos el margen histórico se desvía.
+6. **Food cost real** = costo de lo vendido ÷ ingreso neto de lo vendido. Se compara con el
+   objetivo del local, de la categoría o de la presentación, en ese orden (D-007).
+7. **Consumo teórico** es lo que dicen las recetas de lo vendido; **consumo real** es lo que salió
+   del almacén. Su diferencia es la que hay que explicar: merma no registrada, porciones
+   generosas, robo o recetas mal escritas. El reporte la enseña, no la juzga.
+8. **Las mermas se reportan aparte**, por su propio movimiento, y valorizadas al costo del insumo.
+
+**A validar con ventas reales:** si hace falta congelar el costo en la línea de venta —lo más
+probable—, los umbrales de food cost por categoría y qué diferencia entre consumo teórico y real
+es normal en cada cocina.

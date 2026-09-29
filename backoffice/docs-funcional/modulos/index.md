@@ -2,16 +2,16 @@
 
 La barra izquierda agrupa el back office en ocho módulos. Al pulsar uno se abre un panel con sus secciones; al elegir, el panel se retira y deja todo el ancho al trabajo.
 
-| Módulo                                  | Para qué                                                    | Quién lo usa          |
-| --------------------------------------- | ----------------------------------------------------------- | --------------------- |
-| Inicio                                  | Estado de la sala en vivo                                   | Todos                 |
-| [Sala](/modulos/sala)                   | Salones y mesas                                             | Jefe de sala          |
-| [Clientes](/modulos/clientes)           | Ficha, reservas, [reparto y promociones](/modulos/delivery) | Sala y administración |
-| [Carta](/modulos/carta)                 | Productos, precios y combos                                 | Administración        |
-| [Inventario](/modulos/inventario)       | Insumos, recetas, producción y stock                        | Cocina y almacén      |
-| [Compras](/modulos/compras)             | Solicitudes, requerimientos y recepción                     | Almacén               |
-| Admin                                   | Reportes, caja, facturación y usuarios                      | Administración        |
-| [Configuración](/modulos/configuracion) | Cómo funciona el restaurante                                | Administración        |
+| Módulo                                  | Para qué                                                                                   | Quién lo usa          |
+| --------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------- |
+| Inicio                                  | Estado de la sala en vivo                                                                  | Todos                 |
+| [Sala](/modulos/sala)                   | Salones y mesas                                                                            | Jefe de sala          |
+| [Clientes](/modulos/clientes)           | Ficha, reservas, [reparto y promociones](/modulos/delivery)                                | Sala y administración |
+| [Carta](/modulos/carta)                 | Productos, precios y combos                                                                | Administración        |
+| [Inventario](/modulos/inventario)       | Insumos, recetas, producción y stock                                                       | Cocina y almacén      |
+| [Compras](/modulos/compras)             | Solicitudes, requerimientos y recepción                                                    | Almacén               |
+| [Admin](/modulos/caja)                  | [Caja](/modulos/caja), [facturación](/modulos/facturacion) y [reportes](/modulos/reportes) | Administración        |
+| [Configuración](/modulos/configuracion) | Cómo funciona el restaurante                                                               | Administración        |
 
 ## Lo que se repite en todas las pantallas
 

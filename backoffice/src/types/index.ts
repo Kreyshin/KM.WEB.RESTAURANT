@@ -1807,3 +1807,114 @@ export interface Comprobante {
 export type NuevoComprobante = Pick<Comprobante, 'tipo' | 'ventaId'> & {
   receptor?: ReceptorComprobante
 }
+
+// ── Reportes (F9, D-014) ─────────────────────────────────────────────────────
+
+export interface FiltroReporte {
+  localId?: string
+  /** AAAA-MM-DD, ambos incluidos. */
+  desde: string
+  hasta: string
+  canalId?: string
+}
+
+export interface VentasPorDia {
+  fecha: string
+  cuentas: number
+  comensales: number
+  /** Lo que entró en caja, con impuestos. */
+  total: number
+  /** Ingreso comparable con el costo: sin IGV. */
+  neto: number
+  igv: number
+  recargoConsumo: number
+  propinas: number
+  descuentos: number
+}
+
+export interface VentasPorCanal {
+  canalId: string
+  nombre: string
+  cuentas: number
+  total: number
+  neto: number
+  /** Comisión de la app: gasto, no menor venta (D-010). */
+  comision: number
+  participacion: number
+}
+
+export interface VentasPorHora {
+  hora: number
+  cuentas: number
+  total: number
+}
+
+export interface ResumenVentas extends FiltroReporte {
+  cuentas: number
+  comensales: number
+  total: number
+  neto: number
+  igv: number
+  recargoConsumo: number
+  propinas: number
+  descuentos: number
+  /** Total entre cuentas: lo que gasta una mesa. */
+  ticketMedio: number
+  /** Total entre comensales, cuando se anotan. */
+  gastoPorComensal: number
+  anuladas: number
+  porDia: VentasPorDia[]
+  porCanal: VentasPorCanal[]
+  porHora: VentasPorHora[]
+}
+
+/** Una línea del reporte de platos: lo que vendió y lo que dejó. */
+export interface RentabilidadPlato {
+  vendibleId: string
+  nombre: string
+  categoriaId?: string
+  categoria: string
+  unidades: number
+  ingresoNeto: number
+  /** Costo de la receta vigente, no el del día de la venta (D-014). */
+  costo: number
+  margen: number
+  foodCostReal: number
+  objetivo: number
+  /** Sin receta no hay costo que mostrar: se dice, no se inventa un 0 %. */
+  sinReceta: boolean
+  /** A: el 80 % del margen; B: hasta el 95 %; C: el resto. */
+  clase: ClaseAbc
+}
+
+export interface ResumenPlatos extends FiltroReporte {
+  unidades: number
+  ingresoNeto: number
+  costo: number
+  margen: number
+  foodCostReal: number
+  /** Platos vendidos sin receta: su costo no entra en el food cost. */
+  sinReceta: number
+  platos: RentabilidadPlato[]
+}
+
+/** Lo que las recetas dicen que se gastó frente a lo que salió del almacén. */
+export interface ConsumoInsumo {
+  insumoId: string
+  nombre: string
+  unidad: UnidadMedida
+  teorico: number
+  real: number
+  merma: number
+  /** Real menos teórico: lo que hay que explicar. */
+  diferencia: number
+  costoUnitario: number
+  costoDiferencia: number
+}
+
+export interface ResumenConsumo extends FiltroReporte {
+  costoTeorico: number
+  costoReal: number
+  costoMerma: number
+  insumos: ConsumoInsumo[]
+}

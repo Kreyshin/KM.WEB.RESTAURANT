@@ -25,16 +25,15 @@ Honestidad sobre el alcance de lo que puedes abrir hoy.
 | Configuración                | Vertical, por local, cadenas, canales, áreas y motivos            |
 | Permisos                     | Por rol y excepciones por usuario                                 |
 | Turnos y bitácora            | Franjas del personal y registro de acciones                       |
+| Reportes                     | Ventas, rentabilidad por plato, consumo y mermas                  |
 
 ## Pendiente
 
-La ruta, los permisos por rol y la navegación existen; falta construir la pantalla.
-
-| Módulo            | Qué falta                                 |
-| ----------------- | ----------------------------------------- |
-| Reportes          | Ventas, rentabilidad por plato y mermas   |
-| Facturación SUNAT | Envío real al OSE; lo demás ya funciona   |
-| Usuarios y roles  | Mantenimiento del personal desde pantalla |
+| Módulo            | Qué falta                                         |
+| ----------------- | ------------------------------------------------- |
+| Facturación SUNAT | Envío real al OSE; lo demás ya funciona           |
+| Usuarios y roles  | La ruta y los permisos existen; falta la pantalla |
+| Comanda en cocina | Pantalla de cocina en tiempo real (KDS)           |
 
 ## Sobre los datos
 
