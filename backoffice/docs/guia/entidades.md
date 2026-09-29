@@ -669,8 +669,18 @@ una venta pide motivo, deja el pedido en `anulado` y se anota en la bitácora.
 **Permisos:** `ventas.tomarPedido`, `ventas.anularLinea`, `ventas.cobrar`, `ventas.anularVenta`,
 `caja.gestionar`.
 
-**Todavía no hace:** descontar stock por venta, comanda en tiempo real hacia un KDS, ICBPER y
-emisión electrónica.
+### Consumo por venta (D-007)
+
+Cada línea lleva `consumoRegistrado`: su receta ya salió del almacén y no sale dos veces. El
+parámetro por local `ventas.descuentoStock` decide cuándo —`comandar`, `cobrar` o `no`—; al cobrar
+sale además lo que quedara pendiente, para que nada se venda sin descontarse. El movimiento es una
+salida con motivo «Venta · cuenta N» y la cuenta como referencia, así el kardex lleva hasta ella.
+
+**La venta nunca se bloquea por stock:** se descuenta lo disponible, el resto se anota como
+`faltante` en la venta y en la bitácora. Anular un producto comandado o una venta entera devuelve
+lo consumido con una entrada «Anulación · cuenta N».
+
+**Todavía no hace:** comanda en tiempo real hacia un KDS, ICBPER y emisión electrónica.
 
 ## Retiradas
 

@@ -11,6 +11,7 @@ import KmModal from '@/components/ui/KmModal.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import { cajaService } from '@/services/caja.service'
+import { consumoService, etiquetaMomento } from '@/services/consumo.service'
 import { canalesService, mediosPagoService } from '@/services/comercial.service'
 import { mesasService } from '@/services/mesas.service'
 import { tienePermiso, valorConfig } from '@/services/parametros.service'
@@ -284,6 +285,17 @@ const propina = ref(0)
 const pagos = ref<{ medioPagoId: string; monto: number; referencia: string }[]>([])
 const cobrandoAhora = ref(false)
 
+/** Lo que saldrá del almacén por esta cuenta, y cuándo sale. */
+const momento = computed(() =>
+  localStore.localId ? consumoService.momentoDescuento(localStore.localId) : 'no',
+)
+const consumoPrevisto = computed(() =>
+  pedido.value && momento.value !== 'no' ? consumoService.consumoPendiente(pedido.value) : [],
+)
+const productosSinReceta = computed(() =>
+  pedido.value && momento.value !== 'no' ? consumoService.sinReceta(pedido.value) : [],
+)
+
 const propinaSugerida = computed(() =>
   localStore.localId ? valorConfig<number>('ventas.propinaSugerida', localStore.localId) : 0,
 )
@@ -360,6 +372,7 @@ async function cobrar() {
                   : 'Caja cerrada'
               }}
             </KmBadge>
+            <KmBadge tono="neutro">Stock: {{ etiquetaMomento[momento].toLowerCase() }}</KmBadge>
             <RouterLink
               :to="{ name: 'caja-arqueo' }"
               class="text-xs font-semibold text-verde hover:underline"
@@ -734,6 +747,24 @@ async function cobrar() {
                 ? `Faltan ${formatearSoles(falta)}`
                 : `Cubierto${vuelto ? ` · vuelto ${formatearSoles(vuelto)}` : ''}`
             }}
+          </p>
+        </div>
+        <div
+          v-if="consumoPrevisto.length || productosSinReceta.length"
+          class="flex flex-col gap-2 rounded-card border border-linea p-4"
+        >
+          <p class="rs-etiqueta text-tenue">Sale del almacén al cobrar</p>
+          <ul class="flex flex-col gap-1 text-sm tabular-nums">
+            <li v-for="c in consumoPrevisto" :key="c.insumoId" class="flex justify-between gap-3">
+              <span class="text-tenue">{{ c.nombre }}</span>
+              <span class="text-tinta">{{ c.cantidad }}</span>
+            </li>
+          </ul>
+          <p v-if="productosSinReceta.length" class="text-xs text-laton-texto">
+            Sin receta, no descuentan nada: {{ productosSinReceta.join(', ') }}
+          </p>
+          <p class="text-xs text-tenue">
+            Si falta stock la venta se cobra igual y el faltante queda anotado.
           </p>
         </div>
         <p class="text-xs text-tenue">

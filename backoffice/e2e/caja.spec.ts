@@ -60,6 +60,17 @@ test.describe('Caja', () => {
     await expect(d.getByLabel('Medio')).toHaveCount(2)
   })
 
+  test('el cobro enseña qué sale del almacén', async ({ page }) => {
+    await page.getByRole('button', { name: /Cuenta 1041/ }).click()
+    await page.getByRole('button', { name: /Comandar/ }).click()
+    await page.getByRole('button', { name: 'Cobrar' }).click()
+
+    const d = drawer(page)
+    await expect(d).toContainText('Sale del almacén al cobrar')
+    await expect(d).toContainText('Pescado del día')
+    await expect(d).toContainText('la venta se cobra igual')
+  })
+
   test('cobra, emite nota de venta y deja la mesa en limpieza', async ({ page }) => {
     await page.getByRole('button', { name: /Cuenta 1041/ }).click()
     await page.getByRole('button', { name: /Comandar/ }).click()

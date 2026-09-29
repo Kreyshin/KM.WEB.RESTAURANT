@@ -49,7 +49,8 @@ function recalcularTotal(insumo: Insumo) {
 }
 
 /** Zona por defecto de un insumo: donde más stock tiene, o el primero activo. */
-function zonaPrincipal(insumo: Insumo) {
+/** Zona de la que sale por defecto un insumo: la que más tiene. */
+export function zonaPrincipal(insumo: Insumo) {
   const conStock = [...insumo.existencias].sort((a, b) => b.cantidad - a.cantidad)[0]
   return conStock?.zonaId ?? db.zonas.find((a) => a.activo)?.id ?? ''
 }
@@ -112,7 +113,8 @@ export const aplicarMovimiento = aplicar
  * Ejecuta varios cambios como una transacción: si uno falla, se restaura el
  * estado anterior de insumos y movimientos.
  */
-function transaccion<T>(fn: () => T): T {
+/** Encadena movimientos y guarda una sola vez; si algo falla, no queda nada a medias. */
+export function transaccion<T>(fn: () => T): T {
   const copia = clonar({ insumos: db.insumos, movimientos: db.movimientos })
   try {
     const r = fn()
