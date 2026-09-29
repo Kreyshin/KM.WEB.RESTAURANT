@@ -56,6 +56,13 @@ import type {
   AccesoCadena,
   ConfigIntegracion,
   VinculoErp,
+  ZonaReparto,
+  Promocion,
+  ReglasPuntos,
+  Pedido,
+  Comanda,
+  Venta,
+  SesionCaja,
 } from '@/types'
 import { ilustracionCombo, imagenPlato } from './ilustraciones'
 import { simularRed } from './red'
@@ -64,7 +71,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v30'
+const CLAVE = 'km.restaurante.mock.v31'
 
 export interface Esquema {
   combos: Combo[]
@@ -102,6 +109,13 @@ export interface Esquema {
   clientes: Cliente[]
   fichasCliente: FichaCliente[]
   reservas: Reserva[]
+  zonasReparto: ZonaReparto[]
+  promociones: Promocion[]
+  reglasPuntos: ReglasPuntos
+  pedidos: Pedido[]
+  comandas: Comanda[]
+  ventas: Venta[]
+  sesionesCaja: SesionCaja[]
   bitacora: RegistroAuditoria[]
   ubicaciones: Ubicacion[]
   lotes: Lote[]
@@ -1108,6 +1122,7 @@ function semilla(): Esquema {
     ]
 
   const ahora = Date.now()
+  const hoyIso = new Date(ahora).toISOString().slice(0, 10)
   const hace = (horas: number) => new Date(ahora - horas * 3600_000).toISOString()
 
   const movimientosBase: Omit<Movimiento, 'zonaId'>[] = [
@@ -2947,12 +2962,343 @@ function semilla(): Esquema {
     },
   ]
 
+  /**
+   * Zonas de reparto (F6.2, D-011). Miraflores reparte a tres zonas con costos
+   * distintos; San Isidro solo a su propio distrito y al vecino.
+   */
+  const zonasReparto: ZonaReparto[] = [
+    {
+      id: 'zr1',
+      nombre: 'Cercana',
+      localId: 'l1',
+      distritos: ['Miraflores', 'Barranco'],
+      costoEnvio: 6,
+      pedidoMinimo: 35,
+      tiempoEstimadoMin: 30,
+      envioGratisDesde: 80,
+      nota: 'La moto llega en 30 minutos salvo hora punta.',
+      activa: true,
+    },
+    {
+      id: 'zr2',
+      nombre: 'Intermedia',
+      localId: 'l1',
+      distritos: ['San Isidro', 'Surquillo', 'Santiago de Surco'],
+      costoEnvio: 10,
+      pedidoMinimo: 50,
+      tiempoEstimadoMin: 45,
+      envioGratisDesde: 150,
+      activa: true,
+    },
+    {
+      id: 'zr3',
+      nombre: 'Lejana',
+      localId: 'l1',
+      distritos: ['La Molina', 'San Borja'],
+      costoEnvio: 16,
+      pedidoMinimo: 90,
+      tiempoEstimadoMin: 70,
+      nota: 'Solo hasta las 21:00; después no se llega a tiempo.',
+      activa: false,
+    },
+    {
+      id: 'zr4',
+      nombre: 'Oficinas',
+      localId: 'l2',
+      distritos: ['San Isidro', 'Lince'],
+      costoEnvio: 8,
+      pedidoMinimo: 40,
+      tiempoEstimadoMin: 35,
+      envioGratisDesde: 120,
+      nota: 'Almuerzos de oficina: el reparto se concentra de 12:30 a 14:30.',
+      activa: true,
+    },
+  ]
+
+  /**
+   * Promociones de ejemplo (F6.2, D-011): una por cada forma de beneficio, para
+   * ver en la simulación cómo se pelean entre ellas y cómo pega el tope.
+   */
+  const promociones: Promocion[] = [
+    {
+      id: 'pm1',
+      codigo: 'MARTES-CEBICHE',
+      nombre: 'Martes de cebiche 2×1',
+      descripcion: 'Dos cebiches personales, se paga uno. Solo en salón.',
+      localIds: [],
+      canalIds: ['cv1'],
+      dias: [1],
+      activacion: 'automatica',
+      condicion: { tipo: 'unidades', cantidad: 2, vendibleIds: ['v:v1'] },
+      beneficio: { tipo: 'nxm', llevan: 2, pagan: 1, alcance: 'condicion' },
+      topeMonto: 0,
+      topePorcentaje: 0,
+      combinable: false,
+      prioridad: 90,
+      activa: true,
+    },
+    {
+      id: 'pm2',
+      codigo: 'ENVIO-GRATIS-100',
+      nombre: 'Envío gratis desde S/ 100',
+      descripcion: 'Reparto propio, cuenta de 100 soles o más.',
+      localIds: [],
+      canalIds: ['cv3'],
+      dias: [],
+      activacion: 'automatica',
+      condicion: { tipo: 'montoMinimo', monto: 100 },
+      beneficio: { tipo: 'envioGratis' },
+      topeMonto: 0,
+      topePorcentaje: 0,
+      combinable: true,
+      prioridad: 50,
+      activa: true,
+    },
+    {
+      id: 'pm3',
+      codigo: 'BIENVENIDA10',
+      nombre: 'Cupón de bienvenida 10 %',
+      descripcion: 'Diez por ciento de la cuenta, con tope de 30 soles.',
+      localIds: [],
+      canalIds: [],
+      dias: [],
+      activacion: 'cupon',
+      cupon: { codigo: 'BIENVENIDA10', usosMaximos: 500, usosPorCliente: 1, usados: 214 },
+      condicion: { tipo: 'montoMinimo', monto: 60 },
+      beneficio: { tipo: 'porcentaje', valor: 10, alcance: 'cuenta' },
+      topeMonto: 30,
+      topePorcentaje: 0,
+      combinable: true,
+      prioridad: 40,
+      activa: true,
+    },
+    {
+      id: 'pm4',
+      codigo: 'ALMUERZO-PISCO',
+      nombre: 'Pisco sour a S/ 15 al almuerzo',
+      descripcion: 'De lunes a viernes, de 12:00 a 16:00.',
+      localIds: ['l1', 'l2'],
+      canalIds: ['cv1', 'cv2'],
+      // 0 = lunes … 6 = domingo: de lunes a viernes.
+      dias: [0, 1, 2, 3, 4],
+      horaDesde: '12:00',
+      horaHasta: '16:00',
+      activacion: 'automatica',
+      condicion: { tipo: 'unidades', cantidad: 1, vendibleIds: ['p:p14'] },
+      beneficio: { tipo: 'precioFijo', valor: 15, alcance: 'condicion' },
+      topeMonto: 0,
+      topePorcentaje: 0,
+      combinable: true,
+      prioridad: 60,
+      activa: true,
+    },
+    {
+      id: 'pm5',
+      codigo: 'POSTRE-INVITA',
+      nombre: 'Postre de la casa sobre S/ 150',
+      descripcion: 'Un suspiro limeño de regalo. No se acumula con otras.',
+      localIds: ['l1'],
+      canalIds: ['cv1'],
+      dias: [],
+      activacion: 'automatica',
+      condicion: { tipo: 'montoMinimo', monto: 150 },
+      beneficio: { tipo: 'productoGratis', vendibleId: 'p:p11', cantidad: 1 },
+      topeMonto: 0,
+      topePorcentaje: 0,
+      combinable: false,
+      prioridad: 70,
+      activa: true,
+    },
+    {
+      id: 'pm6',
+      codigo: 'FIESTAS-PATRIAS',
+      nombre: 'Fiestas Patrias: 15 % en fondos criollos',
+      descripcion: 'Del 26 al 31 de julio. Terminó: queda como referencia.',
+      localIds: [],
+      canalIds: [],
+      desde: '2026-07-26',
+      hasta: '2026-07-31',
+      dias: [],
+      activacion: 'automatica',
+      condicion: { tipo: 'unidades', cantidad: 1, categoriaIds: ['c3'] },
+      beneficio: { tipo: 'porcentaje', valor: 15, alcance: 'condicion' },
+      topeMonto: 0,
+      topePorcentaje: 20,
+      combinable: false,
+      prioridad: 80,
+      activa: true,
+    },
+    {
+      id: 'pm7',
+      codigo: 'DELIVERY-5',
+      nombre: 'S/ 5 de descuento en el primer pedido por app propia',
+      localIds: [],
+      canalIds: ['cv3'],
+      dias: [],
+      activacion: 'cupon',
+      cupon: { codigo: 'MOTO5', usosMaximos: 200, usosPorCliente: 1, usados: 200 },
+      condicion: { tipo: 'montoMinimo', monto: 45 },
+      beneficio: { tipo: 'monto', valor: 5, alcance: 'cuenta' },
+      topeMonto: 0,
+      topePorcentaje: 0,
+      combinable: true,
+      prioridad: 30,
+      activa: true,
+    },
+  ]
+
+  /** Reglas de puntos: solo lo que el POS necesita saber (D-011, punto 10). */
+  const reglasPuntos: ReglasPuntos = {
+    activo: false,
+    solesPorPunto: 10,
+    valorPunto: 0.5,
+    canjeMinimo: 20,
+    caducidadMeses: 12,
+    canalIds: ['cv1', 'cv2', 'cv3'],
+  }
+
+  /**
+   * Servicio en marcha (F7, D-012). Las marcas son UTC; en pantalla se ven en
+   * hora de Lima (UTC−5): la caja abre a las 11:30 y se pide a la 1 de la tarde.
+   * Dos mesas con cuenta abierta, una ya
+   * comandada y otra recién tecleada, más un delivery y la caja del día abierta.
+   */
+  const sesionesCaja: SesionCaja[] = [
+    {
+      id: 'sc1',
+      localId: 'l1',
+      usuarioId: 'u4',
+      abierta: `${hoyIso}T16:30:00.000Z`,
+      fondoInicial: 200,
+      estado: 'abierta',
+    },
+  ]
+
+  const pedidos: Pedido[] = [
+    {
+      id: 'pd1',
+      numero: 1041,
+      localId: 'l1',
+      canalId: 'cv1',
+      atencion: 'mesa',
+      mesaIds: ['m1'],
+      nombreCliente: 'Mesa 1',
+      comensales: 4,
+      estado: 'abierto',
+      abierto: `${hoyIso}T18:05:00.000Z`,
+      usuarioId: 'u2',
+      lineas: [
+        {
+          id: 'lp1',
+          vendibleId: 'v:v1',
+          nombre: 'Cebiche clásico · Personal',
+          cantidad: 2,
+          precioUnitario: 42,
+          modificadorIds: ['mo5'],
+          recargoModificadores: 0,
+          estado: 'comandada',
+          areaId: 'ae2',
+          comandaId: 'cm1',
+          usuarioId: 'u2',
+          creada: `${hoyIso}T18:06:00.000Z`,
+        },
+        {
+          id: 'lp2',
+          vendibleId: 'p:p6',
+          nombre: 'Lomo saltado',
+          cantidad: 1,
+          precioUnitario: 48,
+          modificadorIds: ['mo7'],
+          recargoModificadores: 5,
+          nota: 'Término medio',
+          estado: 'comandada',
+          areaId: 'ae1',
+          comandaId: 'cm2',
+          usuarioId: 'u2',
+          creada: `${hoyIso}T18:06:00.000Z`,
+        },
+        {
+          id: 'lp3',
+          vendibleId: 'v:v3',
+          nombre: 'Chicha morada · Vaso',
+          cantidad: 2,
+          precioUnitario: 12,
+          modificadorIds: [],
+          recargoModificadores: 0,
+          estado: 'pendiente',
+          usuarioId: 'u2',
+          creada: `${hoyIso}T18:20:00.000Z`,
+        },
+      ],
+    },
+    {
+      id: 'pd2',
+      numero: 1042,
+      localId: 'l1',
+      canalId: 'cv3',
+      atencion: 'delivery',
+      mesaIds: [],
+      nombreCliente: 'Carla Benavides',
+      clienteId: 'cl1',
+      direccion: 'Av. Pardo 1230, dpto. 502',
+      distrito: 'Miraflores',
+      estado: 'abierto',
+      abierto: `${hoyIso}T18:15:00.000Z`,
+      usuarioId: 'u4',
+      lineas: [
+        {
+          id: 'lp4',
+          vendibleId: 'p:p9',
+          nombre: 'Arroz con mariscos',
+          cantidad: 1,
+          precioUnitario: 54,
+          modificadorIds: [],
+          recargoModificadores: 0,
+          estado: 'pendiente',
+          usuarioId: 'u4',
+          creada: `${hoyIso}T18:15:00.000Z`,
+        },
+      ],
+    },
+  ]
+
+  const comandas: Comanda[] = [
+    {
+      id: 'cm1',
+      numero: 512,
+      pedidoId: 'pd1',
+      areaId: 'ae2',
+      areaNombre: 'Cocina fría (cebichería)',
+      lineaIds: ['lp1'],
+      enviada: `${hoyIso}T18:07:00.000Z`,
+      usuarioId: 'u2',
+      estado: 'entregada',
+    },
+    {
+      id: 'cm2',
+      numero: 513,
+      pedidoId: 'pd1',
+      areaId: 'ae1',
+      areaNombre: 'Cocina caliente',
+      lineaIds: ['lp2'],
+      enviada: `${hoyIso}T18:07:00.000Z`,
+      usuarioId: 'u2',
+      estado: 'enPreparacion',
+    },
+  ]
+
   return {
     combos,
     permisosPorRol: {
       admin: [],
-      cajero: ['compras.solicitar', 'reservas.gestionar'],
-      mesero: [],
+      cajero: [
+        'compras.solicitar',
+        'reservas.gestionar',
+        'ventas.tomarPedido',
+        'ventas.cobrar',
+        'caja.gestionar',
+      ],
+      mesero: ['ventas.tomarPedido'],
       cocinero: ['compras.solicitar', 'produccion.registrar'],
     },
     excepcionesPermiso: [
@@ -2964,6 +3310,13 @@ function semilla(): Esquema {
     clientes,
     fichasCliente,
     reservas,
+    zonasReparto,
+    promociones,
+    reglasPuntos,
+    pedidos,
+    comandas,
+    ventas: [],
+    sesionesCaja,
     listasPrecios,
     zonas,
     proveedores,

@@ -290,3 +290,87 @@ Ejemplo: Sucursal Lima → Cevichería 1, Cevichería 2, Hamburguesería 1; Sucu
 8. **Código:** la vertical usa el suyo; en modo sincronizado la tabla de vínculos guarda el del ERP; en delegado lo asigna el ERP.
 
 **A validar con el contador:** tasa y régimen de IGV del restaurante, recargo al consumo, cortesías como transferencia gratuita, consumo del personal y propinas.
+
+## D-011 · Zonas de reparto y reglas de promoción
+
+**Contexto.** El reparto y las promociones no son pantallas de back office: son **reglas que el
+POS lee en el momento de cobrar**. Lo que aquí se configure mal se descubre con el cliente
+delante. Y son también el sitio donde más tienta inventar campos: un motor de promociones puede
+crecer hasta que nadie sepa qué descuento se aplicó ni por qué.
+
+**Quién usa cada cosa.** El encargado dibuja la cobertura una vez y la retoca por temporada; el
+dueño arma la promoción de la semana; el cajero no configura nada, solo ve qué se aplicó y por
+qué. El POS necesita una respuesta determinista: mismo pedido, misma promoción, mismo importe.
+
+**Decisión.**
+
+1. **La zona de reparto es del local**, no de la cadena: la cobertura y el tiempo de entrega
+   dependen de dónde está la cocina. Lista de distritos, costo de envío, pedido mínimo y tiempo
+   estimado. Un distrito no se reparte entre dos zonas del mismo local.
+2. **Solo aplica al reparto propio** (canal de tipo _Reparto propio_). Las apps de delivery
+   cobran su envío y ponen su logística: por eso su canal tiene comisión (D-001) y no zona.
+3. **Fuera de cobertura es configurable**, no un error de programa: por local se decide si se
+   bloquea el pedido o se permite avisando. Un local nuevo reparte «donde alcance» y otro no.
+4. **Envío gratis desde un monto** es propiedad de la zona, no una promoción aparte: es lo que el
+   encargado piensa como «a San Isidro gratis desde 80».
+5. **La promoción tiene una forma sola:** _a quién alcanza_ (locales, canales), _cuándo rige_
+   (fechas, días, franja horaria), _cómo se activa_ (automática o con cupón), _qué exige_ (monto
+   mínimo o cantidad de unidades de un conjunto) y _qué da_. Si algo no entra en esa forma, es un
+   caso nuevo que se discute, no un campo más.
+6. **El beneficio es lista cerrada** —porcentaje, monto, precio fijo, N×M, producto gratis, envío
+   gratis— porque cada uno es una línea distinta en el comprobante y un cálculo distinto en el
+   POS. Añadir uno cuesta desarrollo, y debe costarlo: un beneficio que el comprobante no sabe
+   representar no es una promoción, es un descuento a dedo.
+7. **No se acumulan por defecto.** Cada promoción declara si es combinable y con qué prioridad; si
+   ninguna lo es, gana la de mayor prioridad y, a igual prioridad, la que más beneficia al
+   cliente. El resultado se explica siempre: qué promoción, por qué regla y cuánto rebajó.
+8. **Tope de descuento** por promoción, en monto o en % de la cuenta. Es el freno contra el cupón
+   que alguien difunde y termina regalando la caja de un sábado.
+9. **El cupón vive en la promoción**: código, usos totales y usos por cliente. Emitir cupones
+   personalizados y llevar el saldo de puntos es fidelización, y eso es otro sistema (D-007).
+10. **De puntos, aquí solo las reglas** —cuánto suma un sol, cuánto vale un punto al canjear,
+    canje mínimo, caducidad y qué canales acumulan—, para que el POS sepa qué mostrar. El saldo
+    del cliente no se guarda en la vertical.
+
+**A validar con operación real:** si la franja horaria por promoción basta o hace falta un
+calendario de excepciones (feriados, partidos); y si el tope de descuento se quiere también por
+día y por caja, no solo por promoción.
+
+## D-012 · Ventas y caja: línea base estándar _(preliminar)_
+
+**Estado.** Preliminar a propósito. Se implanta el comportamiento que comparten los sistemas de
+punto de venta de restaurante —Restaurant.pe, Toast, Square, Lightspeed, Bistrosoft— para verlo
+funcionando y refactorizar sobre algo real, no sobre una discusión. Lo que aquí se decide se revisa
+cuando la operación lo use.
+
+**Lo que hacen todos igual, y por eso se copia.**
+
+1. **La cuenta se abre antes de cobrar y vive mientras se come.** No hay «venta» hasta el cobro: hay
+   un pedido abierto con líneas. La mesa queda ocupada al abrirlo y pasa a limpieza al cobrar.
+2. **La línea tiene estado propio:** pendiente mientras se teclea, comandada cuando sale a cocina.
+   Quitar una línea pendiente es gratis; quitar una comandada es una **anulación con motivo**,
+   porque el insumo ya se gastó. Esa es la diferencia que separa un POS de un bloc de notas.
+3. **Se comanda por área, no por pedido.** Al enviar, las líneas pendientes se agrupan por el área
+   que les toca según su categoría o producto (D-004) y cada área recibe su comanda numerada.
+   Una línea no se comanda dos veces.
+4. **La precuenta no es el comprobante.** Se imprime para que el cliente revise; el comprobante
+   nace al cobrar. Entre una y otro todavía se puede añadir, dividir o transferir.
+5. **Dividir y transferir son gestos de sala,** no operaciones de contabilidad: la cuenta se parte
+   por líneas en cuentas hijas que se cobran por separado, y un pedido se mueve de mesa sin perder
+   su historia.
+6. **El cobro admite varios medios de pago** en la misma cuenta, con propina y vuelto. Se cobra
+   contra **nota de venta**; la boleta o la factura electrónica llega en F8.
+7. **La caja se abre con fondo y se cierra con arqueo** por medio de pago. El cierre es **ciego**
+   por defecto: quien cuenta no ve lo esperado, y la diferencia aparece después. Sin sesión de caja
+   abierta no se cobra, salvo que el local lo desactive.
+8. **Anular una venta es otra operación,** con motivo, permiso y rastro en la bitácora. Nunca se
+   borra: se anula.
+
+**Lo que se deja fuera de esta primera pasada,** para no fingir que funciona: el descuento de stock
+por venta (D-007 ya decidió que el momento será configurable), la comanda en tiempo real hacia un
+KDS, el ICBPER de las bolsas, y la emisión electrónica (F8). La toma de pedido en mesa por el mesero
+vive en otra app de la suite; esta caja toma pedidos igual, porque mostrador, para llevar y delivery
+no tienen mesero.
+
+**A revisar cuando se use:** si la división por líneas basta o hace falta dividir por partes iguales;
+si la propina debe repartirse por mozo; y si el cierre ciego estorba en un local pequeño.

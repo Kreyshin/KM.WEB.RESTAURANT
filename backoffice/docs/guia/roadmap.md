@@ -12,7 +12,7 @@ Fases de **front-end** sobre datos de ejemplo. Una fase no empieza sin los maest
 | F3 · Sala y carta                 | Maestros  | Cierre de sala y carta: imagen, combos, precio por canal    | ✅ Hecha       |
 | F4 · Abastecimiento               | Maestros  | Límite ERP, áreas, insumos, requerimientos, recepción       | ✅ Hecha       |
 | F5 · Personal y permisos          | Maestros  | Catálogo de permisos, turnos y bitácora                     | ✅ Hecha       |
-| F6 · Clientes y promociones       | Maestros  | Clientes, reservas, delivery y reglas de promociones        | En curso       |
+| F6 · Clientes y promociones       | Maestros  | Clientes, reservas, delivery y reglas de promociones        | ✅ Hecha       |
 | F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir       | ⚠️ Por decidir |
 | F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados  | Pendiente      |
 | F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas            | Pendiente      |
@@ -287,20 +287,42 @@ Se entrega en dos partes: **F6.1** clientes y reservas ✅, **F6.2** zonas de de
 - [x] Agenda del día con personas esperadas y reservas por confirmar; las alergias del cliente se ven en la fila
 - [x] Permiso «Gestionar reservas»
 
-**F6.2 · Delivery y promociones** _(siguiente)_
+**F6.2 · Delivery y promociones** ✅
 
-- [ ] Zonas de reparto por local: distritos, costo de envío, pedido mínimo y tiempo estimado
-- [ ] Reglas de promociones y cupones que consume el POS (la fidelización en sí es otro sistema, D-007)
-- [ ] Puntos: solo la configuración de las reglas, no el saldo del cliente
+- [x] Zonas de reparto por local: distritos, costo de envío, pedido mínimo y tiempo estimado
+- [x] Un distrito solo puede estar en una zona del mismo local: el POS necesita un costo y un tiempo
+- [x] Envío gratis desde un monto, propiedad de la zona; el local puede no cobrar envío nunca
+- [x] Fuera de cobertura configurable por local: se avisa o se bloquea (D-011)
+- [x] «¿Se llega?»: estado, envío, tiempo y cuánto falta para el mínimo, con la explicación del cajero
+- [x] Promoción de forma única: a quién alcanza, cuándo rige, cómo se activa, qué exige y qué da
+- [x] Beneficio de lista cerrada: %, monto, precio fijo, N×M, producto gratis y envío gratis
+- [x] Cupones con usos totales y por cliente; el código no se repite y los usos no se reescriben al editar
+- [x] No se acumulan por defecto: manda la prioridad; con acumular activado se suman las combinables
+- [x] Tope por promoción (monto o %) y tope de cuenta por local, que recorta desde la menor prioridad
+- [x] «¿Qué se aplica?»: lo que entra, cuánto rebaja y **por qué cada promoción se queda fuera**
+- [x] Puntos: solo la configuración de las reglas, no el saldo del cliente
+- [x] Permisos «Editar zonas de reparto» y «Editar promociones»; los cambios van a la bitácora
 
 ## F7 · Ventas y caja
 
-> ⚠️ **Decisión pendiente antes de empezar.** Tomar pedidos en mesa y barra, comandar y cobrar es el **núcleo de la vertical** (D-005). Falta decidir **dónde se construye**:
->
-> - **Dentro de este proyecto:** una sección POS (mesero y caja) junto al back office, compartiendo carta, mesas, áreas y canales.
-> - **Aplicación aparte de la misma vertical:** el back office solo configura y supervisa, y el POS consume los mismos datos.
->
-> Según la decisión, F7 incluirá la toma de pedido, la comanda a áreas, la división de cuenta y el cobro, o solo cajas, arqueos, listado de ventas y anulaciones desde el back office.
+Línea base estándar (D-012): se implanta lo que hacen igual los sistemas de punto de venta de
+restaurante, para verlo funcionando y refinarlo con uso. La caja se construye aquí; la app del
+mesero es otro proyecto de la suite que consume los mismos datos.
+
+- [x] Cuenta abierta por mesa, mostrador, para llevar o delivery; la modalidad sale del canal
+- [x] Una mesa no admite dos cuentas abiertas; abrir la cuenta la ocupa y cobrar la manda a limpieza
+- [x] Línea con estado propio: pendiente se quita, comandada se **anula con motivo y permiso**
+- [x] Comanda por área según la configuración de comandas, con número propio por área
+- [x] Aviso si un producto no tiene área que lo prepare: no se comanda nada a medias
+- [x] Precuenta encadenada: consumo → promociones (D-011) → recargo al consumo → envío, con IGV desglosado
+- [x] Mover la cuenta de mesa y dividirla en cuentas hijas que se cobran aparte
+- [x] Cobro con varios medios de pago, referencia donde se pide, propina sugerida y vuelto solo en efectivo
+- [x] Nota de venta con la serie del local; boleta y factura electrónica quedan para F8
+- [x] Anular una venta con motivo, permiso y rastro en la bitácora
+- [x] Caja: apertura con fondo, resumen del turno, efectivo esperado y **cierre a ciegas** con arqueo por medio
+- [ ] Descuento de stock por venta, con el momento configurable (D-007)
+- [ ] Comanda en tiempo real hacia un KDS _(depende de la decisión C)_
+- [ ] ICBPER de las bolsas y consumo del personal
 
 ## Pendientes de revisión
 

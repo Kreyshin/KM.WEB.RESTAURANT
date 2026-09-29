@@ -70,3 +70,25 @@ Lo construido que aún no revisa el responsable de producto. Se marca al revisar
 ## Documentos
 
 - [ ] Artefacto «Arquitectura Mesa» (diagramas de núcleo, modos, jerarquía, precios y contabilidad)
+
+## F6.2 · Delivery y promociones
+
+- [ ] Clientes › Zonas de reparto: distritos, envío, pedido mínimo, tiempo y envío gratis desde un monto
+- [ ] «¿Se llega?»: cubierto, bajo el mínimo y fuera de cobertura, con lo que vería el cajero
+- [ ] Configuración por local: fuera de cobertura avisa o bloquea; local que no cobra envío
+- [ ] Clientes › Promociones: tabla con qué da, cuándo rige, a quién alcanza y prioridad
+- [ ] Editor de promoción con los cinco bloques (alcance, vigencia, activación, condición, beneficio) y frenos
+- [ ] Cupones: usos totales y por cliente; no se borra una promoción con cupones canjeados
+- [ ] «¿Qué se aplica?»: cuenta armada a mano, lo que entra y el motivo de cada descarte
+- [ ] Puntos: reglas y canales que acumulan (el saldo del cliente no vive aquí)
+
+## F7 · Ventas y caja _(línea base estándar, para criticar)_
+
+- [ ] Admin › Caja: cuentas abiertas del local, con lo que falta comandar a la vista
+- [ ] Abrir cuenta: mesa con comensales, mostrador, para llevar y delivery con distrito
+- [ ] Añadir productos, comandar por áreas y ver las comandas con su número
+- [ ] Anular un producto ya comandado: pide motivo y queda en la bitácora
+- [ ] Mover de mesa y dividir la cuenta en una hija que se cobra aparte
+- [ ] Precuenta: promoción aplicada, recargo al consumo e IGV desglosado
+- [ ] Cobro: propina sugerida, varios medios, referencia y vuelto
+- [ ] Admin › Arqueo: apertura con fondo, resumen del turno y cierre a ciegas con diferencia

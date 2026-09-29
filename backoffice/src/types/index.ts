@@ -1329,6 +1329,10 @@ export type ModuloAuditoria =
   | 'Compras'
   | 'Inventario'
   | 'Reservas'
+  | 'Delivery'
+  | 'Promociones'
+  | 'Ventas'
+  | 'Caja'
 
 /** Anotación de una acción sensible: quién, cuándo, qué y sobre qué (F5). */
 export interface RegistroAuditoria {
@@ -1342,4 +1346,381 @@ export interface RegistroAuditoria {
   detalle: string
   /** Local al que afecta, cuando aplica. */
   localId?: string
+}
+
+// ── Delivery y promociones (F6.2, D-011) ─────────────────────────────────────
+
+/**
+ * Zona de reparto de un local: hasta dónde llega la moto, qué cuesta y en
+ * cuánto se promete. Es del local porque la cobertura depende de dónde está la
+ * cocina, y solo vale para el reparto propio: las apps ponen su logística.
+ */
+export interface ZonaReparto {
+  id: string
+  nombre: string
+  localId: string
+  /** Distritos que cubre. Un distrito no se reparte entre dos zonas del local. */
+  distritos: string[]
+  costoEnvio: number
+  /** Cuenta mínima para aceptar el pedido. 0: sin mínimo. */
+  pedidoMinimo: number
+  /** Minutos prometidos al cliente, puerta a puerta. */
+  tiempoEstimadoMin: number
+  /** Desde este importe el envío no se cobra. Sin valor: siempre se cobra. */
+  envioGratisDesde?: number
+  nota?: string
+  activa: boolean
+}
+
+export type NuevaZonaReparto = Omit<ZonaReparto, 'id'>
+
+/** Qué se le puede decir al POS sobre una dirección. */
+export type EstadoCobertura = 'cubierto' | 'fueraDeCobertura' | 'bajoMinimo'
+
+/** Respuesta del reparto para una dirección y un importe de cuenta. */
+export interface Cobertura {
+  estado: EstadoCobertura
+  zona?: ZonaReparto
+  /** Lo que se cobra por el envío, ya descontado el envío gratis. */
+  costoEnvio: number
+  envioGratis: boolean
+  tiempoEstimadoMin?: number
+  /** Cuánto falta para llegar al pedido mínimo, cuando falta. */
+  faltaParaMinimo?: number
+  /** Si se bloquea o solo se avisa; sale de la configuración del local. */
+  bloquea: boolean
+  explicacion: string
+}
+
+export type ActivacionPromocion = 'automatica' | 'cupon'
+
+/** Qué debe cumplir la cuenta para que la promoción entre. */
+export type TipoCondicionPromocion = 'ninguna' | 'montoMinimo' | 'unidades'
+
+/**
+ * Condición de la promoción. `unidades` exige tantas unidades de un conjunto de
+ * vendibles o categorías («3 pizzas», «2 bebidas de la categoría Bebidas»).
+ */
+export interface CondicionPromocion {
+  tipo: TipoCondicionPromocion
+  /** Con `montoMinimo`: importe de la cuenta, sin envío. */
+  monto?: number
+  /** Con `unidades`: cuántas unidades del conjunto. */
+  cantidad?: number
+  /** Conjunto que cuenta: vendibles concretos (ids de ProductoVendible). */
+  vendibleIds?: string[]
+  /** Conjunto que cuenta: categorías enteras de la carta. */
+  categoriaIds?: string[]
+}
+
+/**
+ * Lo que da la promoción. Lista cerrada (D-011): cada beneficio es una línea
+ * distinta en el comprobante y un cálculo distinto en el POS.
+ */
+export type TipoBeneficio =
+  'porcentaje' | 'monto' | 'precioFijo' | 'nxm' | 'productoGratis' | 'envioGratis'
+
+export interface BeneficioPromocion {
+  tipo: TipoBeneficio
+  /** Con `porcentaje`: 0–100. Con `monto` o `precioFijo`: soles. */
+  valor?: number
+  /** Con `nxm`: lleva `llevan` y paga `pagan`. 2×1 es llevan 2, pagan 1. */
+  llevan?: number
+  pagan?: number
+  /** Con `productoGratis`: qué se regala y cuántas unidades. */
+  vendibleId?: string
+  cantidad?: number
+  /**
+   * Sobre qué se calcula: los vendibles de la condición o toda la cuenta.
+   * `envioGratis` y `productoGratis` no lo usan.
+   */
+  alcance?: 'condicion' | 'cuenta'
+}
+
+/** Cupón de la promoción. La emisión personalizada es fidelización (D-007). */
+export interface CuponPromocion {
+  codigo: string
+  /** 0: sin tope de usos. */
+  usosMaximos: number
+  /** 0: sin tope por cliente. */
+  usosPorCliente: number
+  /** Usos ya registrados; el POS los incrementa al cobrar. */
+  usados: number
+}
+
+/**
+ * Regla de promoción que consume el POS (D-011). Tiene una forma sola: a quién
+ * alcanza, cuándo rige, cómo se activa, qué exige y qué da.
+ */
+export interface Promocion {
+  id: string
+  codigo: string
+  nombre: string
+  descripcion?: string
+  /** Vacío: todos los locales. */
+  localIds: string[]
+  /** Vacío: todos los canales. */
+  canalIds: string[]
+  /** AAAA-MM-DD. Sin valor: sin límite por ese lado. */
+  desde?: string
+  hasta?: string
+  /** Vacío: todos los días. */
+  dias: DiaSemana[]
+  /** `HH:mm`. Franja del día; sin valor: todo el día. */
+  horaDesde?: string
+  horaHasta?: string
+  activacion: ActivacionPromocion
+  cupon?: CuponPromocion
+  condicion: CondicionPromocion
+  beneficio: BeneficioPromocion
+  /** Tope del descuento en soles. 0: sin tope. */
+  topeMonto: number
+  /** Tope del descuento como % de la cuenta. 0: sin tope. */
+  topePorcentaje: number
+  /** Si puede sumarse a otra promoción combinable. */
+  combinable: boolean
+  /** Manda la de mayor prioridad cuando no se combinan. */
+  prioridad: number
+  activa: boolean
+}
+
+export type NuevaPromocion = Omit<Promocion, 'id'>
+
+/** Línea de la cuenta que se manda a evaluar. */
+export interface LineaCuenta {
+  vendibleId: string
+  cantidad: number
+  /** Precio unitario ya cobrado; sin valor lo resuelve la lista de precios. */
+  precioUnitario?: number
+}
+
+/** Lo que se le pregunta: esta cuenta, en este local, canal y momento. */
+export interface CuentaPromociones {
+  localId: string
+  canalId: string
+  /** AAAA-MM-DD y HH:mm. */
+  fecha: string
+  hora: string
+  lineas: LineaCuenta[]
+  /** Código de cupón tecleado en caja. */
+  cupon?: string
+  /** Distrito de la dirección, para el envío. */
+  distrito?: string
+}
+
+export type MotivoDescarte =
+  | 'inactiva'
+  | 'fueraDeVigencia'
+  | 'otroDia'
+  | 'fueraDeFranja'
+  | 'otroLocal'
+  | 'otroCanal'
+  | 'sinCupon'
+  | 'cuponAgotado'
+  | 'condicionNoCumplida'
+  | 'noCombinable'
+  | 'sinEfecto'
+
+/** Promoción evaluada: entró o no, y en los dos casos se dice por qué. */
+export interface PromocionAplicada {
+  promocionId: string
+  codigo: string
+  nombre: string
+  aplica: boolean
+  /** Descuento sobre los productos, en soles. */
+  descuento: number
+  /** Envío que la promoción perdona, en soles. */
+  descuentoEnvio: number
+  /** Regalo, cuando el beneficio es un producto gratis. */
+  regalo?: { vendibleId: string; nombre: string; cantidad: number }
+  /** Por qué entró, o por qué no: se explica siempre. */
+  explicacion: string
+  motivo?: MotivoDescarte
+  /** Descuento antes del tope, cuando el tope lo recortó. */
+  descuentoSinTope?: number
+}
+
+/** Resultado de la evaluación: lo que el POS muestra en la cuenta. */
+export interface ResultadoPromociones {
+  /** Suma de las líneas, sin envío ni descuentos. */
+  subtotal: number
+  costoEnvio: number
+  descuento: number
+  descuentoEnvio: number
+  /** Lo que se cobra: subtotal + envío − descuentos. */
+  total: number
+  aplicadas: PromocionAplicada[]
+  descartadas: PromocionAplicada[]
+  cobertura?: Cobertura
+}
+
+/** Reglas de puntos que el POS necesita conocer; el saldo es de otro sistema. */
+export interface ReglasPuntos {
+  activo: boolean
+  /** Soles de consumo que valen un punto. */
+  solesPorPunto: number
+  /** Soles que descuenta un punto al canjear. */
+  valorPunto: number
+  /** Puntos mínimos para poder canjear. */
+  canjeMinimo: number
+  /** Meses que vive un punto. 0: no caduca. */
+  caducidadMeses: number
+  /** Canales que acumulan. Vacío: todos. */
+  canalIds: string[]
+}
+
+// ── Ventas y caja (F7, D-012) ────────────────────────────────────────────────
+
+/** Cómo se atiende el pedido. Sale del tipo del canal, no se teclea. */
+export type TipoAtencion = 'mesa' | 'mostrador' | 'llevar' | 'delivery'
+
+export type EstadoPedido = 'abierto' | 'cobrado' | 'anulado'
+
+/**
+ * Estado de una línea. Pendiente se quita sin más; comandada ya se está
+ * cocinando y quitarla es una anulación con motivo (D-012).
+ */
+export type EstadoLinea = 'pendiente' | 'comandada' | 'anulada'
+
+export interface LineaPedido {
+  id: string
+  vendibleId: string
+  /** Nombre con el que se cobró: la carta puede cambiar después. */
+  nombre: string
+  cantidad: number
+  precioUnitario: number
+  /** Modificadores elegidos; los que tienen recargo suman al precio. */
+  modificadorIds: string[]
+  recargoModificadores: number
+  /** «Sin cebolla», «para la señora del fondo». */
+  nota?: string
+  estado: EstadoLinea
+  /** Área que la cocina, resuelta al comandar. */
+  areaId?: string
+  comandaId?: string
+  motivoAnulacion?: string
+  usuarioId?: string
+  creada: string
+}
+
+/** Cuenta abierta: existe mientras se come y muere al cobrarse. */
+export interface Pedido {
+  id: string
+  numero: number
+  localId: string
+  canalId: string
+  atencion: TipoAtencion
+  /** Mesas ocupadas por el pedido; vacío fuera del salón. */
+  mesaIds: string[]
+  clienteId?: string
+  nombreCliente?: string
+  /** Delivery: a dónde va y por qué zona de reparto pasa. */
+  direccion?: string
+  distrito?: string
+  comensales?: number
+  lineas: LineaPedido[]
+  estado: EstadoPedido
+  /** Cupón tecleado en caja, que se pasa a promociones. */
+  cupon?: string
+  nota?: string
+  abierto: string
+  usuarioId?: string
+  /** Pedido del que salió al dividir la cuenta. */
+  divididoDe?: string
+}
+
+export type EstadoComanda = 'enviada' | 'enPreparacion' | 'lista' | 'entregada'
+
+/** Lo que sale a un área. Se numera por local para poder cantarla en voz alta. */
+export interface Comanda {
+  id: string
+  numero: number
+  pedidoId: string
+  areaId: string
+  areaNombre: string
+  lineaIds: string[]
+  enviada: string
+  usuarioId?: string
+  estado: EstadoComanda
+}
+
+export interface Pago {
+  medioPagoId: string
+  nombre: string
+  monto: number
+  /** Número de operación o voucher, si el medio lo pide. */
+  referencia?: string
+}
+
+/** Lo que se cobra y de dónde sale cada cifra. */
+export interface TotalesPedido {
+  subtotal: number
+  descuentoPromociones: number
+  costoEnvio: number
+  descuentoEnvio: number
+  recargoPorcentaje: number
+  recargoConsumo: number
+  total: number
+  tasaIgv: number
+  valorVenta: number
+  igv: number
+  promociones: PromocionAplicada[]
+  descartadas: PromocionAplicada[]
+  cobertura?: Cobertura
+}
+
+export interface Venta {
+  id: string
+  numero: number
+  pedidoId: string
+  localId: string
+  canalId: string
+  sesionCajaId?: string
+  fecha: string
+  usuarioId?: string
+  totales: TotalesPedido
+  propina: number
+  pagos: Pago[]
+  /** Efectivo entregado por encima de lo que cubre la cuenta. */
+  vuelto: number
+  comprobante: { tipo: TipoComprobante; serie: string; numero: number }
+  estado: 'cobrada' | 'anulada'
+  motivoAnulacion?: string
+}
+
+/** Arqueo de un medio de pago al cerrar la caja. */
+export interface ConteoMedio {
+  medioPagoId: string
+  nombre: string
+  esperado: number
+  contado: number
+  diferencia: number
+}
+
+/**
+ * Sesión de caja: se abre con un fondo y se cierra contando. El cierre ciego
+ * (por defecto) no enseña lo esperado hasta haber contado.
+ */
+export interface SesionCaja {
+  id: string
+  localId: string
+  usuarioId: string
+  abierta: string
+  fondoInicial: number
+  cerrada?: string
+  conteo?: ConteoMedio[]
+  diferencia?: number
+  nota?: string
+  estado: 'abierta' | 'cerrada'
+}
+
+/** Resumen de lo vendido en una sesión, para el arqueo. */
+export interface ResumenCaja {
+  sesion: SesionCaja
+  ventas: number
+  totalVendido: number
+  propinas: number
+  porMedio: { medioPagoId: string; nombre: string; monto: number }[]
+  /** Efectivo que debería haber: fondo + cobrado en efectivo − vueltos. */
+  efectivoEsperado: number
 }

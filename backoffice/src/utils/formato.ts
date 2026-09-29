@@ -22,6 +22,17 @@ export function formatearFecha(iso: string) {
   return fechaCorta.format(new Date(iso))
 }
 
+const horaCorta = new Intl.DateTimeFormat('es-PE', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+
+/** Hora local del restaurante: la marca ISO está en UTC y en caja eso confunde. */
+export function formatearHora(iso: string) {
+  return horaCorta.format(new Date(iso))
+}
+
 /** Cantidad con su unidad, sin ceros decimales sobrantes. */
 export function formatearCantidad(cantidad: number, unidad: UnidadMedida) {
   const numero = Number(cantidad.toFixed(3)).toLocaleString('es-PE')

@@ -31,11 +31,11 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 | F1 · Cimientos                    | Componentes `Km*` y capa de datos mock                      | ✅                     |
 | F2 · Configuración                | Configuración de la vertical y por local, permisos, canales | ✅                     |
 | F3 · Sala y carta                 | Imagen, combos, precio por canal, mesas unidas              | ✅                     |
-| F4 · Abastecimiento               | Rehecha según D-004 y D-005, por subfases                   | 🔨 En curso            |
+| F4 · Abastecimiento               | Rehecha según D-004 y D-005, por subfases                   | ✅                     |
 | F5 · Personal y permisos          | Catálogo de permisos, turnos, bitácora                      | ✅                     |
 | F6.1 · Clientes y reservas        | Cliente del ERP con ficha de sala, reservas por mesa y cupo | ✅                     |
-| **F6.2 · Delivery y promociones** | Zonas de reparto y reglas de promociones para el POS        | 🔨 **Lo siguiente**    |
-| F7 · Ventas y caja                | Pedido, comanda, cuenta y cobro                             | ⚠️ Alcance por decidir |
+| F6.2 · Delivery y promociones     | Zonas de reparto y reglas de promociones para el POS        | ✅                     |
+| F7 · Ventas y caja                | Pedido, comanda, cuenta y cobro                             | 🔨 Línea base hecha    |
 | F8 · Comprobantes                 | Boletas, facturas y notas de crédito                        | ⏳                     |
 | F9 · Reportes                     | Ventas, rentabilidad por plato, consumo y mermas            | ⏳                     |
 | F10 · Pulido                      | Accesibilidad, rendimiento y diccionario de entidades       | ⏳                     |
@@ -57,14 +57,14 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 
 ## 3. Lo siguiente
 
-1. **F6.2** — zonas de reparto y reglas de promociones para el POS.
-2. **F7 a F9** — operación y análisis.
+1. **Criticar F7** — la línea base estándar ya funciona; lo que chirríe se refactoriza (D-012).
+2. **F8 y F9** — comprobantes electrónicos y análisis.
 
 ## 4. Decisiones abiertas
 
 | #     | Decisión                                                                                                                                               | Bloquea          | Notas                                                                                       |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- | ------------------------------------------------------------------------------------------- |
-| **A** | POS: ✅ decidido. La caja con estilo de back office se construye en este proyecto; la app del mesero es otro proyecto de la suite con los mismos datos | F7               | Queda definir el alcance de la caja al empezar F7.                                          |
+| **A** | POS: ✅ cerrada. La caja se construye en este proyecto con la línea base estándar (D-012); la app del mesero es otro proyecto de la suite con los mismos datos | —                | Falta el descuento de stock por venta y el KDS en tiempo real.                               |
 | **B** | Backend: stack y forma (monolito modular vs. servicios)                                                                                                | Integración real | Karma Corp ya tiene plataforma: conviene alinear con el resto del ERP, no elegir por gusto. |
 | **C** | Transporte en tiempo real para comanda y KDS                                                                                                           | F7               | WebSocket propio o servicio gestionado; afecta coste y complejidad de reconexión.           |
 | **D** | Facturación electrónica: OSE de terceros o integración directa                                                                                         | F8               | Probablemente ya resuelto en el ERP; confirmar antes de diseñar nada.                       |
