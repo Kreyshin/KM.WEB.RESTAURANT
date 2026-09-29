@@ -13,6 +13,7 @@ import type {
 } from '@/types'
 import { registrar } from './auditoria.service'
 import { sesionAbierta } from './caja.service'
+import { etiquetaTipoComprobante } from './comprobantes.service'
 import { descontar, devolver, momentoDescuento } from './consumo.service'
 import { db, latencia, nuevoId, persistir } from './mock/db'
 import { clonar } from './mock/red'
@@ -562,7 +563,7 @@ export const ventasService = {
     const serie = db.series.find((s) => s.localId === pedido.localId && s.tipo === tipo && s.activo)
     if (!serie)
       throw {
-        mensaje: `Este local no tiene serie activa de ${tipo}. Configúrala en el ERP.`,
+        mensaje: `Este local no tiene serie activa de ${etiquetaTipoComprobante[tipo].toLowerCase()}. Se configura en el ERP.`,
       } satisfies ApiError
     serie.correlativo += 1
 

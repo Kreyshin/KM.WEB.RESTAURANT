@@ -33,7 +33,7 @@ La ruta, los permisos por rol y la navegación existen; falta construir la panta
 | Módulo            | Qué falta                                 |
 | ----------------- | ----------------------------------------- |
 | Reportes          | Ventas, rentabilidad por plato y mermas   |
-| Facturación SUNAT | Emisión de comprobantes electrónicos      |
+| Facturación SUNAT | Envío real al OSE; lo demás ya funciona   |
 | Usuarios y roles  | Mantenimiento del personal desde pantalla |
 
 ## Sobre los datos

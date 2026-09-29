@@ -11,6 +11,7 @@ import KmModal from '@/components/ui/KmModal.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
 import { cajaService } from '@/services/caja.service'
+import { comprobantesService, etiquetaTipoComprobante } from '@/services/comprobantes.service'
 import { consumoService, etiquetaMomento } from '@/services/consumo.service'
 import { canalesService, mediosPagoService } from '@/services/comercial.service'
 import { mesasService } from '@/services/mesas.service'
@@ -31,6 +32,7 @@ import type {
   Pedido,
   ProductoVendible,
   SesionCaja,
+  TipoComprobante,
   TotalesPedido,
 } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
@@ -323,6 +325,29 @@ const agregarPago = () =>
   (pagos.value = [...pagos.value, { medioPagoId: '', monto: falta.value, referencia: '' }])
 const quitarPago = (i: number) => (pagos.value = pagos.value.filter((_, idx) => idx !== i))
 
+/**
+ * Comprobante al cobrar, si el local lo tiene configurado. Cuando no se puede
+ * —falta el documento del cliente, por ejemplo— no se rompe el cobro: se dice
+ * que la venta quedó pendiente de comprobante y se sigue en Facturación.
+ */
+async function emitirComprobante(ventaId: string) {
+  if (
+    !localStore.localId ||
+    !valorConfig<boolean>('comprobantes.emisionAutomatica', localStore.localId)
+  )
+    return
+  const tipo = valorConfig<TipoComprobante>('comprobantes.tipoPorDefecto', localStore.localId)
+  try {
+    const comprobante = await comprobantesService.emitir({ ventaId, tipo }, auth.usuario?.id)
+    await comprobantesService.enviar(comprobante.id, auth.usuario?.id)
+    ui.exito(
+      `${etiquetaTipoComprobante[comprobante.tipo]} ${comprobante.serie}-${comprobante.numero} emitida.`,
+    )
+  } catch {
+    ui.error('La venta quedó sin comprobante: termínala en Facturación.')
+  }
+}
+
 async function cobrar() {
   cobrandoAhora.value = true
   try {
@@ -342,6 +367,7 @@ async function cobrar() {
     ui.exito(
       `Cobrado ${formatearSoles(venta.totales.total + venta.propina)} · ${venta.comprobante.serie}-${venta.comprobante.numero}${venta.vuelto ? ` · vuelto ${formatearSoles(venta.vuelto)}` : ''}`,
     )
+    await emitirComprobante(venta.id)
     cobrando.value = false
     seleccionado.value = null
     await cargar()

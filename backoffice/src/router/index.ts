@@ -278,7 +278,7 @@ const rutas: RouteRecordRaw[] = [
       {
         path: 'facturacion',
         name: 'facturacion',
-        component: () => import('@/views/EnConstruccionView.vue'),
+        component: () => import('@/views/ventas/ComprobantesView.vue'),
         meta: { titulo: 'Facturación SUNAT', roles: ['admin', 'cajero'] },
       },
     ],

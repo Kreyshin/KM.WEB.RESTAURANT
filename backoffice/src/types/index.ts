@@ -1333,6 +1333,7 @@ export type ModuloAuditoria =
   | 'Promociones'
   | 'Ventas'
   | 'Caja'
+  | 'Comprobantes'
 
 /** Anotación de una acción sensible: quién, cuándo, qué y sobre qué (F5). */
 export interface RegistroAuditoria {
@@ -1740,4 +1741,69 @@ export interface ResumenCaja {
   porMedio: { medioPagoId: string; nombre: string; monto: number }[]
   /** Efectivo que debería haber: fondo + cobrado en efectivo − vueltos. */
   efectivoEsperado: number
+}
+
+// ── Comprobantes electrónicos (F8, D-013) ────────────────────────────────────
+
+/** A quién se emite. Sin documento, boleta simple. */
+export interface ReceptorComprobante {
+  tipoDocumento?: TipoDocumento
+  documento?: string
+  nombre?: string
+  /** Obligatoria en factura. */
+  direccion?: string
+  email?: string
+}
+
+/**
+ * Estados del envío, los mismos que tendrá con un OSE real. Un rechazo se
+ * reintenta; un aceptado ya no se toca.
+ */
+export type EstadoComprobante = 'porEnviar' | 'enviado' | 'aceptado' | 'rechazado' | 'observado'
+
+/** Respuesta del servicio de envío (simulada mientras no haya integración). */
+export interface RespuestaSunat {
+  codigo: string
+  mensaje: string
+  fecha: string
+  /** Constancia de recepción; en simulación es un identificador inventado. */
+  cdr?: string
+}
+
+export type MotivoNotaCredito =
+  'anulacion' | 'devolucion' | 'descuento' | 'errorDescripcion' | 'errorRuc'
+
+/** Importes del comprobante, congelados tal como se cobraron. */
+export interface TotalesComprobante {
+  valorVenta: number
+  igv: number
+  tasaIgv: number
+  recargoConsumo: number
+  total: number
+}
+
+export interface Comprobante {
+  id: string
+  tipo: TipoComprobante
+  serie: string
+  numero: number
+  localId: string
+  /** Venta que lo origina; una nota de crédito la hereda de su comprobante. */
+  ventaId: string
+  fecha: string
+  usuarioId?: string
+  receptor: ReceptorComprobante
+  totales: TotalesComprobante
+  estado: EstadoComprobante
+  respuesta?: RespuestaSunat
+  /** Intentos de envío, para no esconder los rechazos. */
+  intentos: number
+  /** Nota de crédito: comprobante al que corrige. */
+  referenciaId?: string
+  motivoNota?: MotivoNotaCredito
+  notaMotivoTexto?: string
+}
+
+export type NuevoComprobante = Pick<Comprobante, 'tipo' | 'ventaId'> & {
+  receptor?: ReceptorComprobante
 }

@@ -94,5 +94,5 @@ insumos al almacén, con su propio movimiento.
 
 ## Lo que todavía no hace
 
-Para no fingir que funciona: no manda la comanda a una pantalla de cocina en tiempo real, no
-calcula el impuesto a las bolsas y no emite comprobantes electrónicos.
+Para no fingir que funciona: no manda la comanda a una pantalla de cocina en tiempo real y no
+calcula el impuesto a las bolsas. Los comprobantes electrónicos viven en [Facturación](/modulos/facturacion).

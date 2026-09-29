@@ -3,6 +3,8 @@ withDefaults(
   defineProps<{
     id?: string
     etiqueta?: string
+    /** Nombre para lectores de pantalla cuando la etiqueta visible no basta («Sí», «No»). */
+    nombreAccesible?: string
     descripcion?: string
     disabled?: boolean
   }>(),
@@ -27,7 +29,7 @@ const activo = defineModel<boolean>({ default: false })
       type="button"
       role="switch"
       :aria-checked="activo"
-      :aria-label="etiqueta"
+      :aria-label="nombreAccesible ?? etiqueta"
       :disabled="disabled"
       class="relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors duration-200"
       :class="activo ? 'bg-accion' : 'bg-linea'"

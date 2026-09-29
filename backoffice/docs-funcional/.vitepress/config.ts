@@ -57,6 +57,7 @@ export default defineConfig({
           { text: 'Clientes y reservas', link: '/modulos/clientes' },
           { text: 'Reparto y promociones', link: '/modulos/delivery' },
           { text: 'Ventas y caja', link: '/modulos/caja' },
+          { text: 'Facturación', link: '/modulos/facturacion' },
           { text: 'Configuración', link: '/modulos/configuracion' },
         ],
       },
