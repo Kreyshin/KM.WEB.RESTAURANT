@@ -92,3 +92,4 @@ Lo construido que aún no revisa el responsable de producto. Se marca al revisar
 - [ ] Precuenta: promoción aplicada, recargo al consumo e IGV desglosado
 - [ ] Cobro: propina sugerida, varios medios, referencia y vuelto
 - [ ] Admin › Arqueo: apertura con fondo, resumen del turno y cierre a ciegas con diferencia
+- [ ] Descuento de stock por venta: momento configurable, faltantes sin bloquear y devolución al anular

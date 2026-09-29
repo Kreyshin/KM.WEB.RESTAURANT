@@ -13,6 +13,7 @@ import type {
 } from '@/types'
 import { registrar } from './auditoria.service'
 import { sesionAbierta } from './caja.service'
+import { descontar, devolver, momentoDescuento } from './consumo.service'
 import { db, latencia, nuevoId, persistir } from './mock/db'
 import { clonar } from './mock/red'
 import { errorCampo } from './mock/reglas'
@@ -327,6 +328,9 @@ export const ventasService = {
       )
     linea.estado = 'anulada'
     linea.motivoAnulacion = motivo.trim()
+    // Lo que ya salió del almacén vuelve: el plato anulado no se comió.
+    devolver(pedido, [{ ...linea, estado: 'comandada' }], usuarioId)
+    linea.consumoRegistrado = false
     registrar({
       usuarioId,
       localId: pedido.localId,
@@ -388,6 +392,8 @@ export const ventasService = {
       db.comandas.push(comanda)
       nuevas.push(comanda)
     }
+    if (momentoDescuento(pedido.localId) === 'comandar')
+      descontar(pedido, [...porArea.values()].flat(), usuarioId)
     persistir()
     return latencia(clonar(nuevas))
   },
@@ -576,6 +582,9 @@ export const ventasService = {
       comprobante: { tipo, serie: serie.serie, numero: serie.correlativo },
       estado: 'cobrada',
     }
+    // Al cobrar sale lo que aún no salió: con el modo «al comandar» quedan las
+    // líneas que ya estaban en cocina antes de activarlo.
+    venta.consumo = descontar(pedido, vivas(pedido), usuarioId)
     db.ventas.push(venta)
     pedido.estado = 'cobrado'
     reflejarEnMesas(pedido, true)
@@ -595,7 +604,10 @@ export const ventasService = {
     venta.estado = 'anulada'
     venta.motivoAnulacion = motivo.trim()
     const pedido = db.pedidos.find((p) => p.id === venta.pedidoId)
-    if (pedido) pedido.estado = 'anulado'
+    if (pedido) {
+      devolver(pedido, pedido.lineas, usuarioId)
+      pedido.estado = 'anulado'
+    }
     registrar({
       usuarioId,
       localId: venta.localId,

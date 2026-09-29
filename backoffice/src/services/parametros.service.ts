@@ -234,6 +234,21 @@ const definiciones: DefinicionParametro[] = [
     porDefecto: 10,
   },
   {
+    clave: 'ventas.descuentoStock',
+    etiqueta: 'Descontar stock por venta',
+    descripcion:
+      'Al comandar: sale del almacén cuando la cocina lo recibe. Al cobrar: cuando la venta existe. No descontar: el stock se lleva aparte. La venta nunca se bloquea por falta de stock.',
+    alcance: 'local',
+    grupo: 'Ventas',
+    tipo: 'opcion',
+    opciones: [
+      { valor: 'cobrar', etiqueta: 'Al cobrar' },
+      { valor: 'comandar', etiqueta: 'Al comandar' },
+      { valor: 'no', etiqueta: 'No descontar' },
+    ],
+    porDefecto: 'cobrar',
+  },
+  {
     clave: 'caja.exigirSesion',
     etiqueta: 'Exigir caja abierta para cobrar',
     descripcion: 'Sin caja abierta no se cobra. Apagado en locales que no hacen arqueo por turno.',

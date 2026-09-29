@@ -1601,6 +1601,8 @@ export interface LineaPedido {
   motivoAnulacion?: string
   usuarioId?: string
   creada: string
+  /** Su receta ya salió del almacén: no se descuenta dos veces (D-007). */
+  consumoRegistrado?: boolean
 }
 
 /** Cuenta abierta: existe mientras se come y muere al cobrarse. */
@@ -1627,6 +1629,19 @@ export interface Pedido {
   usuarioId?: string
   /** Pedido del que salió al dividir la cuenta. */
   divididoDe?: string
+}
+
+/** Cuándo sale del almacén lo que consume la venta (D-007). */
+export type MomentoDescuento = 'no' | 'comandar' | 'cobrar'
+
+/** Insumo consumido por una venta, en su propia unidad. */
+export interface ConsumoLinea {
+  insumoId: string
+  nombre: string
+  /** Lo que se descontó de verdad. */
+  cantidad: number
+  /** Lo que no alcanzó: la venta no se bloquea por stock. */
+  faltante: number
 }
 
 export type EstadoComanda = 'enviada' | 'enPreparacion' | 'lista' | 'entregada'
@@ -1686,6 +1701,8 @@ export interface Venta {
   comprobante: { tipo: TipoComprobante; serie: string; numero: number }
   estado: 'cobrada' | 'anulada'
   motivoAnulacion?: string
+  /** Insumos que salieron del almacén por esta venta, si se descuentan al cobrar. */
+  consumo?: ConsumoLinea[]
 }
 
 /** Arqueo de un medio de pago al cerrar la caja. */

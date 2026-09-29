@@ -366,8 +366,11 @@ cuando la operación lo use.
 8. **Anular una venta es otra operación,** con motivo, permiso y rastro en la bitácora. Nunca se
    borra: se anula.
 
-**Lo que se deja fuera de esta primera pasada,** para no fingir que funciona: el descuento de stock
-por venta (D-007 ya decidió que el momento será configurable), la comanda en tiempo real hacia un
+**El descuento de stock por venta** ya está: el momento es configurable por local (al comandar, al
+cobrar o nunca) y **la venta nunca se bloquea por stock** —se descuenta lo que hay, el faltante se
+anota y se cobra igual—. Lo anulado vuelve al almacén.
+
+**Lo que se deja fuera de esta primera pasada,** para no fingir que funciona: la comanda en tiempo real hacia un
 KDS, el ICBPER de las bolsas, y la emisión electrónica (F8). La toma de pedido en mesa por el mesero
 vive en otra app de la suite; esta caja toma pedidos igual, porque mostrador, para llevar y delivery
 no tienen mesero.

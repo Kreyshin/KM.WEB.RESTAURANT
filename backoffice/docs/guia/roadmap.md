@@ -320,7 +320,10 @@ mesero es otro proyecto de la suite que consume los mismos datos.
 - [x] Nota de venta con la serie del local; boleta y factura electrónica quedan para F8
 - [x] Anular una venta con motivo, permiso y rastro en la bitácora
 - [x] Caja: apertura con fondo, resumen del turno, efectivo esperado y **cierre a ciegas** con arqueo por medio
-- [ ] Descuento de stock por venta, con el momento configurable (D-007)
+- [x] Descuento de stock por venta, con el momento configurable: al comandar, al cobrar o nunca (D-007)
+- [x] La venta **no se bloquea por stock**: se descuenta lo que hay y el faltante queda en la bitácora
+- [x] Lo anulado vuelve al almacén, tanto un producto como una venta entera
+- [x] El cobro enseña qué sale del almacén y qué productos no tienen receta
 - [ ] Comanda en tiempo real hacia un KDS _(depende de la decisión C)_
 - [ ] ICBPER de las bolsas y consumo del personal
 

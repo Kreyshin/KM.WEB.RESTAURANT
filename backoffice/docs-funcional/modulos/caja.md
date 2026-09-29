@@ -73,8 +73,26 @@ arqueo deja de medir nada. La diferencia se guarda tal cual, cuadre o no.
 
 Sin caja abierta no se cobra, salvo que el local desactive esa exigencia.
 
+## Lo que se vende sale del almacén
+
+Cuando se vende un plato, su receta se descuenta del stock. **Cuándo** lo decide cada local: al
+comandar, que es cuando la cocina lo toca de verdad, o al cobrar, que es cuando la venta existe. Y
+se puede apagar: el restaurante que mide su stock a ojo no quiere que la caja dependa del
+inventario.
+
+Antes de cobrar, el panel enseña qué va a salir y avisa de los productos que no tienen receta, que
+no descuentan nada.
+
+::: warning La venta no se bloquea por falta de stock
+Si el almacén dice que no queda pescado y la cocina acaba de servirlo, se descuenta lo que hay, el
+faltante queda anotado en la bitácora y la venta se cobra. Un cliente esperando no es el momento de
+cuadrar el inventario.
+:::
+
+Lo anulado vuelve: tanto un producto retirado de la cuenta como una venta entera devuelven sus
+insumos al almacén, con su propio movimiento.
+
 ## Lo que todavía no hace
 
-Para no fingir que funciona: no descuenta stock por venta —eso llega con su momento configurable—,
-no manda la comanda a una pantalla de cocina en tiempo real, no calcula el impuesto a las bolsas y
-no emite comprobantes electrónicos.
+Para no fingir que funciona: no manda la comanda a una pantalla de cocina en tiempo real, no
+calcula el impuesto a las bolsas y no emite comprobantes electrónicos.
