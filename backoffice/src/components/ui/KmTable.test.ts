@@ -72,3 +72,44 @@ describe('KmTable', () => {
     expect(emitted('update:orden')!.at(-1)).toEqual([undefined])
   })
 })
+
+describe('KmTable · tandas', () => {
+  /** Una carta grande: nadie lee mil filas seguidas y el navegador las sufre. */
+  const muchas = Array.from({ length: 400 }, (_, i) => ({
+    id: String(i),
+    nombre: `Plato ${i}`,
+    precio: i,
+  }))
+
+  it('pinta solo la primera tanda y dice cuántas hay', () => {
+    renderizar(KmTable, { props: { columnas, filas: muchas, limiteInicial: 50 } })
+    expect(screen.getAllByRole('row')).toHaveLength(52) // 50 filas + cabecera + «mostrar más»
+    expect(screen.getByText('50 de 400')).toBeInTheDocument()
+  })
+
+  it('«mostrar más» añade otra tanda sin perder lo anterior', async () => {
+    const { usuario } = renderizar(KmTable, {
+      props: { columnas, filas: muchas, limiteInicial: 50 },
+    })
+    await usuario.click(screen.getByRole('button', { name: /Mostrar 50 más/ }))
+    expect(screen.getByText('100 de 400')).toBeInTheDocument()
+    expect(screen.getByText('Plato 0')).toBeInTheDocument()
+    expect(screen.getByText('Plato 99')).toBeInTheDocument()
+  })
+
+  it('sin pasar del límite no estorba con controles', () => {
+    renderizar(KmTable, { props: { columnas, filas } })
+    expect(screen.queryByRole('button', { name: /Mostrar/ })).not.toBeInTheDocument()
+  })
+
+  it('al cambiar el filtro vuelve a la primera tanda', async () => {
+    const { usuario, rerender } = renderizar(KmTable, {
+      props: { columnas, filas: muchas, limiteInicial: 50 },
+    })
+    await usuario.click(screen.getByRole('button', { name: /Mostrar 50 más/ }))
+    expect(screen.getByText('100 de 400')).toBeInTheDocument()
+
+    await rerender({ filas: muchas.slice(0, 300) })
+    expect(screen.getByText('50 de 300')).toBeInTheDocument()
+  })
+})

@@ -39,4 +39,7 @@ Honestidad sobre el alcance de lo que puedes abrir hoy.
 
 Todo funciona con **datos de ejemplo en tu navegador**. No hay servidor detrás todavía.
 
+El teclado llega a todo: los paneles se abren con foco dentro, se cierran con Escape y lo
+devuelven donde estaba; el menú de una mesa se abre con Shift+F10.
+
 No es una maqueta: las reglas de negocio están implementadas de verdad —el food cost se divide entre el rendimiento, las listas de temporada no se solapan, la recepción convierte y aparta lo que hay que transformar— y son las mismas que tendrá que respetar el backend cuando exista.

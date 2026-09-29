@@ -162,10 +162,13 @@ const menu = ref<{ mesa: Mesa; x: number; y: number } | null>(null)
 const menuEl = ref<HTMLElement | null>(null)
 /** El scroll que provoca abrir el menú (enfocar, llevar a la vista) no debe cerrarlo. */
 let abiertoEn = 0
+/** La mesa desde la que se abrió: al cerrar, el foco vuelve ahí y no al body. */
+let mesaDelMenu: HTMLElement | null = null
 
 async function abrirMenu(mesa: Mesa, x: number, y: number) {
   if (props.seleccionando) return
   abiertoEn = performance.now()
+  mesaDelMenu = document.activeElement as HTMLElement | null
   menu.value = { mesa, x, y }
   await nextTick()
   // Se recoloca si se sale de la ventana y se enfoca la primera opción.
@@ -187,7 +190,18 @@ function alMenuContextual(mesa: Mesa, evento: MouseEvent) {
 }
 
 function cerrarMenu() {
+  const volverA = mesaDelMenu
   menu.value = null
+  mesaDelMenu = null
+  // Quien abrió el menú con el teclado vuelve a su mesa, no al principio de la
+  // página. Solo si el foco sigue dentro del menú que se está cerrando.
+  if (
+    volverA?.isConnected &&
+    (!document.activeElement ||
+      menuEl.value?.contains(document.activeElement) ||
+      document.activeElement === document.body)
+  )
+    volverA.focus({ preventScroll: true })
 }
 
 function elegir(accion: () => void) {
