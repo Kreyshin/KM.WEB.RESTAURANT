@@ -249,6 +249,39 @@ const definiciones: DefinicionParametro[] = [
     porDefecto: 'cobrar',
   },
   {
+    clave: 'comprobantes.emisionAutomatica',
+    etiqueta: 'Emitir el comprobante al cobrar',
+    descripcion:
+      'Sin esto, la venta queda con su nota de venta y el comprobante se emite después desde Facturación.',
+    alcance: 'local',
+    grupo: 'Comprobantes',
+    tipo: 'booleano',
+    porDefecto: true,
+  },
+  {
+    clave: 'comprobantes.tipoPorDefecto',
+    etiqueta: 'Comprobante por defecto',
+    descripcion: 'El que propone la caja cuando el cliente no pide otra cosa.',
+    alcance: 'local',
+    grupo: 'Comprobantes',
+    tipo: 'opcion',
+    opciones: [
+      { valor: 'boleta', etiqueta: 'Boleta' },
+      { valor: 'factura', etiqueta: 'Factura' },
+    ],
+    porDefecto: 'boleta',
+  },
+  {
+    clave: 'comprobantes.limiteBoletaSinDni',
+    etiqueta: 'Boleta sin documento hasta',
+    descripcion:
+      'Por encima de este importe la boleta lleva el documento del cliente. 0: nunca se exige.',
+    alcance: 'local',
+    grupo: 'Comprobantes',
+    tipo: 'numero',
+    porDefecto: 700,
+  },
+  {
     clave: 'caja.exigirSesion',
     etiqueta: 'Exigir caja abierta para cobrar',
     descripcion: 'Sin caja abierta no se cobra. Apagado en locales que no hacen arqueo por turno.',
@@ -401,6 +434,18 @@ const permisos: PermisoVertical[] = [
     etiqueta: 'Abrir y cerrar caja',
     modulo: 'Ventas',
     descripcion: 'Apertura con fondo y cierre con arqueo por medio de pago.',
+  },
+  {
+    clave: 'comprobantes.emitir',
+    etiqueta: 'Emitir comprobantes',
+    modulo: 'Comprobantes',
+    descripcion: 'Boletas y facturas sobre las ventas cobradas, y su envío.',
+  },
+  {
+    clave: 'comprobantes.anular',
+    etiqueta: 'Emitir notas de crédito',
+    modulo: 'Comprobantes',
+    descripcion: 'Anular o rebajar un comprobante aceptado, con su motivo.',
   },
 ]
 

@@ -261,7 +261,7 @@ Regla: no se elimina un salón con mesas o áreas.
 
 ### RegistroAuditoria
 
-`{ fecha, usuarioId?, autor, modulo, accion, detalle, localId? }`. Módulos: Permisos, Turnos, Integración, Recetas, Precios, Compras, Inventario, Reservas, Delivery, Promociones, Ventas, Caja. Se escribe desde los servicios y solo se consulta.
+`{ fecha, usuarioId?, autor, modulo, accion, detalle, localId? }`. Módulos: Permisos, Turnos, Integración, Recetas, Precios, Compras, Inventario, Reservas, Delivery, Promociones, Ventas, Caja, Comprobantes. Se escribe desde los servicios y solo se consulta.
 
 ## Carta
 
@@ -681,6 +681,33 @@ salida con motivo «Venta · cuenta N» y la cuenta como referencia, así el kar
 lo consumido con una entrada «Anulación · cuenta N».
 
 **Todavía no hace:** comanda en tiempo real hacia un KDS, ICBPER y emisión electrónica.
+
+## Comprobantes electrónicos (F8, D-013)
+
+### Comprobante
+
+| Campo             | Tipo                                                         | Notas                                                   |
+| ----------------- | ------------------------------------------------------------ | ------------------------------------------------------- |
+| `tipo`            | boleta, factura, notaCredito                                 | La nota de venta la emite la caja (F7)                  |
+| `serie`, `numero` | string, number                                               | Correlativo de la serie del local, que es dato del ERP  |
+| `ventaId`         | string                                                       | → Venta; la nota de crédito hereda la de su comprobante |
+| `receptor`        | tipoDocumento, documento, nombre, dirección, email           | Factura: RUC válido, razón social y dirección           |
+| `totales`         | valorVenta, igv, tasaIgv, recargoConsumo, total              | Congelados como se cobraron                             |
+| `estado`          | porEnviar, enviado, aceptado, rechazado, observado           | Los mismos que tendrá el envío real                     |
+| `respuesta`       | codigo, mensaje, fecha, cdr                                  | Lo que contestó el servicio; en simulación, inventado   |
+| `intentos`        | number                                                       | Los rechazos no se esconden                             |
+| `referenciaId`    | string?                                                      | Nota de crédito: comprobante que corrige                |
+| `motivoNota`      | anulacion, devolucion, descuento, errorDescripcion, errorRuc | Con detalle libre opcional                              |
+
+**Reglas.** Una venta tiene un solo comprobante vivo; un rechazado se corrige y se reintenta, y un
+aceptado ya no se toca: se corrige con **nota de crédito**, total o parcial. La total anula la
+venta y devuelve al almacén lo consumido (D-007). Sin serie activa del tipo, no se emite: se dice
+cuál falta. **Parámetros por local:** `comprobantes.emisionAutomatica`,
+`comprobantes.tipoPorDefecto`, `comprobantes.limiteBoletaSinDni`. **Permisos:**
+`comprobantes.emitir` y `comprobantes.anular`, que son distintos a propósito.
+
+**Todavía no hace:** envío real a un OSE, resumen diario de boletas, comunicación de baja y notas
+de débito.
 
 ## Retiradas
 

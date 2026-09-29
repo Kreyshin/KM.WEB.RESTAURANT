@@ -63,6 +63,7 @@ import type {
   Comanda,
   Venta,
   SesionCaja,
+  Comprobante,
 } from '@/types'
 import { ilustracionCombo, imagenPlato } from './ilustraciones'
 import { simularRed } from './red'
@@ -71,7 +72,7 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v31'
+const CLAVE = 'km.restaurante.mock.v32'
 
 export interface Esquema {
   combos: Combo[]
@@ -116,6 +117,7 @@ export interface Esquema {
   comandas: Comanda[]
   ventas: Venta[]
   sesionesCaja: SesionCaja[]
+  comprobantes: Comprobante[]
   bitacora: RegistroAuditoria[]
   ubicaciones: Ubicacion[]
   lotes: Lote[]
@@ -3297,6 +3299,7 @@ function semilla(): Esquema {
         'ventas.tomarPedido',
         'ventas.cobrar',
         'caja.gestionar',
+        'comprobantes.emitir',
       ],
       mesero: ['ventas.tomarPedido'],
       cocinero: ['compras.solicitar', 'produccion.registrar'],
@@ -3317,6 +3320,7 @@ function semilla(): Esquema {
     comandas,
     ventas: [],
     sesionesCaja,
+    comprobantes: [],
     listasPrecios,
     zonas,
     proveedores,

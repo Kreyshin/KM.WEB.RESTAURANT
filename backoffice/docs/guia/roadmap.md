@@ -14,7 +14,7 @@ Fases de **front-end** sobre datos de ejemplo. Una fase no empieza sin los maest
 | F5 · Personal y permisos          | Maestros  | Catálogo de permisos, turnos y bitácora                     | ✅ Hecha       |
 | F6 · Clientes y promociones       | Maestros  | Clientes, reservas, delivery y reglas de promociones        | ✅ Hecha       |
 | F7 · Ventas y caja                | Operación | Pedido, comanda, cuenta y cobro · alcance por decidir       | ⚠️ Por decidir |
-| F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados  | Pendiente      |
+| F8 · Comprobantes                 | Operación | Boletas, facturas y notas de crédito con estados simulados  | ✅ Hecha       |
 | F9 · Reportes y analítica         | Análisis  | Ventas, rentabilidad por plato, consumo y mermas            | Pendiente      |
 | F10 · Pulido y entidades          | Análisis  | Accesibilidad, rendimiento y diccionario de entidades       | Pendiente      |
 
@@ -326,6 +326,23 @@ mesero es otro proyecto de la suite que consume los mismos datos.
 - [x] El cobro enseña qué sale del almacén y qué productos no tienen receta
 - [ ] Comanda en tiempo real hacia un KDS _(depende de la decisión C)_
 - [ ] ICBPER de las bolsas y consumo del personal
+
+## F8 · Comprobantes electrónicos
+
+Emisión con **envío simulado** (D-013): los estados y las reglas están construidos para cuando se
+enchufe el OSE real (decisión D). La vertical emite; quien declara es el ERP.
+
+- [x] Boleta o factura sobre la venta cobrada, con la serie del local y sus importes congelados
+- [x] La factura exige RUC válido, razón social y dirección fiscal
+- [x] La boleta pide documento por encima del importe configurado (700 soles por defecto, SUNAT)
+- [x] Emisión al cobrar, configurable por local; si no se puede, la venta queda en la cola de Facturación
+- [x] Estados del envío: por enviar → enviado → aceptado, rechazado u observado, con código y mensaje
+- [x] Un rechazado se corrige y se reintenta, contando los intentos; un aceptado ya no se toca
+- [x] Nota de crédito con motivo, total o parcial; la total anula la venta y devuelve el stock
+- [x] Sin serie activa del tipo no se emite: se dice cuál falta en vez de inventarla
+- [x] Permisos separados para emitir y para anular
+- [ ] Envío real a un OSE _(decisión D)_
+- [ ] Resumen diario de boletas, comunicación de baja y notas de débito
 
 ## Pendientes de revisión
 

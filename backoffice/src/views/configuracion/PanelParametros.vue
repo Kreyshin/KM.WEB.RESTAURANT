@@ -118,6 +118,7 @@ function textoOrigen(v: ValorParametro) {
               v-if="v.definicion.tipo === 'booleano'"
               :model-value="Boolean(v.valor)"
               :etiqueta="v.valor ? 'Sí' : 'No'"
+              :nombre-accesible="v.definicion.etiqueta"
               @update:model-value="guardar(v, $event)"
             />
             <KmNumero

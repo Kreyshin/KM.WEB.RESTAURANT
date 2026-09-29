@@ -377,3 +377,35 @@ no tienen mesero.
 
 **A revisar cuando se use:** si la división por líneas basta o hace falta dividir por partes iguales;
 si la propina debe repartirse por mozo; y si el cierre ciego estorba en un local pequeño.
+
+## D-013 · Comprobantes electrónicos _(preliminar, con envío simulado)_
+
+**Contexto.** La vertical cobra (D-012) y emite; quien declara es el ERP. Aquí no hay backend ni
+OSE: el envío a SUNAT se **simula** con sus estados y sus respuestas, para que la pantalla, los
+estados y las reglas estén construidos cuando se enchufe la integración real (decisión D).
+
+**Decisión.**
+
+1. **La nota de venta no es comprobante.** Cobrar cierra la cuenta y deja una nota de venta
+   (D-012); el comprobante electrónico se emite sobre esa venta y puede emitirse al cobrar
+   (configurable por local) o después, desde Facturación.
+2. **Boleta o factura, según el receptor.** La factura exige **RUC válido** y razón social; la
+   boleta admite DNI, y lo **exige** por encima del importe que marque la configuración —700 soles
+   por defecto, como pide SUNAT—. Sin documento, boleta simple.
+3. **El comprobante guarda su foto:** serie, número, receptor, valor de venta, IGV, recargo al
+   consumo y total, tal como se cobraron. Si la carta o el IGV cambian después, el comprobante no
+   se mueve.
+4. **Estados del envío**, los mismos que tendrá con OSE real: `porEnviar` → `enviado` →
+   `aceptado`, `rechazado` u `observado`. Un rechazo guarda código y mensaje, y **se puede
+   reintentar**; un aceptado ya no se toca.
+5. **Anular es emitir otro documento**, nunca borrar: **nota de crédito** con su motivo, referida
+   al comprobante original. La comunicación de baja queda para cuando haya integración real,
+   porque solo tiene sentido contra el plazo de SUNAT.
+6. **La nota de crédito puede ser total o parcial.** Total devuelve la venta entera y deja la
+   venta anulada, con lo que el stock consumido vuelve al almacén (D-007).
+7. **El correlativo lo lleva la serie del local** (dato del ERP, D-005). Sin serie activa del tipo
+   que toca, no se emite: se dice cuál falta en lugar de inventar una.
+
+**A validar con el contador y con el ERP:** si la emisión la hace esta vertical o la centraliza el
+ERP; el resumen diario de boletas; la comunicación de baja y sus plazos; y las notas de débito,
+que aquí todavía no existen.

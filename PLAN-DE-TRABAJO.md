@@ -36,7 +36,7 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 | F6.1 · Clientes y reservas        | Cliente del ERP con ficha de sala, reservas por mesa y cupo | ✅                     |
 | F6.2 · Delivery y promociones     | Zonas de reparto y reglas de promociones para el POS        | ✅                     |
 | F7 · Ventas y caja                | Pedido, comanda, cuenta y cobro                             | 🔨 Línea base hecha    |
-| F8 · Comprobantes                 | Boletas, facturas y notas de crédito                        | ⏳                     |
+| F8 · Comprobantes                 | Boletas, facturas y notas de crédito                        | ✅ (envío simulado)    |
 | F9 · Reportes                     | Ventas, rentabilidad por plato, consumo y mermas            | ⏳                     |
 | F10 · Pulido                      | Accesibilidad, rendimiento y diccionario de entidades       | ⏳                     |
 
@@ -57,8 +57,8 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 
 ## 3. Lo siguiente
 
-1. **Criticar F7** — la línea base estándar ya funciona; lo que chirríe se refactoriza (D-012).
-2. **F8 y F9** — comprobantes electrónicos y análisis.
+1. **Criticar F7 y F8** — la línea base estándar ya funciona; lo que chirríe se refactoriza (D-012, D-013).
+2. **F9 · Reportes** — ventas, rentabilidad por plato, consumo y mermas.
 
 ## 4. Decisiones abiertas
 
@@ -67,7 +67,7 @@ a un servicio, y el mock se sustituye por HTTP sin tocar las vistas.
 | **A** | POS: ✅ cerrada. La caja se construye en este proyecto con la línea base estándar (D-012); la app del mesero es otro proyecto de la suite con los mismos datos | —                | Falta el KDS en tiempo real (decisión C), el ICBPER y la emisión electrónica (F8).           |
 | **B** | Backend: stack y forma (monolito modular vs. servicios)                                                                                                | Integración real | Karma Corp ya tiene plataforma: conviene alinear con el resto del ERP, no elegir por gusto. |
 | **C** | Transporte en tiempo real para comanda y KDS                                                                                                           | F7               | WebSocket propio o servicio gestionado; afecta coste y complejidad de reconexión.           |
-| **D** | Facturación electrónica: OSE de terceros o integración directa                                                                                         | F8               | Probablemente ya resuelto en el ERP; confirmar antes de diseñar nada.                       |
+| **D** | Facturación electrónica: OSE de terceros o integración directa                                                                                         | Envío real       | F8 está hecha con envío simulado: solo falta enchufar el servicio. Confirmar con el ERP.    |
 
 Las decisiones ya cerradas (D-001 a D-010) están en
 [decisiones.md](backoffice/docs/guia/decisiones.md). Las que funcionan pero deben validarse con

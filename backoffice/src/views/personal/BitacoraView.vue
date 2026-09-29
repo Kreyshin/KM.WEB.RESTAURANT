@@ -42,6 +42,7 @@ const modulos: ModuloAuditoria[] = [
   'Promociones',
   'Ventas',
   'Caja',
+  'Comprobantes',
 ]
 const tono: Record<ModuloAuditoria, TonoMesa> = {
   Permisos: 'vino',
@@ -56,6 +57,7 @@ const tono: Record<ModuloAuditoria, TonoMesa> = {
   Promociones: 'vino',
   Ventas: 'verde',
   Caja: 'pizarra',
+  Comprobantes: 'laton',
 }
 
 const modulo = ref('')

@@ -249,7 +249,7 @@ export const modulos: ModuloNav[] = [
       {
         nombreRuta: 'facturacion',
         etiqueta: 'Facturación SUNAT',
-        descripcion: 'Comprobantes electrónicos',
+        descripcion: 'Boletas, facturas y notas de crédito',
         roles: ['admin', 'cajero'],
       },
       {

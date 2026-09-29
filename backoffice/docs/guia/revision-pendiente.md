@@ -93,3 +93,11 @@ Lo construido que aún no revisa el responsable de producto. Se marca al revisar
 - [ ] Cobro: propina sugerida, varios medios, referencia y vuelto
 - [ ] Admin › Arqueo: apertura con fondo, resumen del turno y cierre a ciegas con diferencia
 - [ ] Descuento de stock por venta: momento configurable, faltantes sin bloquear y devolución al anular
+
+## F8 · Comprobantes
+
+- [ ] Admin › Facturación: emitidos con su estado, y ventas sin comprobante como cola de trabajo
+- [ ] Emisión de boleta y factura, con las exigencias de cada una
+- [ ] Envío, rechazo con código y mensaje, corrección y reintento con contador de intentos
+- [ ] Nota de crédito total (anula la venta y devuelve stock) y parcial
+- [ ] Emisión automática al cobrar, configurable por local
