@@ -14,6 +14,7 @@ import { db, latencia, nuevoId, persistir } from './mock/db'
 import { clonar } from './mock/red'
 import { errorCampo } from './mock/reglas'
 import { tienePermiso, valorConfig } from './parametros.service'
+import { diaLocal } from '@/utils/fechas'
 import { validarRuc } from '@/utils/validaciones'
 
 /**
@@ -228,7 +229,7 @@ export const comprobantesService = {
       clonar(
         db.comprobantes
           .filter((c) => {
-            const dia = c.fecha.slice(0, 10)
+            const dia = diaLocal(c.fecha)
             return (
               (!filtro.localId || c.localId === filtro.localId) &&
               (!filtro.estado || c.estado === filtro.estado) &&

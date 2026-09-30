@@ -37,6 +37,7 @@ import type {
   Salon,
 } from '@/types'
 import type { OpcionSelect, TonoMesa } from '@/types/ui'
+import { hoyLocal } from '@/utils/fechas'
 import { etiquetaAlergeno, formatearFecha } from '@/utils/formato'
 
 /**
@@ -48,7 +49,7 @@ const ui = useUiStore()
 const auth = useAuthStore()
 const localStore = useLocalStore()
 
-const hoy = new Date().toISOString().slice(0, 10)
+const hoy = hoyLocal()
 const fecha = ref<string | null>(hoy)
 const reservas = shallowRef<Reserva[]>([])
 const clientes = shallowRef<Cliente[]>([])

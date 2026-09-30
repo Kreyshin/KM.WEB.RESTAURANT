@@ -14,6 +14,7 @@ import { useLocalStore } from '@/stores/local.store'
 import { useUiStore } from '@/stores/ui.store'
 import type { ApiError, Mesa, Reserva, Salon } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
+import { diaLocal } from '@/utils/fechas'
 
 /**
  * El reloj del servicio: mesas en filas, el turno en columnas de cuarto de hora.
@@ -59,7 +60,7 @@ const arrastre = ref<{
 
 let reloj: number | undefined
 
-const hoy = computed(() => ahora.value.toISOString().slice(0, 10))
+const hoy = computed(() => diaLocal(ahora.value))
 
 // ── El eje de tiempo ─────────────────────────────────────────────────────────
 

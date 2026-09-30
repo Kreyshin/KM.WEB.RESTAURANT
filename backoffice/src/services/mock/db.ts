@@ -69,6 +69,7 @@ import type {
   UnidadMedida,
 } from '@/types'
 import { ilustracionCombo, imagenPlato } from './ilustraciones'
+import { aFechaIso } from '@/utils/fechas'
 import { simularRed } from './red'
 
 /**
@@ -1129,7 +1130,7 @@ function semilla(): Esquema {
 
   const ahora = Date.now()
   const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
-  const hoyIso = new Date(ahora).toISOString().slice(0, 10)
+  const hoyIso = aFechaIso(new Date(ahora))
   const hace = (horas: number) => new Date(ahora - horas * 3600_000).toISOString()
 
   const movimientosBase: Omit<Movimiento, 'zonaId'>[] = [
@@ -2499,7 +2500,7 @@ function semilla(): Esquema {
   ]
 
   // ── F4.6: recetas estandarizadas (D-007) ──
-  const diaIso = (dias: number) => new Date(ahora - dias * 86_400_000).toISOString().slice(0, 10)
+  const diaIso = (dias: number) => aFechaIso(new Date(ahora - dias * 86_400_000))
   const costoDe = (ids: string[], cambios: Record<string, number> = {}) =>
     Object.fromEntries(
       ids.map((id) => [id, cambios[id] ?? insumos.find((x) => x.id === id)?.costoUnitario ?? 0]),
@@ -2836,8 +2837,7 @@ function semilla(): Esquema {
   ]
 
   /** Día relativo a hoy, en el mismo formato que usan los servicios. */
-  const diaReserva = (dias: number) =>
-    new Date(ahora + dias * 86_400_000).toISOString().slice(0, 10)
+  const diaReserva = (dias: number) => aFechaIso(new Date(ahora + dias * 86_400_000))
 
   const reservas: Reserva[] = [
     {
@@ -3474,7 +3474,7 @@ function semilla(): Esquema {
       if (venta.estado !== 'cobrada') continue
       const pedido = pedidosHist.find((p) => p.id === venta.pedidoId)
       if (!pedido) continue
-      const dia = venta.fecha.slice(0, 10)
+      const dia = aFechaIso(new Date(venta.fecha))
 
       for (const linea of pedido.lineas) {
         const receta = recetasEstandar.find((r) => r.vendibleId === linea.vendibleId)

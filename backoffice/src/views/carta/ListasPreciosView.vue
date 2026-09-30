@@ -37,6 +37,7 @@ import type {
   ProductoVendible,
 } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
+import { hoyLocal } from '@/utils/fechas'
 import { formatearFecha, formatearSoles } from '@/utils/formato'
 
 /**
@@ -54,7 +55,7 @@ const vendibles = shallowRef<ProductoVendible[]>([])
 const canales = shallowRef<CanalVenta[]>([])
 const seleccionada = ref<string | null>(null)
 
-const hoy = new Date().toISOString().slice(0, 10)
+const hoy = hoyLocal()
 
 async function cargar() {
   const [ls, vs, cs] = await Promise.all([

@@ -47,6 +47,7 @@ import type {
   TipoCondicionPromocion,
 } from '@/types'
 import type { ColumnaTabla, OpcionSelect, Pestana } from '@/types/ui'
+import { hoyLocal } from '@/utils/fechas'
 import { formatearSoles } from '@/utils/formato'
 
 /**
@@ -358,7 +359,7 @@ async function eliminar(p: Promocion) {
 
 // ── Simulador ────────────────────────────────────────────────────────────────
 
-const hoy = new Date().toISOString().slice(0, 10)
+const hoy = hoyLocal()
 const simCanal = ref('cv1')
 const simFecha = ref(hoy)
 const simHora = ref('20:00')

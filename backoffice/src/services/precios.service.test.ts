@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { hoyLocal } from '@/utils/fechas'
 import { db, reiniciarMock } from './mock/db'
 import { precioVigente, preciosService, repartoCombo, vendibles } from './precios.service'
 
@@ -12,7 +13,7 @@ beforeEach(() => {
   reiniciarMock()
 })
 
-const hoy = new Date().toISOString().slice(0, 10)
+const hoy = hoyLocal()
 const anio = new Date().getFullYear()
 const sinId = (id: string) => {
   const { id: _id, ...resto } = db.listasPrecios.find((l) => l.id === id)!

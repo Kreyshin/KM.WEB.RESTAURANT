@@ -15,6 +15,7 @@ import { db, latencia, nuevoId, persistir } from './mock/db'
 import { clonar } from './mock/red'
 import { errorCampo } from './mock/reglas'
 import { tienePermiso, valorConfig } from './parametros.service'
+import { diaRelativo, hoyLocal } from '@/utils/fechas'
 
 /**
  * Clientes y reservas (F6.1). El cliente es del ERP —ahí se factura— y la
@@ -39,7 +40,7 @@ export const etiquetaEstadoReserva: Record<EstadoReserva, string> = {
 
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/
 const FECHA = /^\d{4}-\d{2}-\d{2}$/
-const hoy = () => new Date().toISOString().slice(0, 10)
+const hoy = hoyLocal
 const minutos = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3))
 
 /** Una reserva cuenta mientras no se haya cancelado ni marcado como no vino. */
@@ -101,7 +102,7 @@ function validar(datos: NuevaReserva, id?: string) {
 
   const maxDias = valorConfig<number>('reservas.anticipacionMaxDias', datos.localId)
   if (maxDias > 0) {
-    const limite = new Date(Date.now() + maxDias * 86_400_000).toISOString().slice(0, 10)
+    const limite = diaRelativo(maxDias)
     if (datos.fecha > limite)
       throw errorCampo(
         'fecha',

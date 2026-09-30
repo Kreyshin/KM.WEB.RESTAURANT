@@ -14,6 +14,7 @@ import type {
 import { db, latencia } from './mock/db'
 import { costoReceta } from './recetas.service'
 import { vendibles } from './precios.service'
+import { diaLocal } from '@/utils/fechas'
 
 /**
  * Reportes (F9, D-014).
@@ -29,10 +30,7 @@ const r3 = (n: number) => Math.round((n + Number.EPSILON) * 1000) / 1000
 
 /** Hora local del restaurante, que es la que ordena el servicio. */
 const horaDe = (iso: string) => new Date(iso).getHours()
-const diaDe = (iso: string) => {
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
+const diaDe = diaLocal
 
 /** Notas de crédito que rebajan una venta sin anularla (D-014, punto 1). */
 function rebajaDe(ventaId: string) {

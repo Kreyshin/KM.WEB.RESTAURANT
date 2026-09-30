@@ -51,6 +51,7 @@ import type {
   VersionReceta,
 } from '@/types'
 import type { OpcionSelect, Pestana, TonoMesa } from '@/types/ui'
+import { hoyLocal } from '@/utils/fechas'
 import { etiquetaAlergeno, formatearFecha, formatearSoles } from '@/utils/formato'
 
 /**
@@ -71,7 +72,7 @@ const productos = shallowRef<Producto[]>([])
 const auth = useAuthStore()
 const { cargando, iniciar, terminar } = useCarga()
 const canalId = ref('cv1')
-const hoy = new Date().toISOString().slice(0, 10)
+const hoy = hoyLocal()
 
 async function cargar() {
   iniciar()

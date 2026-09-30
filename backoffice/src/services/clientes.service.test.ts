@@ -3,6 +3,7 @@ import { auditoriaService } from './auditoria.service'
 import { clientesService, reservasService } from './clientes.service'
 import { db, reiniciarMock } from './mock/db'
 import { parametrosService } from './parametros.service'
+import { diaRelativo, hoyLocal } from '@/utils/fechas'
 
 /**
  * Reglas de F6.1: la ficha de sala es de la vertical y las reservas no pisan
@@ -15,8 +16,8 @@ beforeEach(() => {
 })
 
 const ADMIN = 'u1'
-const hoy = new Date().toISOString().slice(0, 10)
-const dia = (dias: number) => new Date(Date.now() + dias * 86_400_000).toISOString().slice(0, 10)
+const hoy = hoyLocal()
+const dia = (dias: number) => diaRelativo(dias)
 
 const base = {
   localId: 'l1',
