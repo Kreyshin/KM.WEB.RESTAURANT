@@ -179,6 +179,9 @@ Permitido según configuración, para compras de emergencia o de mercado. Contro
 | **Excepciones por usuario**      | Ajustes sobre los permisos de su rol        | Administrador                                                                                                              |
 
 - **Herencia:** un local sin valor propio usa el de la vertical (base de la cadena Cadena → Local → Almacén → Categoría → Insumo de D-004).
+- **Cómo se enseña la herencia.** Los niveles son tres —empresa → cadena → local—, pero al usuario solo le importan dos estados: el valor es **propio** de donde está mirando, o es **heredado**. Eso es lo que dice la insignia. De dónde viene («de la empresa», «de la cadena», «de fábrica») y cuánto vale lo heredado van en letra pequeña, porque son el detalle y no la decisión. En un valor propio se enseña además **a cuánto volvería**: el botón dice «Volver a lo heredado (90)», no «Volver», para que soltar la herencia no sea un salto a ciegas.
+- **Soltar el valor propio existe en los tres niveles**, no solo en el local: la empresa también puede volver al valor de fábrica. Un nivel donde no se puede deshacer convierte cualquier prueba en permanente.
+- **La distinción importa aunque el número se vea igual.** Un local con «10» propio y otro que hereda «10» se ven idénticos, pero el primero dejó de escuchar a la empresa: si mañana la empresa sube a 12, él se queda en 10. Por eso el estado se enseña siempre, no solo cuando difiere.
 - Los catálogos de **parámetros** y **permisos** empiezan vacíos. Cada fase añade sus definiciones en `parametros.service.ts` y las pantallas las muestran sin cambios.
 - También se quitan las **series de comprobantes**: la numeración la gestiona el ERP.
 - Canales de venta, estaciones e impresoras y motivos siguen en Configuración.

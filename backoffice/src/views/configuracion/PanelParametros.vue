@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useCarga } from '@/composables/useCarga'
+import KmBadge from '@/components/ui/KmBadge.vue'
+import KmButton from '@/components/ui/KmButton.vue'
 import KmEstado from '@/components/ui/KmEstado.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
@@ -54,17 +56,33 @@ async function guardar(v: ValorParametro, valor: string | number | boolean | und
   }
 }
 
-function textoOrigen(v: ValorParametro) {
-  if (v.origen === 'propio') {
-    return props.localId
-      ? 'Propio de este local'
-      : props.cadenaId
-        ? 'Propio de esta cadena'
-        : 'Fijado para la empresa'
-  }
-  if (v.origen === 'cadena') return 'Heredado de la cadena'
-  if (v.origen === 'empresa') return 'Heredado de la empresa'
-  return 'Valor por defecto'
+/**
+ * Solo hay dos estados que importan: el valor es **propio** de este nivel, o
+ * **heredado** del de arriba. De dónde viene y cuánto vale va en letra pequeña,
+ * porque es el detalle, no la decisión.
+ */
+const esPropio = (v: ValorParametro) => v.origen === 'propio'
+
+const nivel = () => (props.localId ? 'este local' : props.cadenaId ? 'esta cadena' : 'la empresa')
+
+/** De dónde viene lo heredado, dicho como lo diría una persona. */
+function fuente(origen: ValorParametro['origenHeredado']) {
+  if (origen === 'cadena') return 'de la cadena'
+  if (origen === 'empresa') return 'de la empresa'
+  return 'de fábrica'
+}
+
+/** El valor, legible: los interruptores no dicen «true». */
+function comoTexto(v: ValorParametro, valor: ValorParametro['valor']) {
+  if (v.definicion.tipo === 'booleano') return valor ? 'Sí' : 'No'
+  const opcion = v.definicion.opciones?.find((o) => o.valor === valor)
+  return opcion ? opcion.etiqueta : String(valor)
+}
+
+function detalle(v: ValorParametro) {
+  if (!esPropio(v)) return `Viene ${fuente(v.origenHeredado)}`
+  // En un valor propio interesa lo otro: a qué volvería si se suelta.
+  return `Fijado en ${nivel()} · ${fuente(v.origenHeredado)} sería ${comoTexto(v, v.heredado)}`
 }
 </script>
 
@@ -95,23 +113,25 @@ function textoOrigen(v: ValorParametro) {
             <p v-if="v.definicion.descripcion" class="text-xs text-tenue">
               {{ v.definicion.descripcion }}
             </p>
-            <p
-              class="mt-1 text-xs"
-              :class="v.origen === 'propio' ? 'text-laton-texto' : 'text-tenue'"
-            >
-              {{ textoOrigen(v) }}
-              <template v-if="!enLocal && v.definicion.alcance === 'local'">
-                · cada cadena o local puede cambiarlo
-              </template>
-              <button
-                v-if="enLocal && v.origen === 'propio'"
-                type="button"
-                class="ml-2 text-verde underline"
+            <div class="mt-1.5 flex flex-wrap items-center gap-2">
+              <KmBadge :tono="esPropio(v) ? 'laton' : 'neutro'" punto>
+                {{ esPropio(v) ? 'Propio' : 'Heredado' }}
+              </KmBadge>
+              <span class="text-xs text-tenue">{{ detalle(v) }}</span>
+              <KmButton
+                v-if="esPropio(v)"
+                tamano="sm"
+                variante="secundario"
                 @click="guardar(v, undefined)"
               >
-                Usar el heredado
-              </button>
-            </p>
+                {{ enLocal ? 'Volver a lo heredado' : 'Volver a lo de fábrica' }} ({{
+                  comoTexto(v, v.heredado)
+                }})
+              </KmButton>
+              <span v-if="!enLocal && v.definicion.alcance === 'local'" class="text-xs text-tenue">
+                · cada cadena o local puede cambiarlo
+              </span>
+            </div>
           </div>
 
           <div class="w-56 shrink-0">

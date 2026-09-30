@@ -37,6 +37,29 @@ test.describe('Configuración del negocio', () => {
     await expect(page.getByText('Vida útil de lo producido')).toHaveCount(0)
   })
 
+  test('un valor propio se distingue del heredado y se puede soltar', async ({ page }) => {
+    await page.goto('/configuracion/local')
+    const fila = page.getByRole('listitem').filter({ hasText: 'Duración de una reserva' }).first()
+
+    // De entrada nadie lo tocó: es el valor de fábrica, y no hay nada que soltar.
+    await expect(fila.getByText('Heredado')).toBeVisible()
+    await expect(fila.getByText('Viene de fábrica')).toBeVisible()
+    await expect(fila.getByRole('button', { name: /Volver/ })).toHaveCount(0)
+
+    await fila.getByRole('spinbutton').fill('75')
+    await fila.getByRole('spinbutton').blur()
+
+    // Ahora es propio, y dice a cuánto volvería si se suelta.
+    await expect(fila.getByText('Propio')).toBeVisible()
+    await expect(fila).toContainText('de fábrica sería 90')
+    const volver = fila.getByRole('button', { name: /Volver a lo heredado \(90\)/ })
+    await expect(volver).toBeVisible()
+
+    await volver.click()
+    await expect(fila.getByText('Heredado')).toBeVisible()
+    await expect(fila.getByRole('spinbutton')).toHaveValue('90')
+  })
+
   test('permisos por rol del ERP y excepciones por usuario', async ({ page }) => {
     await page.goto('/configuracion/roles')
     await page
