@@ -524,6 +524,14 @@ export interface ValorParametro {
   valor: Valor
   /** De dónde sale el valor mostrado. */
   origen: 'propio' | 'cadena' | 'empresa' | 'defecto'
+  /**
+   * Lo que valdría si se quitara el valor propio de este nivel. Sirve para
+   * enseñarlo antes de devolver la herencia: «vuelve a 12» en vez de «vuelve».
+   * Cuando el valor ya es heredado, coincide con `valor`.
+   */
+  heredado: Valor
+  /** De dónde viene ese valor heredado. */
+  origenHeredado: 'cadena' | 'empresa' | 'defecto'
 }
 
 /** Nivel que se consulta o edita: la empresa, una cadena o un local. */
@@ -554,13 +562,18 @@ export const parametrosService = {
           : ambito.cadenaId
             ? cadena
             : empresa
-        if (propio !== undefined) return { definicion: d, valor: propio, origen: 'propio' }
-        if (localId && cadena !== undefined)
-          return { definicion: d, valor: cadena, origen: 'cadena' }
-        if (!esEmpresa && empresa !== undefined) {
-          return { definicion: d, valor: empresa, origen: 'empresa' }
-        }
-        return { definicion: d, valor: d.porDefecto, origen: 'defecto' }
+
+        // Lo que quedaría al quitar el valor propio de este nivel: el de arriba.
+        const heredado: { valor: Valor; origen: ValorParametro['origenHeredado'] } =
+          localId && cadena !== undefined
+            ? { valor: cadena, origen: 'cadena' }
+            : !esEmpresa && empresa !== undefined
+              ? { valor: empresa, origen: 'empresa' }
+              : { valor: d.porDefecto, origen: 'defecto' }
+
+        const base = { definicion: d, heredado: heredado.valor, origenHeredado: heredado.origen }
+        if (propio !== undefined) return { ...base, valor: propio, origen: 'propio' as const }
+        return { ...base, valor: heredado.valor, origen: heredado.origen }
       }),
     )
   },
