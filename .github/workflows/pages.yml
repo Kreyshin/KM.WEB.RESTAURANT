@@ -22,6 +22,11 @@ defaults:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # El runner vive en UTC y el restaurante en Lima: con la hora de Greenwich,
+    # las reglas que dependen del día (promoción del martes, vigencias, filtros)
+    # se prueban en un huso que nadie usa y los fallos aparecen solo de noche.
+    env:
+      TZ: America/Lima
     steps:
       - uses: actions/checkout@v4
         with:
