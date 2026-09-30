@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmBusqueda from '@/components/ui/KmBusqueda.vue'
@@ -35,11 +36,11 @@ const clientes = shallowRef<Cliente[]>([])
 const fichas = shallowRef<FichaCliente[]>([])
 const reservas = shallowRef<Reserva[]>([])
 const salones = shallowRef<Salon[]>([])
-const cargando = ref(true)
+const { cargando, iniciar, terminar } = useCarga()
 const busqueda = ref('')
 
 async function cargar() {
-  cargando.value = true
+  iniciar()
   try {
     ;[clientes.value, fichas.value, reservas.value, salones.value] = await Promise.all([
       clientesService.todos(),
@@ -50,7 +51,7 @@ async function cargar() {
   } catch (e) {
     ui.error((e as ApiError).mensaje ?? 'No se pudieron cargar los clientes.')
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 onMounted(cargar)

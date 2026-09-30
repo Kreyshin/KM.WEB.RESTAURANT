@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmDrawer from '@/components/ui/KmDrawer.vue'
@@ -39,7 +40,7 @@ const ui = useUiStore()
 const mesas = ref<Mesa[]>([])
 const salones = ref<Salon[]>([])
 const reservas = ref<Reserva[]>([])
-const cargando = ref(true)
+const { cargando, refrescando, iniciar, terminar } = useCarga()
 const ahora = ref(new Date())
 
 const seleccionada = ref<Reserva | null>(null)
@@ -210,7 +211,7 @@ const glifos: Record<string, string> = { pendiente: '◷', confirmada: '◆', se
 async function cargar() {
   const localId = localStore.localId
   if (!localId) return
-  cargando.value = true
+  iniciar()
   try {
     const [listaSalones, listaMesas, agenda] = await Promise.all([
       salonesService.listar(),
@@ -224,7 +225,7 @@ async function cargar() {
   } catch {
     ui.error('No se pudo cargar el servicio.')
   } finally {
-    cargando.value = false
+    terminar()
   }
 }
 
@@ -382,7 +383,12 @@ function esperaDe(minutos: number | null | undefined) {
 
     <p v-if="cargando" class="py-16 text-center text-sm text-tenue">Cargando el servicio…</p>
 
-    <div v-else class="overflow-x-auto rounded-card border border-linea bg-panel">
+    <div
+      v-else
+      class="overflow-x-auto rounded-card border border-linea bg-panel"
+      :class="{ 'rs-refrescando': refrescando }"
+      :aria-busy="refrescando"
+    >
       <div class="relative min-w-[56rem]">
         <!-- Cabecera de horas -->
         <div

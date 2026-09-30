@@ -68,8 +68,21 @@ const props = withDefaults(
     consecuenciasEstado?: (id: string, activar: boolean) => Promise<string[]>
     /** Datos del ERP: se consultan pero no se crean, editan ni eliminan. */
     soloLectura?: boolean
+    /**
+     * Con qué vista se abre la pantalla la primera vez. Un catálogo que se
+     * mira —tipos de habitación, repuestos— se entiende antes en tarjetas;
+     * uno que se busca, en tabla. Después manda la elección del usuario, que
+     * `KmCambioVista` recuerda.
+     */
+    vistaPorDefecto?: 'tabla' | 'tarjetas'
   }>(),
-  { femenino: false, anchoDrawer: 'md', sinTarjeta: false, soloLectura: false },
+  {
+    femenino: false,
+    anchoDrawer: 'md',
+    sinTarjeta: false,
+    soloLectura: false,
+    vistaPorDefecto: 'tabla',
+  },
 )
 
 defineSlots<{
@@ -87,7 +100,7 @@ defineSlots<{
 }>()
 
 const slots = useSlots()
-const vista = ref<'tabla' | 'tarjetas'>('tabla')
+const vista = ref<'tabla' | 'tarjetas'>(props.vistaPorDefecto)
 
 const ui = useUiStore()
 
