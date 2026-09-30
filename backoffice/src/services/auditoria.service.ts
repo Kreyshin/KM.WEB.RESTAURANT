@@ -1,5 +1,6 @@
 import type { ModuloAuditoria, RegistroAuditoria } from '@/types'
 import { db, latencia, nuevoId, persistir } from './mock/db'
+import { diaLocal } from '@/utils/fechas'
 
 /**
  * Bitácora de acciones sensibles (F5): quién cambió un permiso, un modo de
@@ -51,7 +52,7 @@ export const auditoriaService = {
     return latencia(
       [...db.bitacora]
         .filter((r) => {
-          const dia = r.fecha.slice(0, 10)
+          const dia = diaLocal(r.fecha)
           if (filtro.modulo && r.modulo !== filtro.modulo) return false
           if (filtro.usuarioId && r.usuarioId !== filtro.usuarioId) return false
           if (filtro.localId && r.localId !== filtro.localId) return false

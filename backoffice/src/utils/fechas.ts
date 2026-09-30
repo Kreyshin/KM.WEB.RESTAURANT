@@ -12,6 +12,23 @@ export function aFechaIso(fecha: Date) {
   return `${fecha.getFullYear()}-${mes}-${dia}`
 }
 
+/**
+ * El día del restaurante a partir de una marca ISO, una fecha o nada (hoy).
+ *
+ * Las marcas se guardan en UTC y el día en que pasan las cosas es el del local:
+ * en Lima no coinciden entre las 19:00 y la medianoche. Cortar por UTC mandaba
+ * la cena al día siguiente, y con ella la promoción del martes, el filtro de
+ * comprobantes y el consumo del reporte. Todo lo que compare días pasa por aquí.
+ */
+export const diaLocal = (valor?: string | Date | number) =>
+  aFechaIso(valor === undefined ? new Date() : new Date(valor))
+
+/** Hoy, en el día del restaurante. */
+export const hoyLocal = () => aFechaIso(new Date())
+
+/** El día que será dentro de `dias` días; con un número negativo, el que fue. */
+export const diaRelativo = (dias: number) => aFechaIso(new Date(Date.now() + dias * 86_400_000))
+
 function sumarDias(fecha: Date, dias: number) {
   const copia = new Date(fecha)
   copia.setDate(copia.getDate() + dias)

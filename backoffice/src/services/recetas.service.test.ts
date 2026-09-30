@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { diaRelativo, hoyLocal } from '@/utils/fechas'
 import { inventarioService } from './inventario.service'
 import { db, reiniciarMock } from './mock/db'
 import { parametrosService } from './parametros.service'
@@ -24,8 +25,8 @@ beforeEach(() => {
 })
 
 const salon = { localId: 'l1', canalId: 'cv1' }
-const hoy = new Date().toISOString().slice(0, 10)
-const manana = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)
+const hoy = hoyLocal()
+const manana = diaRelativo(1)
 
 describe('unidades', () => {
   it('convierte solo dentro de la misma dimensión', () => {
@@ -53,7 +54,7 @@ describe('costo de receta', () => {
   })
 
   it('la versión anterior sigue costeando las fechas en que regía', () => {
-    const antes = new Date(Date.now() - 40 * 86_400_000).toISOString().slice(0, 10)
+    const antes = diaRelativo(-40)
     expect(costoReceta('p:p6', { ...salon, fecha: antes }).version).toBe(1)
   })
 

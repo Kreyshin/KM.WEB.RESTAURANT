@@ -16,6 +16,7 @@ import { clonar } from './mock/red'
 import { errorCampo } from './mock/reglas'
 import { tienePermiso, valorConfig } from './parametros.service'
 import { precioVigente, vendibles } from './precios.service'
+import { hoyLocal } from '@/utils/fechas'
 
 /**
  * Receta estandarizada (D-007). Vive en el producto vendible (producto sin
@@ -25,7 +26,7 @@ import { precioVigente, vendibles } from './precios.service'
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 const r4 = (n: number) => Math.round((n + Number.EPSILON) * 10000) / 10000
-const hoy = () => new Date().toISOString().slice(0, 10)
+const hoy = hoyLocal
 
 // ── Unidades ──
 

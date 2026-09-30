@@ -21,6 +21,7 @@ import { errorCampo } from './mock/reglas'
 import { tienePermiso, valorConfig } from './parametros.service'
 import { precioVigente, vendibles } from './precios.service'
 import { evaluar } from './promociones.service'
+import { diaLocal, hoyLocal } from '@/utils/fechas'
 
 /**
  * Ventas y caja (F7, D-012) — línea base estándar, para refinar con uso.
@@ -33,7 +34,7 @@ import { evaluar } from './promociones.service'
 
 const redondear = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
 const ahora = () => new Date().toISOString()
-const hoy = () => ahora().slice(0, 10)
+const hoy = hoyLocal
 const hora = () => ahora().slice(11, 16)
 
 export const etiquetaAtencion: Record<TipoAtencion, string> = {
@@ -628,7 +629,7 @@ export const ventasService = {
             (v) =>
               (!filtro.localId || v.localId === filtro.localId) &&
               (!filtro.sesionCajaId || v.sesionCajaId === filtro.sesionCajaId) &&
-              (!filtro.fecha || v.fecha.slice(0, 10) === filtro.fecha),
+              (!filtro.fecha || diaLocal(v.fecha) === filtro.fecha),
           )
           .sort((a, b) => b.fecha.localeCompare(a.fecha)),
       ),

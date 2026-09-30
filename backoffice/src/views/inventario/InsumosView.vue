@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import VinculosArticulo from './VinculosArticulo.vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
+import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmCatalogo, { type ServicioCatalogo } from '@/components/ui/KmCatalogo.vue'
 import KmField from '@/components/ui/KmField.vue'
 import KmInput from '@/components/ui/KmInput.vue'

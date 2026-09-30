@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import KmCheckbox from '@/components/ui/KmCheckbox.vue'
 import { copiar } from '@/utils/copiar'
+import { hoyLocal } from '@/utils/fechas'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmField from '@/components/ui/KmField.vue'
@@ -56,12 +57,7 @@ function precioEnLocal(localId: string) {
   const p = props.producto
   if (!p) return 0
   const v = p.variantes.find((x) => x.activa)
-  return precioVigente(
-    v ? `v:${v.id}` : `p:${p.id}`,
-    localId,
-    'cv1',
-    new Date().toISOString().slice(0, 10),
-  ).precio
+  return precioVigente(v ? `v:${v.id}` : `p:${p.id}`, localId, 'cv1', hoyLocal()).precio
 }
 
 onMounted(async () => {

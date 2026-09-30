@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { hoyLocal } from '@/utils/fechas'
 import { inventarioService } from './inventario.service'
 import { db, reiniciarMock } from './mock/db'
 import { parametrosService } from './parametros.service'
@@ -20,7 +21,7 @@ beforeEach(() => {
   reiniciarMock()
 })
 
-const hoy = new Date().toISOString().slice(0, 10)
+const hoy = hoyLocal()
 const salon = { localId: 'l1', canalId: 'cv1' }
 const lineas = [
   { id: '', tipo: 'ingrediente' as const, insumoId: 'i1', cantidad: 190, unidad: 'g' as const },

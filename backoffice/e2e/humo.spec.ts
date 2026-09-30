@@ -43,6 +43,11 @@ test.describe('Humo: botones de cada pantalla', () => {
       const errores = vigilarErrores(page)
       await entrar()
       await page.goto(c.ruta)
+      await expect(page.getByRole('button', { name: c.nuevo })).toBeVisible()
+      // Hay pantallas que abren en tarjetas (la despensa); el recorrido de esta
+      // prueba es el de la tabla, así que se pide la tabla donde se puede elegir.
+      const verTabla = page.getByRole('radio', { name: 'Tabla' })
+      if (await verTabla.count()) await verTabla.click()
       await expect(page.locator('main tbody tr').first()).toBeVisible()
 
       await page.getByRole('button', { name: c.nuevo }).click()
