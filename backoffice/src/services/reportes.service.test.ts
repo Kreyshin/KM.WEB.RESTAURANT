@@ -159,7 +159,10 @@ describe('consumo y mermas', () => {
     const r = await reportesService.consumo(rango)
     const fila = r.insumos[0]!
     expect(fila.diferencia).toBeCloseTo(fila.real - fila.teorico, 3)
-    expect(fila.costoDiferencia).toBeCloseTo(fila.diferencia * fila.costoUnitario, 2)
+    // El importe son céntimos redondeados, no el producto crudo: comparar con
+    // tolerancia fallaba cuando el resultado caía justo en el medio céntimo.
+    const enCentimos = Math.round(fila.diferencia * fila.costoUnitario * 100) / 100
+    expect(fila.costoDiferencia).toBe(enCentimos)
   })
 
   it('una venta de hoy suma consumo real y acerca la diferencia', async () => {
