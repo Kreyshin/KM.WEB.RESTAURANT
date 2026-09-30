@@ -286,7 +286,9 @@ export function resumenConsumo(filtro: FiltroReporte): ResumenConsumo {
 
   // Real: lo que salió del almacén por venta, y las mermas registradas.
   for (const movimiento of db.movimientos) {
-    const dia = movimiento.fecha.slice(0, 10)
+    // El día es el del restaurante, no el de Greenwich: cortar por UTC mandaba
+    // el consumo de la cena al día siguiente y el reporte quedaba corto.
+    const dia = diaDe(movimiento.fecha)
     if (dia < filtro.desde || dia > filtro.hasta) continue
     if (movimiento.tipo === 'salida' && movimiento.motivo?.startsWith('Venta'))
       fila(movimiento.insumoId).real = r3(fila(movimiento.insumoId).real + movimiento.cantidad)
