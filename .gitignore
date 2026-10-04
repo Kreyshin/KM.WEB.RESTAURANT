@@ -58,3 +58,6 @@ test-results/
 playwright-report/
 blob-report/
 dist-portfolio/
+
+# Configuración local del editor/agente, no del proyecto.
+.claude/
