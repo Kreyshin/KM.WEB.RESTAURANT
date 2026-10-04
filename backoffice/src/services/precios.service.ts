@@ -1,5 +1,7 @@
 ﻿import type {
+  ApiError,
   ListaPrecios,
+  MotivoEnUso,
   NuevaListaPrecios,
   PrecioVigente,
   ProductoVendible,
@@ -124,14 +126,27 @@ export function precioDeLista(listaId: string, vendibleId: string) {
   )
 }
 
-/** Lista que manda para un local y canal en una fecha: temporada vigente o base. */
-export function listaAplicable(localId: string, canalId: string, fecha: string) {
-  const delCanal = db.listasPrecios.filter(
+/** Listas del catálogo de un local y canal, en el orden en que se guardaron. */
+export function catalogoDe(localId: string, canalId: string) {
+  return db.listasPrecios.filter(
     (l) => l.activa && l.localId === localId && l.canalIds.includes(canalId),
   )
+}
+
+/**
+ * Lista que manda para un local y canal en una fecha (D-015). Primero una con
+ * fechas que cubran ese día —se programó de antemano—, y si no, la que se dejó
+ * en uso a mano. `respaldo` es la elegida cuando una programada la tapa: sirve
+ * para enseñar de dónde vuelve el precio al acabar la temporada.
+ */
+export function listaAplicable(localId: string, canalId: string, fecha: string) {
+  const delCanal = catalogoDe(localId, canalId)
+  const programada = delCanal.find((l) => l.desde && l.hasta && enVigencia(fecha, l.desde, l.hasta))
+  const elegida = delCanal.find((l) => l.enUso && l.id !== programada?.id)
   return {
-    temporada: delCanal.find((l) => l.tipo === 'temporada' && enVigencia(fecha, l.desde, l.hasta)),
-    base: delCanal.find((l) => l.tipo === 'base'),
+    manda: programada ?? elegida,
+    motivo: (programada ? 'programada' : 'elegida') as MotivoEnUso,
+    respaldo: programada ? elegida : undefined,
   }
 }
 
@@ -142,18 +157,20 @@ export function precioVigente(
   canalId: string,
   fecha: string,
 ): PrecioVigente {
-  const { temporada, base } = listaAplicable(localId, canalId, fecha)
+  const { manda, respaldo } = listaAplicable(localId, canalId, fecha)
   let lista: ListaPrecios | undefined
   let resultado: { precio: number; origen: PrecioVigente['origen'] } | null = null
-  if (temporada) {
-    resultado = precioEnLista(temporada, vendibleId)
-    if (resultado) lista = temporada
+  if (manda) {
+    resultado = precioEnLista(manda, vendibleId)
+    if (resultado) lista = manda
   }
-  if (!resultado && base) {
-    resultado = precioEnLista(base, vendibleId)
+  // La que manda puede no tener línea para este producto: entonces cae a la que
+  // estaba en uso antes de que la tapara, y por último al precio de la carta.
+  if (!resultado && respaldo) {
+    resultado = precioEnLista(respaldo, vendibleId)
     if (resultado) {
-      lista = base
-      if (temporada) resultado.origen = 'base'
+      lista = respaldo
+      resultado.origen = 'base'
     }
   }
   if (!resultado) {
@@ -161,7 +178,7 @@ export function precioVigente(
       precio: vendibles().find((v) => v.id === vendibleId)?.precioReferencia ?? 0,
       origen: 'referencia',
     }
-    lista = temporada ?? base
+    lista = manda ?? respaldo
   }
   const linea = lista?.precios.find((p) => p.vendibleId === vendibleId)
   const descuentoPorcentaje =
@@ -241,30 +258,37 @@ function validar(datos: NuevaListaPrecios, id?: string) {
 
   const nombreCanal = (c: string) => db.canales.find((x) => x.id === c)?.nombre ?? c
   const otras = db.listasPrecios.filter(
-    (l) => l.id !== id && l.activa && l.localId === datos.localId && l.tipo === datos.tipo,
+    (l) => l.id !== id && l.activa && l.localId === datos.localId,
   )
-  if (datos.tipo === 'base') {
-    for (const o of otras) {
-      const comun = o.canalIds.find((c) => datos.canalIds.includes(c))
-      if (comun && datos.activa)
-        throw errorCampo(
-          'canalIds',
-          `${nombreCanal(comun)} ya tiene la lista base «${o.nombre}» en este local.`,
-          'Canal con otra lista base',
-        )
-    }
-  } else {
+
+  // Las fechas son opcionales (D-015): sin ellas la lista solo manda cuando se
+  // la pone en uso a mano. Con ellas, tienen que ser un periodo con sentido.
+  if (datos.desde || datos.hasta) {
     if (!datos.desde || !datos.hasta)
-      throw errorCampo('vigencia', 'Una lista de temporada necesita inicio y fin.', 'Requerido')
+      throw errorCampo('vigencia', 'Indica el inicio y el fin, o deja las dos fechas en blanco.')
     if (datos.desde > datos.hasta)
       throw errorCampo('vigencia', 'El inicio no puede ser posterior al fin.', 'Fechas invertidas')
+    // Dos listas programadas a la vez en el mismo canal dejarían el precio al azar.
     for (const o of otras) {
       const comun = o.canalIds.find((c) => datos.canalIds.includes(c))
-      if (comun && datos.activa && cruzan(o, datos))
+      if (comun && o.desde && o.hasta && cruzan(o, datos))
         throw errorCampo(
           'vigencia',
-          `Se cruza con «${o.nombre}» en ${nombreCanal(comun)}. Las temporadas no se solapan.`,
+          `«${o.nombre}» ya está programada en ${nombreCanal(comun)} esos días. Dos listas programadas a la vez dejarían el precio al azar.`,
           'Vigencia solapada',
+        )
+    }
+  }
+
+  // Solo una en uso por local y canal: es lo que hace el precio predecible.
+  if (datos.enUso) {
+    for (const o of otras) {
+      const comun = o.canalIds.find((c) => datos.canalIds.includes(c))
+      if (comun && o.enUso)
+        throw errorCampo(
+          'canalIds',
+          `En ${nombreCanal(comun)} ya está en uso «${o.nombre}». Ponla en uso desde el catálogo y esa sale sola.`,
+          'Ya hay una en uso',
         )
     }
   }
@@ -310,7 +334,7 @@ function normalizar(datos: NuevaListaPrecios): NuevaListaPrecios {
   const n = clonar(datos)
   n.nombre = n.nombre.trim()
   n.codigo = n.codigo.trim().toUpperCase()
-  if (n.tipo === 'base') {
+  if (!n.desde || !n.hasta) {
     delete n.desde
     delete n.hasta
   }
@@ -364,6 +388,40 @@ export const preciosService = {
     })
     persistir()
     return latencia(clonar(db.listasPrecios[i]!))
+  },
+
+  /**
+   * Pone una lista en uso y saca a la que estaba, en los canales que comparten
+   * (D-015). Es la operación normal: el catálogo se prepara antes y aquí se
+   * decide cuál cobra.
+   */
+  async ponerEnUso(id: string): Promise<ListaPrecios[]> {
+    const lista = db.listasPrecios.find((l) => l.id === id)
+    if (!lista) throw { mensaje: 'Lista de precios no encontrada.' } satisfies ApiError
+    if (!lista.activa)
+      throw {
+        mensaje: `«${lista.nombre}» está fuera del catálogo. Actívala antes de ponerla en uso.`,
+      } satisfies ApiError
+
+    const salen = db.listasPrecios.filter(
+      (l) =>
+        l.id !== id &&
+        l.enUso &&
+        l.localId === lista.localId &&
+        l.canalIds.some((c) => lista.canalIds.includes(c)),
+    )
+    for (const l of salen) l.enUso = false
+    lista.enUso = true
+    registrar({
+      localId: lista.localId,
+      modulo: 'Precios',
+      accion: 'Lista puesta en uso',
+      detalle: salen.length
+        ? `${lista.nombre}, en lugar de ${salen.map((l) => `«${l.nombre}»`).join(', ')}`
+        : lista.nombre,
+    })
+    persistir()
+    return latencia(clonar([lista, ...salen]))
   },
 
   async eliminar(id: string): Promise<void> {

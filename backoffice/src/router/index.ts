@@ -66,7 +66,13 @@ const rutas: RouteRecordRaw[] = [
         path: 'combos',
         name: 'combos',
         component: () => import('@/views/carta/CombosView.vue'),
-        meta: { titulo: 'Combos y menús', roles: ['admin'] },
+        meta: { titulo: 'Combos', roles: ['admin'] },
+      },
+      {
+        path: 'carta/menus',
+        name: 'menus',
+        component: () => import('@/views/carta/MenusView.vue'),
+        meta: { titulo: 'Menús', roles: ['admin'] },
       },
       {
         path: 'inventario',

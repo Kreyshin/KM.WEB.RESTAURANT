@@ -307,35 +307,18 @@ defineExpose({ mostrarError })
         </div>
       </div>
 
-      <!-- Imagen y áreas de comanda -->
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="flex flex-col gap-2">
-          <span class="text-sm font-semibold text-tinta">Foto</span>
-          <KmUploadImagen v-model="form.imagen" etiqueta="Foto del plato" @error="ui.error" />
-        </div>
-        <div class="flex flex-col gap-2">
-          <span class="text-sm font-semibold text-tinta">Se comanda en</span>
-          <ul v-if="destinos.length" class="flex flex-col gap-1 text-sm">
-            <li v-for="d in destinos" :key="d.localId">
-              <span class="text-tenue">{{ nombreLocal(d.localId) }}:</span>
-              <span class="text-tinta">{{ d.nombres.join(', ') }}</span>
-            </li>
-          </ul>
-          <p v-else class="text-sm font-medium text-vino">Ningún área recibe esta categoría.</p>
-          <RouterLink
-            :to="{ name: 'config-areas' }"
-            class="self-start text-xs font-semibold text-verde hover:underline"
-          >
-            Cambiar en Áreas
-          </RouterLink>
-        </div>
+      <!-- Foto -->
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-semibold text-tinta">Foto</span>
+        <KmUploadImagen v-model="form.imagen" etiqueta="Foto del plato" @error="ui.error" />
       </div>
 
-      <!-- Por local -->
+      <!-- Dónde se ofrece: lo decides aquí -->
       <div>
-        <p class="rs-etiqueta text-laton-texto">Por local</p>
+        <p class="rs-etiqueta text-laton-texto">Dónde se ofrece</p>
         <p class="mt-1 mb-2.5 text-xs text-tenue">
-          Apágalo donde no se ofrece. El precio de cada local sale de su lista de precios.
+          Apágalo en el local donde no entra a la carta. El precio de cada local sale de su lista de
+          precios.
         </p>
         <ul class="grid gap-2 sm:grid-cols-3">
           <li
@@ -355,6 +338,30 @@ defineExpose({ mostrarError })
         </ul>
       </div>
 
+      <!-- Dónde se prepara: no se decide aquí, sale de Áreas -->
+      <div class="rounded-card border border-linea bg-panel-2 px-3.5 py-3">
+        <p class="rs-etiqueta text-laton-texto">Dónde se prepara</p>
+        <p class="mt-1 mb-2 text-xs text-tenue">
+          Esto no se elige en el producto: cada área declara qué categorías recibe. Aquí se ve a
+          dónde saldrá su comanda.
+        </p>
+        <ul v-if="destinos.length" class="flex flex-col gap-1 text-sm">
+          <li v-for="d in destinos" :key="d.localId">
+            <span class="text-tenue">{{ nombreLocal(d.localId) }}:</span>
+            <span class="text-tinta">{{ d.nombres.join(', ') }}</span>
+          </li>
+        </ul>
+        <p v-else class="text-sm font-medium text-vino">
+          Ningún área recibe esta categoría: su comanda no llegaría a nadie.
+        </p>
+        <RouterLink
+          :to="{ name: 'config-areas' }"
+          class="mt-2 inline-block text-xs font-semibold text-verde hover:underline"
+        >
+          Cambiar en Áreas
+        </RouterLink>
+      </div>
+
       <!-- Precios -->
       <p class="rounded-control border border-linea px-3 py-2 text-xs text-tenue">
         El precio de arriba es el de la carta. Lo que se cobra por local, canal y temporada se
@@ -367,7 +374,15 @@ defineExpose({ mostrarError })
 
       <!-- Alérgenos -->
       <div>
-        <p class="rs-etiqueta mb-2.5 text-laton-texto">Alérgenos</p>
+        <p class="rs-etiqueta text-laton-texto">Alérgenos que declara la carta</p>
+        <p class="mt-1 mb-2.5 text-xs text-tenue">
+          Los alérgenos reales salen de los insumos de la receta. Esto es lo que el plato declara al
+          comensal: en
+          <RouterLink :to="{ name: 'inv-recetas' }" class="font-medium text-verde underline">
+            Recetas
+          </RouterLink>
+          se avisa si la receta trae alguno que aquí no está marcado.
+        </p>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="a in alergenos"
@@ -408,36 +423,62 @@ defineExpose({ mostrarError })
           {{ formatearSoles(Number(form.precio) || 0) }}.
         </p>
 
-        <ul v-else class="flex flex-col gap-2">
-          <li
-            v-for="(v, i) in form.variantes"
-            :key="v.id"
-            class="grid grid-cols-[1fr_110px_auto_auto] items-center gap-2"
+        <div v-else class="flex flex-col gap-2">
+          <!-- Rótulos de columna: en una fila de campos sueltos el marcador de
+               posición no basta, y desaparece en cuanto se escribe. -->
+          <div
+            class="hidden text-xs text-tenue sm:grid sm:grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_5rem] sm:gap-2"
+            aria-hidden="true"
           >
-            <KmInput v-model="v.nombre" placeholder="Nombre" />
-            <KmNumero
-              v-model="v.precio"
-              :min="0"
-              placeholder="Precio"
-              prefijo="S/"
-              :decimales="2"
-              :controles="false"
-            />
-            <KmCheckbox v-model="v.activa" tamano="sm" class="px-1">Activa</KmCheckbox>
-            <KmButton variante="fantasma" tamano="sm" @click="quitarVariante(i)">
-              <span class="text-vino">Quitar</span>
-            </KmButton>
-          </li>
-        </ul>
+            <span>Presentación</span>
+            <span>Precio</span>
+            <span>Se ofrece</span>
+            <span></span>
+          </div>
+          <ul class="flex flex-col gap-3 sm:gap-2">
+            <li
+              v-for="(v, i) in form.variantes"
+              :key="v.id"
+              class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-linea pb-3 last:border-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_5rem] sm:border-0 sm:pb-0"
+            >
+              <KmInput
+                v-model="v.nombre"
+                class="min-w-0"
+                placeholder="Nombre"
+                aria-label="Nombre de la presentación"
+              />
+              <KmButton
+                variante="fantasma"
+                tamano="sm"
+                class="sm:order-last"
+                @click="quitarVariante(i)"
+              >
+                <span class="text-vino">Quitar</span>
+              </KmButton>
+              <KmNumero
+                v-model="v.precio"
+                class="min-w-0"
+                :min="0"
+                placeholder="Precio"
+                aria-label="Precio de la presentación"
+                prefijo="S/"
+                :decimales="2"
+                :controles="false"
+              />
+              <KmCheckbox v-model="v.activa" tamano="sm">Activa</KmCheckbox>
+            </li>
+          </ul>
+        </div>
       </div>
 
-      <!-- Grupos de opciones -->
+      <!-- Modificadores -->
       <div>
         <div class="mb-2.5 flex items-center justify-between gap-3">
           <div>
-            <p class="rs-etiqueta text-laton-texto">Grupos de opciones</p>
+            <p class="rs-etiqueta text-laton-texto">Modificadores</p>
             <p class="mt-1 text-xs text-tenue">
-              Término, extras, nivel de ají... Es lo que el mesero marca al tomar la comanda.
+              Término, extras, nivel de ají... Es lo que el mesero marca al tomar la comanda. Van
+              agrupados: cada grupo dice cuántas opciones suyas se pueden elegir.
             </p>
           </div>
           <KmButton variante="secundario" tamano="sm" @click="agregarGrupo">Añadir grupo</KmButton>
@@ -446,7 +487,7 @@ defineExpose({ mostrarError })
         <p v-if="errores.grupos" class="mb-2 text-xs font-medium text-vino">{{ errores.grupos }}</p>
 
         <p v-if="form.gruposModificadores.length === 0" class="text-sm text-tenue">
-          Sin grupos de opciones.
+          Sin modificadores: el plato se comanda tal cual.
         </p>
 
         <ul v-else class="flex flex-col gap-4">
@@ -455,23 +496,29 @@ defineExpose({ mostrarError })
             :key="g.id"
             class="rounded-card border border-linea bg-panel-2 p-4"
           >
-            <div class="grid grid-cols-[1fr_84px_84px_auto] items-center gap-2">
-              <KmInput v-model="g.nombre" placeholder="Nombre del grupo" />
-              <KmNumero
-                v-model="g.seleccionMinima"
-                :min="0"
-                placeholder="Mín."
-                :controles="false"
+            <div
+              class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_6rem_6rem_5rem]"
+            >
+              <KmInput
+                v-model="g.nombre"
+                class="min-w-0"
+                placeholder="Nombre del grupo"
+                aria-label="Nombre del grupo"
               />
-              <KmNumero
-                v-model="g.seleccionMaxima"
-                :min="1"
-                placeholder="Máx."
-                :controles="false"
-              />
-              <KmButton variante="fantasma" tamano="sm" @click="quitarGrupo(ig)">
+              <KmButton
+                variante="fantasma"
+                tamano="sm"
+                class="sm:order-last"
+                @click="quitarGrupo(ig)"
+              >
                 <span class="text-vino">Quitar</span>
               </KmButton>
+              <KmField v-slot="{ id }" label="Elige mín." class="min-w-0">
+                <KmNumero :id="id" v-model="g.seleccionMinima" :min="0" :controles="false" />
+              </KmField>
+              <KmField v-slot="{ id }" label="Elige máx." class="min-w-0">
+                <KmNumero :id="id" v-model="g.seleccionMaxima" :min="1" :controles="false" />
+              </KmField>
             </div>
 
             <p class="mt-2 text-xs text-tenue">
@@ -480,25 +527,46 @@ defineExpose({ mostrarError })
 
             <div class="rs-filete my-3.5" role="presentation"></div>
 
-            <ul class="flex flex-col gap-2">
+            <div
+              class="hidden text-xs text-tenue sm:grid sm:grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_5rem] sm:gap-2"
+              aria-hidden="true"
+            >
+              <span>Opción</span>
+              <span>Recargo</span>
+              <span>Se ofrece</span>
+              <span></span>
+            </div>
+            <ul class="mt-1.5 flex flex-col gap-3 sm:gap-2">
               <li
                 v-for="(m, im) in g.modificadores"
                 :key="m.id"
-                class="grid grid-cols-[1fr_110px_auto_auto] items-center gap-2"
+                class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b border-linea pb-3 last:border-0 last:pb-0 sm:grid-cols-[minmax(0,1fr)_7.5rem_5.5rem_5rem] sm:border-0 sm:pb-0"
               >
-                <KmInput v-model="m.nombre" placeholder="Opción" />
+                <KmInput
+                  v-model="m.nombre"
+                  class="min-w-0"
+                  placeholder="Opción"
+                  aria-label="Nombre de la opción"
+                />
+                <KmButton
+                  variante="fantasma"
+                  tamano="sm"
+                  class="sm:order-last"
+                  @click="quitarModificador(ig, im)"
+                >
+                  <span class="text-vino">Quitar</span>
+                </KmButton>
                 <KmNumero
                   v-model="m.recargo"
+                  class="min-w-0"
                   :min="0"
                   placeholder="Recargo"
+                  aria-label="Recargo de la opción"
                   prefijo="S/"
                   :decimales="2"
                   :controles="false"
                 />
-                <KmCheckbox v-model="m.activo" tamano="sm" class="px-1">Activa</KmCheckbox>
-                <KmButton variante="fantasma" tamano="sm" @click="quitarModificador(ig, im)">
-                  <span class="text-vino">Quitar</span>
-                </KmButton>
+                <KmCheckbox v-model="m.activo" tamano="sm">Activa</KmCheckbox>
               </li>
             </ul>
 

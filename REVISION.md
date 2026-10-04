@@ -11,7 +11,7 @@ reinicia si algo se enreda.
 adivinar. Si algo funciona pero te hace pensar dos veces, eso también es un fallo.
 
 - Fases: **F2** a **F10**, más lo transversal.
-- Total: **126 puntos**.
+- Total: **134 puntos**.
 - Estado del código al abrir esta revisión: 364 pruebas y 75 e2e en verde.
 
 ---
@@ -26,7 +26,9 @@ adivinar. Si algo funciona pero te hace pensar dos veces, eso también es un fal
 - [ ] **Configuración › Cadenas**: locales por cadena y parámetros propios de la cadena
 - [ ] **Configuración › Canales**: modalidad de atención, comisión solo en apps y recargo al consumo por canal
 - [ ] **Configuración › Áreas**: qué recibe cada área y el aviso cuando un producto llega a dos áreas o a ninguna
-- [ ] **Configuración › Motivos**: motivos de anulación, descuento y cortesía, con los que exigen autorización
+- [ ] **Configuración › Motivos**: los motivos y sus tipos; el tipo dice en qué operación se piden
+- [ ] **Configuración › Motivos › Tipos de motivo** (D-017): crear uno nuevo (p. ej. «Consumo del personal») y verlo aparecer como pestaña
+- [ ] En Canales y en Impresoras, el formulario explica por qué la modalidad y el uso no se editan
 
 ### Permisos
 
@@ -41,6 +43,8 @@ adivinar. Si algo funciona pero te hace pensar dos veces, eso también es un fal
 - [ ] Clic derecho sobre una mesa: cambiar estado, editar, juntar y separar
 - [ ] Juntar mesas para un grupo, y el aviso al separar si una está ocupada
 - [ ] **Sala › Reloj del servicio**: turnos en cuartos de hora y quién espera en la puerta
+- [ ] **Reservar desde el reloj** (D-018): pulsar un hueco abre la reserva con esa mesa y esa hora puestas
+- [ ] Las mesas unidas cambian de estado juntas: ocupar una ocupa toda la unión
 - [ ] **Clientes › Clientes**: el cliente es del ERP y solo se consulta; encima va la ficha de sala (alergias, etiquetas, notas, salón preferido)
 - [ ] **Clientes › Reservas**: agenda del día, personas esperadas y reservas por confirmar
 - [ ] Crear una reserva: la mesa queda apartada por su duración y no admite dos a la misma hora
@@ -52,11 +56,15 @@ adivinar. Si algo funciona pero te hace pensar dos veces, eso también es un fal
 
 - [ ] **Carta › Carta y menú**: categorías, secciones, productos, presentaciones y modificadores
 - [ ] Alérgenos e imagen del plato; un producto puede limitarse a ciertos locales y canales
-- [ ] **Carta › Listas de precios**: base y temporada por local y canal, sin solaparse
+- [ ] **Carta › Listas de precios** (D-015): el catálogo guarda varias por local y canal, y «Poner en uso» cambia cuál cobra
+- [ ] La que sale de uso vuelve al catálogo, no se borra; una con fechas entra y sale sola y lo dice
+- [ ] La lista se crea para el local activo: ya no hay un segundo selector de local
+- [ ] **Carta › Menús** (D-016): agrupa productos sin precio propio, con vigencia permanente, por fechas o por días
 - [ ] Lista derivada de otra con un ajuste en %, y el precio heredado se ve en gris
 - [ ] Descuento por línea con su vigencia
 - [ ] «¿Cuánto se cobra?»: precio por local, canal y fecha, con IGV y reparto del combo
-- [ ] **Carta › Combos**: grupos de elección y reparto analítico del precio entre componentes
+- [ ] **Carta › Combos**: solo lo que se cobra a un precio cerrado, con grupos de elección y reparto analítico
+- [ ] Productos y Combos abren en tarjetas, con la foto del plato
 
 ## 4 · Inventario y recetas (F4)
 

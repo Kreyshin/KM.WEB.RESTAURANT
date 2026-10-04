@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useCarga } from '@/composables/useCarga'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmDrawer from '@/components/ui/KmDrawer.vue'
 import KmNumero from '@/components/ui/KmNumero.vue'
 import KmSelect from '@/components/ui/KmSelect.vue'
+import ReservaFormModal from '@/views/clientes/ReservaFormModal.vue'
 import { mesasService } from '@/services/mesas.service'
-import { reservasService, etiquetaEstadoReserva } from '@/services/clientes.service'
+import {
+  clientesService,
+  reservasService,
+  etiquetaEstadoReserva,
+} from '@/services/clientes.service'
+import { tienePermiso } from '@/services/parametros.service'
 import { salonesService } from '@/services/salones.service'
 import { useAuthStore } from '@/stores/auth.store'
 import { useLocalStore } from '@/stores/local.store'
 import { useUiStore } from '@/stores/ui.store'
-import type { ApiError, Mesa, Reserva, Salon } from '@/types'
+import type { ApiError, Cliente, Mesa, Reserva, Salon } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
 import { diaLocal } from '@/utils/fechas'
 
@@ -214,15 +220,17 @@ async function cargar() {
   if (!localId) return
   iniciar()
   try {
-    const [listaSalones, listaMesas, agenda] = await Promise.all([
+    const [listaSalones, listaMesas, agenda, listaClientes] = await Promise.all([
       salonesService.listar(),
       mesasService.listar(),
       reservasService.agenda(localId, hoy.value),
+      clientesService.todos(),
     ])
     // El servicio es de una sede: los salones de otras no pintan aquí.
     salones.value = listaSalones.filter((s) => s.localId === localId && s.activo)
     mesas.value = listaMesas.filter((m) => salones.value.some((s) => s.id === m.salonId))
     reservas.value = agenda.reservas
+    clientes.value = listaClientes
   } catch {
     ui.error('No se pudo cargar el servicio.')
   } finally {
@@ -326,6 +334,22 @@ function esperaDe(minutos: number | null | undefined) {
   const falta = minutos - minutosAhora.value
   return falta <= 0 ? 'ahora' : `en ${falta} min`
 }
+
+// ── Reservar desde el reloj (D-018) ──────────────────────────────────────────
+
+const clientes = ref<Cliente[]>([])
+const formulario = useTemplateRef<InstanceType<typeof ReservaFormModal>>('formulario')
+const puedeGestionar = computed(() => tienePermiso(auth.usuario?.id, 'reservas.gestionar'))
+
+/** Pulsar un hueco de la rejilla abre el formulario con esa mesa y esa hora. */
+function reservarEn(mesa: Mesa, hora: string) {
+  if (huboArrastre.value) return
+  formulario.value?.abrir(undefined, { fecha: hoy.value, hora, mesaIds: [mesa.id] })
+}
+
+function nuevaReserva() {
+  formulario.value?.abrir(undefined, { fecha: hoy.value })
+}
 </script>
 
 <template>
@@ -338,7 +362,12 @@ function esperaDe(minutos: number | null | undefined) {
           {{ mesas.length }} mesas ·
           {{ ahora.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) }}
         </p>
+        <p class="mt-1 text-xs text-tenue">
+          Pulsa un hueco de la rejilla para reservar esa mesa a esa hora.
+        </p>
       </div>
+
+      <KmButton :disabled="!puedeGestionar" @click="nuevaReserva">Nueva reserva</KmButton>
 
       <!--
         La puerta: la pregunta con la que de verdad se usa esta pantalla.
@@ -460,14 +489,21 @@ function esperaDe(minutos: number | null | undefined) {
               </span>
             </div>
 
-            <div
+            <!-- Cada hueco libre reserva (D-018): es donde se mira el servicio,
+                 así que es donde se apunta a quien llama. -->
+            <button
               v-for="f in franjas"
               :key="f.min"
-              class="rs-reloj-celda h-[var(--km-celda,2.25rem)]"
+              type="button"
+              class="rs-reloj-celda h-[var(--km-celda,2.25rem)] transition-colors"
               :class="[
                 f.enPunto ? 'rs-reloj-hora' : '',
                 m.estado === 'inactiva' ? 'rs-reloj-cerrado' : '',
+                m.estado !== 'inactiva' && puedeGestionar ? 'hover:bg-seleccion' : '',
               ]"
+              :disabled="m.estado === 'inactiva' || !puedeGestionar"
+              :aria-label="`Reservar la mesa ${m.codigo} a las ${f.hora}`"
+              @click="reservarEn(m, f.hora)"
             />
 
             <!-- Los turnos, por encima de la rejilla -->
@@ -475,12 +511,14 @@ function esperaDe(minutos: number | null | undefined) {
               class="pointer-events-none absolute inset-y-0 right-0"
               :style="{ left: `${ANCHO_MESA}px` }"
             >
-              <div class="pointer-events-auto relative h-full">
+              <!-- La capa no recibe clics: solo los turnos. Si los recibiera,
+                   taparía toda la fila y no se podría pulsar un hueco libre. -->
+              <div class="relative h-full">
                 <button
                   v-for="t in turnosDe(m.id)"
                   :key="t.reserva.id"
                   type="button"
-                  class="rs-turno absolute inset-y-1 flex items-center gap-1.5 overflow-hidden px-2 text-left"
+                  class="rs-turno pointer-events-auto absolute inset-y-1 flex items-center gap-1.5 overflow-hidden px-2 text-left"
                   :class="[
                     tonos[t.reserva.estado] ?? 'rs-turno-confirmada',
                     arrastre?.reservaId === t.reserva.id ? 'rs-turno-arrastrando' : '',
@@ -581,4 +619,13 @@ function esperaDe(minutos: number | null | undefined) {
       </KmButton>
     </template>
   </KmDrawer>
+
+  <ReservaFormModal
+    ref="formulario"
+    :local-id="localStore.localId ?? ''"
+    :clientes="clientes"
+    :mesas="mesas"
+    :salones="salones"
+    @guardada="cargar"
+  />
 </template>

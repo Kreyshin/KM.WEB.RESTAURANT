@@ -38,7 +38,7 @@ import type {
 } from '@/types'
 import type { OpcionSelect } from '@/types/ui'
 import { hoyLocal } from '@/utils/fechas'
-import { formatearFecha, formatearSoles } from '@/utils/formato'
+import { formatearDia, formatearSoles } from '@/utils/formato'
 
 /**
  * Listas de precios (D-010). Cada local tiene una lista base por canal y puede
@@ -81,9 +81,52 @@ const nombreLocal = (id: string) => locales.value.find((l) => l.id === id)?.nomb
 const nombreLista = (id?: string) => listas.value.find((l) => l.id === id)?.nombre ?? '—'
 
 const vigenciaTexto = (l: ListaPrecios) =>
-  l.tipo === 'base' ? 'Siempre' : `${formatearFecha(l.desde!)} al ${formatearFecha(l.hasta!)}`
-const estadoTemporada = (l: ListaPrecios) =>
-  l.tipo === 'base' ? null : hoy < l.desde! ? 'Programada' : hoy > l.hasta! ? 'Vencida' : 'Vigente'
+  l.desde && l.hasta ? `${formatearDia(l.desde)} al ${formatearDia(l.hasta)}` : 'Sin fechas'
+
+/**
+ * Estado de la lista dentro del catálogo (D-015). Una con fechas que cubren hoy
+ * manda aunque nadie la haya puesto en uso; al pasar su periodo no se borra ni
+ * se apaga: vuelve al catálogo como disponible.
+ */
+function estadoLista(l: ListaPrecios) {
+  if (!l.activa) return { texto: 'Fuera del catálogo', tono: 'neutro' as const }
+  if (l.desde && l.hasta) {
+    if (hoy < l.desde) return { texto: 'Programada', tono: 'laton' as const }
+    if (hoy > l.hasta) return { texto: 'Terminada · vuelve al catálogo', tono: 'neutro' as const }
+    return { texto: 'En uso por fechas', tono: 'verde' as const }
+  }
+  return l.enUso
+    ? { texto: 'En uso', tono: 'verde' as const }
+    : { texto: 'Preparada', tono: 'neutro' as const }
+}
+
+/** La lista con fechas vigentes tapa a la elegida a mano, y conviene decirlo. */
+function tapadaPorFechas(l: ListaPrecios) {
+  if (!l.enUso || (l.desde && l.hasta)) return null
+  return (
+    listas.value.find(
+      (o) =>
+        o.id !== l.id &&
+        o.activa &&
+        o.localId === l.localId &&
+        o.canalIds.some((c) => l.canalIds.includes(c)) &&
+        o.desde &&
+        o.hasta &&
+        hoy >= o.desde &&
+        hoy <= o.hasta,
+    ) ?? null
+  )
+}
+
+async function ponerEnUso(l: ListaPrecios) {
+  try {
+    await preciosService.ponerEnUso(l.id)
+    ui.exito(`«${l.nombre}» es ahora la lista en uso.`)
+    await cargar()
+  } catch (e) {
+    ui.error((e as ApiError).mensaje ?? 'No se pudo poner la lista en uso.')
+  }
+}
 
 // ── Precios de la lista seleccionada ──
 
@@ -213,6 +256,8 @@ function vacia(): NuevaListaPrecios {
     localId: localStore.localId ?? locales.value[0]?.id ?? '',
     canalIds: [],
     precios: [],
+    // Una lista nace preparada: se pone en uso aparte, cuando toca.
+    enUso: false,
     activa: true,
   }
 }
@@ -238,8 +283,8 @@ const opcionesLocal = computed<OpcionSelect[]>(() =>
   locales.value.map((l) => ({ valor: l.id, etiqueta: l.nombre })),
 )
 const opcionesTipoLista: OpcionSelect[] = [
-  { valor: 'base', etiqueta: 'Base (siempre)' },
-  { valor: 'temporada', etiqueta: 'Temporada (con vigencia)' },
+  { valor: 'base', etiqueta: 'Carta habitual' },
+  { valor: 'temporada', etiqueta: 'Temporada' },
 ]
 const opcionesOrigen = computed<OpcionSelect[]>(() => [
   { valor: '', etiqueta: 'No deriva: usa el precio de la carta' },
@@ -359,9 +404,12 @@ const etiquetaOrigen: Record<PrecioVigente['origen'], string> = {
         class="flex flex-col gap-1 self-start rounded-card border border-linea bg-panel p-2"
       >
         <div class="flex items-center justify-between gap-2 px-2 py-1.5">
-          <p class="rs-etiqueta text-tenue">Listas · {{ delLocal.length }}</p>
-          <KmButton tamano="sm" variante="fantasma" @click="abrir()">Nueva lista</KmButton>
+          <p class="rs-etiqueta text-tenue">Catálogo · {{ delLocal.length }}</p>
+          <KmButton tamano="sm" @click="abrir()">Nueva lista</KmButton>
         </div>
+        <p class="px-3 pb-1 text-xs text-tenue">
+          Prepara las que quieras y pon en uso la que toque. Las de fechas entran y salen solas.
+        </p>
         <button
           v-for="l in delLocal"
           :key="l.id"
@@ -375,12 +423,8 @@ const etiquetaOrigen: Record<PrecioVigente['origen'], string> = {
         >
           <span class="flex items-center justify-between gap-2">
             <span class="text-sm font-semibold">{{ l.nombre }}</span>
-            <KmBadge v-if="!l.activa" tono="neutro">Inactiva</KmBadge>
-            <KmBadge
-              v-else-if="estadoTemporada(l)"
-              :tono="estadoTemporada(l) === 'Vigente' ? 'verde' : 'laton'"
-            >
-              {{ estadoTemporada(l) }}
+            <KmBadge :tono="estadoLista(l).tono" :punto="estadoLista(l).tono === 'verde'">
+              {{ estadoLista(l).texto }}
             </KmBadge>
           </span>
           <span class="text-xs">
@@ -435,12 +479,75 @@ const etiquetaOrigen: Record<PrecioVigente['origen'], string> = {
               </div>
             </dl>
           </div>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <KmButton
+              v-if="lista.activa && !lista.enUso && !(lista.desde && lista.hasta)"
+              tamano="sm"
+              @click="ponerEnUso(lista)"
+            >
+              Poner en uso
+            </KmButton>
             <KmButton tamano="sm" variante="secundario" @click="abrir(lista)">Editar</KmButton>
             <KmButton tamano="sm" variante="fantasma" class="text-vino" @click="confirmar = true">
               Eliminar
             </KmButton>
           </div>
+        </div>
+
+        <!-- Qué está pasando con esta lista, en una línea. -->
+        <div class="px-6 pt-3">
+          <p
+            v-if="estadoLista(lista).tono === 'verde'"
+            class="rs-tono rs-tono-verde rounded-control border px-3 py-2 text-sm"
+            role="status"
+          >
+            <template v-if="lista.desde && lista.hasta">
+              Manda hasta el {{ formatearDia(lista.hasta) }} por sus fechas. Después vuelve al
+              catálogo y cobra
+              <strong>{{
+                nombreLista(
+                  delLocal.find(
+                    (o) =>
+                      o.id !== lista!.id &&
+                      o.enUso &&
+                      o.canalIds.some((c) => lista!.canalIds.includes(c)),
+                  )?.id,
+                )
+              }}</strong
+              >.
+            </template>
+            <template v-else>Es la lista que se cobra hoy en estos canales.</template>
+          </p>
+          <p
+            v-else-if="tapadaPorFechas(lista)"
+            class="rs-tono rs-tono-laton rounded-control border px-3 py-2 text-sm"
+            role="status"
+          >
+            Está en uso, pero hoy la tapa
+            <strong>{{ tapadaPorFechas(lista)!.nombre }}</strong
+            >, que está programada hasta el {{ formatearDia(tapadaPorFechas(lista)!.hasta!) }}.
+            Vuelve a cobrar sola ese día.
+          </p>
+          <p
+            v-else-if="lista.desde && lista.hasta && hoy > lista.hasta"
+            class="rounded-control border border-linea px-3 py-2 text-sm text-tenue"
+          >
+            Su periodo terminó el {{ formatearDia(lista.hasta) }}. No se ha borrado: sigue en el
+            catálogo y puedes reutilizarla cambiándole las fechas.
+          </p>
+          <p
+            v-else-if="lista.desde && lista.hasta"
+            class="rs-tono rs-tono-laton rounded-control border px-3 py-2 text-sm"
+          >
+            Programada: entra sola el {{ formatearDia(lista.desde) }} y sale el
+            {{ formatearDia(lista.hasta) }}.
+          </p>
+          <p
+            v-else-if="lista.activa"
+            class="rounded-control border border-linea px-3 py-2 text-sm text-tenue"
+          >
+            Preparada y guardada. No cobra nada hasta que la pongas en uso.
+          </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-3 px-6 pt-4">
@@ -509,7 +616,7 @@ const etiquetaOrigen: Record<PrecioVigente['origen'], string> = {
                   >
                     <template v-if="lineas[v.id]?.descuento">
                       −{{ lineas[v.id]!.descuento!.porcentaje }} % hasta
-                      {{ formatearFecha(lineas[v.id]!.descuento!.hasta) }}
+                      {{ formatearDia(lineas[v.id]!.descuento!.hasta) }}
                     </template>
                     <template v-else>Agregar</template>
                   </button>
@@ -636,22 +743,34 @@ const etiquetaOrigen: Record<PrecioVigente['origen'], string> = {
             <KmInput :id="id" v-model="form.codigo" placeholder="LP-MIR-01" />
           </KmField>
         </div>
-        <KmField v-slot="{ id }" label="Local" requerido :error="errores.localId">
-          <KmSelect :id="id" v-model="form.localId" :opciones="opcionesLocal" />
-        </KmField>
-        <KmField v-slot="{ id }" label="Tipo">
+        <!-- El local es el activo de la cabecera: una lista creada para otro
+             local desaparecía de esta pantalla en cuanto se guardaba. -->
+        <div class="rounded-control border border-linea px-3 py-2 text-sm">
+          <span class="text-tenue">Local</span>
+          <strong class="ml-1.5 text-tinta">{{ nombreLocal(form.localId) }}</strong>
+          <p class="mt-0.5 text-xs text-tenue">
+            Para otro local, cámbialo en la cabecera y crea la lista allí.
+          </p>
+        </div>
+
+        <KmField
+          v-slot="{ id }"
+          label="Tipo"
+          ayuda="Solo es una etiqueta para encontrarla. Lo que decide cuál cobra es ponerla en uso, o sus fechas."
+        >
           <KmSelect :id="id" v-model="form.tipo" :opciones="opcionesTipoLista" />
         </KmField>
-        <div v-if="form.tipo === 'temporada'" class="flex flex-col gap-1">
+
+        <div class="flex flex-col gap-1">
           <div class="grid gap-4 sm:grid-cols-2">
-            <KmField v-slot="{ id }" label="Desde" requerido>
+            <KmField v-slot="{ id }" label="Desde">
               <KmFecha
                 :id="id"
                 :model-value="form.desde ?? null"
                 @update:model-value="form.desde = $event ?? undefined"
               />
             </KmField>
-            <KmField v-slot="{ id }" label="Hasta" requerido>
+            <KmField v-slot="{ id }" label="Hasta">
               <KmFecha
                 :id="id"
                 :model-value="form.hasta ?? null"
@@ -661,6 +780,10 @@ const etiquetaOrigen: Record<PrecioVigente['origen'], string> = {
           </div>
           <p v-if="errores.vigencia" class="text-xs font-medium text-vino">
             {{ errores.vigencia }}
+          </p>
+          <p v-else class="text-xs text-tenue">
+            Opcionales. Con fechas, la lista entra y sale sola en ese periodo. Sin fechas, manda
+            solo cuando la pongas en uso.
           </p>
         </div>
         <div class="flex flex-col gap-2">

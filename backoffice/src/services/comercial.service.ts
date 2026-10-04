@@ -1,12 +1,16 @@
 import type {
+  ApiError,
   CanalVenta,
   MedioPago,
   Motivo,
   NuevoCanalVenta,
   NuevoMedioPago,
   NuevoMotivo,
+  NuevoTipoMotivo,
+  OperacionMotivo,
+  TipoMotivo,
 } from '@/types'
-import { db } from './mock/db'
+import { db, latencia } from './mock/db'
 import { errorCampo, esPorcentaje, existeOtro } from './mock/reglas'
 import { crearRepositorio } from './mock/repositorio'
 
@@ -110,8 +114,8 @@ function validarMotivo(datos: Partial<NuevoMotivo>, id?: string) {
     if (!datos.descripcion.trim()) {
       throw errorCampo('descripcion', 'La descripción es obligatoria.')
     }
-    const tipo = datos.tipo ?? db.motivos.find((m) => m.id === id)?.tipo
-    const mismosTipo = db.motivos.filter((m) => m.tipo === tipo)
+    const tipoId = datos.tipoId ?? db.motivos.find((m) => m.id === id)?.tipoId
+    const mismosTipo = db.motivos.filter((m) => m.tipoId === tipoId)
     if (existeOtro(mismosTipo, (m) => m.descripcion, datos.descripcion, id)) {
       throw errorCampo('descripcion', 'Ya existe un motivo igual de este tipo.', 'Duplicado')
     }
@@ -129,5 +133,56 @@ export const motivosService = {
   async actualizar(id: string, datos: Partial<NuevoMotivo>): Promise<Motivo> {
     validarMotivo(datos, id)
     return repoMotivos.actualizar(id, datos)
+  },
+
+  /** Los motivos que el sistema debe ofrecer en un punto del flujo (D-017). */
+  async paraOperacion(operacion: OperacionMotivo): Promise<Motivo[]> {
+    const tipos = db.tiposMotivo.filter((t) => t.activo && t.operaciones.includes(operacion))
+    const ids = new Set(tipos.map((t) => t.id))
+    return latencia(db.motivos.filter((m) => m.activo && ids.has(m.tipoId)))
+  },
+}
+
+// ── Tipos de motivo ──────────────────────────────────────────────────────────
+
+const repoTiposMotivo = crearRepositorio('tiposMotivo', {
+  prefijo: 'tm',
+  entidad: 'Tipo de motivo',
+  camposBusqueda: ['nombre'],
+})
+
+function validarTipoMotivo(datos: Partial<NuevoTipoMotivo>, id?: string) {
+  if (datos.nombre !== undefined) {
+    if (!datos.nombre.trim()) throw errorCampo('nombre', 'El nombre es obligatorio.')
+    if (existeOtro(db.tiposMotivo, (t) => t.nombre, datos.nombre, id)) {
+      throw errorCampo('nombre', 'Ya existe un tipo con ese nombre.', 'Duplicado')
+    }
+  }
+}
+
+export const tiposMotivoService = {
+  ...repoTiposMotivo,
+
+  async crear(datos: NuevoTipoMotivo): Promise<TipoMotivo> {
+    validarTipoMotivo(datos)
+    return repoTiposMotivo.crear({ ...datos, nombre: datos.nombre.trim() })
+  },
+
+  async actualizar(id: string, datos: Partial<NuevoTipoMotivo>): Promise<TipoMotivo> {
+    validarTipoMotivo(datos, id)
+    return repoTiposMotivo.actualizar(id, datos)
+  },
+
+  /** Un tipo con motivos dentro no se borra: se desactiva. */
+  async eliminar(id: string): Promise<void> {
+    const conMotivos = db.motivos.filter((m) => m.tipoId === id).length
+    if (conMotivos) {
+      throw {
+        mensaje: `«${db.tiposMotivo.find((t) => t.id === id)?.nombre}» tiene ${conMotivos} ${
+          conMotivos === 1 ? 'motivo' : 'motivos'
+        }. Muévelos o desactiva el tipo.`,
+      } satisfies ApiError
+    }
+    await repoTiposMotivo.eliminar(id)
   },
 }

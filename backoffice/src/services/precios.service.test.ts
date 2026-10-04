@@ -82,13 +82,55 @@ describe('precio vigente', () => {
 })
 
 describe('reglas de las listas', () => {
-  it('un canal no tiene dos listas base en el mismo local', async () => {
+  it('un canal tiene una sola lista en uso a la vez (D-015)', async () => {
     await expect(
-      preciosService.crear({ ...sinId('lp1'), codigo: 'LP-X', nombre: 'Otra', precios: [] }),
-    ).rejects.toMatchObject({ campos: { canalIds: 'Canal con otra lista base' } })
+      preciosService.crear({
+        ...sinId('lp1'),
+        codigo: 'LP-X',
+        nombre: 'Otra',
+        precios: [],
+        enUso: true,
+      }),
+    ).rejects.toMatchObject({ campos: { canalIds: 'Ya hay una en uso' } })
   })
 
-  it('las temporadas del mismo canal no se solapan y necesitan vigencia ordenada', async () => {
+  it('el catálogo admite tantas listas preparadas como se quieran (D-015)', async () => {
+    // Lo que D-010 prohibía: dos listas del mismo local y canal, guardadas.
+    const otra = await preciosService.crear({
+      ...sinId('lp1'),
+      codigo: 'LP-X2',
+      nombre: 'Otra preparada',
+      precios: [],
+      enUso: false,
+    })
+    expect(otra.enUso).toBe(false)
+    // No cobra nada mientras no se ponga en uso.
+    expect(precioVigente('p:p4', 'l1', 'cv1', hoy).listaId).toBe('lp1')
+  })
+
+  it('poner en uso una lista saca a la anterior en sus canales (D-015)', async () => {
+    expect(precioVigente('p:p4', 'l1', 'cv1', hoy).listaId).toBe('lp1')
+    await preciosService.ponerEnUso('lp6')
+    expect(precioVigente('p:p4', 'l1', 'cv1', hoy).listaId).toBe('lp6')
+    // La anterior no se borra: vuelve al catálogo, lista para recuperarla.
+    const listas = await preciosService.listas()
+    expect(listas.find((l) => l.id === 'lp1')).toMatchObject({ enUso: false, activa: true })
+    await preciosService.ponerEnUso('lp1')
+    expect(precioVigente('p:p4', 'l1', 'cv1', hoy).listaId).toBe('lp1')
+  })
+
+  it('una lista programada tapa a la elegida, y al pasar su periodo la devuelve', () => {
+    const dentro = `${anio + 1}-02-10`
+    const despues = `${anio + 1}-06-10`
+    expect(precioVigente('v:v1', 'l1', 'cv1', dentro)).toMatchObject({
+      precio: 45,
+      origen: 'lista',
+    })
+    // Pasada la temporada vuelve a cobrar la que estaba en uso, sin tocar nada.
+    expect(precioVigente('v:v1', 'l1', 'cv1', despues).listaId).toBe('lp1')
+  })
+
+  it('dos listas programadas a la vez en un canal se rechazan, y la vigencia va ordenada', async () => {
     const base = { ...sinId('lp3'), codigo: 'LP-Y', nombre: 'Otra temporada', precios: [] }
     await expect(
       preciosService.crear({ ...base, desde: `${anio + 1}-03-01`, hasta: `${anio + 1}-04-30` }),

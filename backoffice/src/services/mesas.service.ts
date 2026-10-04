@@ -41,15 +41,22 @@ export const mesasService = {
     return latencia(mesa)
   },
 
-  /** Cambio de estado rápido desde el plano del salón. */
-  async cambiarEstado(id: string, estado: EstadoMesa): Promise<Mesa> {
+  /**
+   * Cambio de estado rápido desde el plano del salón. Las mesas unidas atienden
+   * a un solo grupo, así que cambian juntas: ocupar una ocupa toda la unión y
+   * liberarla la libera entera. Devuelve todas las que cambiaron.
+   */
+  async cambiarEstado(id: string, estado: EstadoMesa): Promise<Mesa[]> {
     const mesa = db.mesas.find((m) => m.id === id)
     if (!mesa) throw { mensaje: 'Mesa no encontrada.' }
-    mesa.estado = estado
-    // Al liberar una mesa se suelta también al mesero asignado.
-    if (estado === 'libre') delete mesa.meseroId
+    const afectadas = mesa.grupoId ? db.mesas.filter((m) => m.grupoId === mesa.grupoId) : [mesa]
+    for (const m of afectadas) {
+      m.estado = estado
+      // Al liberar una mesa se suelta también al mesero asignado.
+      if (estado === 'libre') delete m.meseroId
+    }
     persistir()
-    return latencia(mesa, 80)
+    return latencia(afectadas, 80)
   },
 
   /** Reposiciona la mesa en el plano (coordenadas en % del contenedor). */

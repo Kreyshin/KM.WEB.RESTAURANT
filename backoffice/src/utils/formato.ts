@@ -22,6 +22,23 @@ export function formatearFecha(iso: string) {
   return fechaCorta.format(new Date(iso))
 }
 
+const diaCorto = new Intl.DateTimeFormat('es-PE', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+})
+
+/**
+ * Un día suelto (AAAA-MM-DD), sin hora. `new Date('2027-01-01')` lo lee como
+ * medianoche UTC y en Lima eso enseña el 31 de diciembre a las 7 p. m., así que
+ * las partes se arman a mano en la hora del restaurante.
+ */
+export function formatearDia(fecha: string) {
+  const [anio, mes, dia] = fecha.split('-').map(Number)
+  if (!anio || !mes || !dia) return fecha
+  return diaCorto.format(new Date(anio, mes - 1, dia))
+}
+
 const horaCorta = new Intl.DateTimeFormat('es-PE', {
   hour: '2-digit',
   minute: '2-digit',

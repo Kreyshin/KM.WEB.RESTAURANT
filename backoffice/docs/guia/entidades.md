@@ -35,7 +35,9 @@ StockDetalle *──1 Insumo · Almacen · 0..1 Lote · 0..1 Ubicacion
 Transformacion *──* Insumo (entradas y salidas)
 AjusteParametros ──> Cadena · Local · Almacen · CategoriaInsumo · Insumo
 Combo 1──* GrupoCombo ──opciones──> Producto
-CanalVenta · Motivo · DefinicionParametro · PermisoVertical
+Menu 1──* SeccionMenu ──productoIds──> Producto
+TipoMotivo 1──* Motivo
+CanalVenta · DefinicionParametro · PermisoVertical
 ```
 
 ## Maestros del ERP
@@ -180,13 +182,25 @@ Reglas:
 
 Regla: no se elimina una impresora asignada a áreas.
 
+### TipoMotivo
+
+Agrupador de motivos, configurable ([D-017](decisiones.md)). Lo cerrado son las **operaciones**: los puntos del flujo donde el sistema ya se detiene a pedir un motivo.
+
+| Campo         | Tipo                | Notas                                                  |
+| ------------- | ------------------- | ------------------------------------------------------ |
+| `nombre`      | string              | Único                                                  |
+| `operaciones` | `OperacionMotivo[]` | Vacío: sus motivos no se ofrecen en ningún sitio       |
+| `activo`      | boolean             | Un tipo con motivos dentro no se elimina: se desactiva |
+
+`OperacionMotivo`: `'anularProducto' | 'anularVenta' | 'descuento' | 'cortesia' | 'merma' | 'cancelarReserva' | 'rechazarRecepcion'`.
+
 ### Motivo
 
-| Campo                  | Tipo                                       | Notas                                |
-| ---------------------- | ------------------------------------------ | ------------------------------------ |
-| `tipo`                 | `'anulacion' \| 'descuento' \| 'cortesia'` |                                      |
-| `descripcion`          | string                                     | Única dentro de su tipo              |
-| `requiereAutorizacion` | boolean                                    | Exige aprobación de un administrador |
+| Campo                  | Tipo    | Notas                                |
+| ---------------------- | ------- | ------------------------------------ |
+| `tipoId`               | string  | → TipoMotivo                         |
+| `descripcion`          | string  | Única dentro de su tipo              |
+| `requiereAutorizacion` | boolean | Exige aprobación de un administrador |
 
 ## Sala
 
@@ -330,16 +344,40 @@ Regla: no se elimina un salón con mesas o áreas.
 
 ### Combo
 
+Agrupación que **se cobra a un solo precio** ([D-016](decisiones.md)). Es un vendible, con código y reparto analítico entre sus partes.
+
 | Campo                   | Tipo                                       | Notas                                              |
 | ----------------------- | ------------------------------------------ | -------------------------------------------------- |
-| `tipo`                  | `'combo' \| 'menuDia'`                     |                                                    |
 | `nombre`                | string                                     | Único                                              |
 | `precio`                | number                                     | Precio cerrado, mayor que 0                        |
 | `grupos`                | `{ id, nombre, opciones: productoId[] }[]` | Una opción = parte fija; varias = el cliente elige |
-| `dias`                  | `DiaSemana[]`                              | Vacío = todos. Obligatorio en menú del día         |
+| `dias`                  | `DiaSemana[]`                              | Vacío = todos                                      |
 | `imagen`, `descripcion` | string?                                    |                                                    |
 
 Un producto que forma parte de un combo no se puede eliminar.
+
+### Menu
+
+Selección de **lo que se ofrece** (D-016). **No tiene precio**: cada producto se cobra por su lista. «Menú del día» es un menú con `modoVigencia: 'dias'`, no una entidad aparte.
+
+| Campo           | Tipo                                 | Notas                                        |
+| --------------- | ------------------------------------ | -------------------------------------------- |
+| `nombre`        | string                               | Único                                        |
+| `localIds`      | string[]                             | Vacío = todos los locales                    |
+| `modoVigencia`  | `'permanente' \| 'fechas' \| 'dias'` |                                              |
+| `desde`,`hasta` | string?                              | Con `modoVigencia: 'fechas'`, y en ese orden |
+| `dias`          | `DiaSemana[]`                        | Con `modoVigencia: 'dias'`, al menos uno     |
+| `secciones`     | `SeccionMenu[]`                      | Al menos una                                 |
+| `descripcion`   | string?                              |                                              |
+
+### SeccionMenu
+
+Bloque dentro del menú: «Entradas», «Fondos». Solo ordena lo que se ofrece.
+
+| Campo         | Tipo     | Notas                                     |
+| ------------- | -------- | ----------------------------------------- |
+| `nombre`      | string   |                                           |
+| `productoIds` | string[] | → Producto. Al menos uno. Sin precio aquí |
 
 ## Inventario
 

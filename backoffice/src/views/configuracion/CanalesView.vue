@@ -90,6 +90,11 @@ function validar(c: NuevoCanalVenta): Record<string, string> {
           :ayuda="`${ayudaTipoCanal[borrador.tipo]} Se aplicará al tomar pedidos (Ventas).`"
         >
           <KmSelect :id="id" v-model="borrador.tipo" :opciones="opcionesTipoCanal" />
+          <p class="mt-1.5 text-xs text-tenue">
+            Los canales los creas tú, los que quieras. Las cuatro modalidades no: cada una es una
+            forma de atender que el sistema sabe operar —pedir mesa, pedir distrito, cobrar
+            comisión—, así que una nueva necesita desarrollo, no configuración.
+          </p>
         </KmField>
 
         <KmField

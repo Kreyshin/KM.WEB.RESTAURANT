@@ -231,7 +231,7 @@ test.describe('Humo: botones de cada pantalla', () => {
     const errores = vigilarErrores(page)
     await entrar()
     await page.goto('/carta')
-    await page.getByRole('radio', { name: 'Tarjetas' }).click()
+    // La carta abre en tarjetas: el plato se reconoce por la foto.
     await expect(page.locator('main tbody')).toHaveCount(0)
     const tarjeta = page.locator('article').filter({ hasText: 'Picarones' })
     await expect(tarjeta.locator('img')).toBeVisible()
@@ -240,18 +240,14 @@ test.describe('Humo: botones de cada pantalla', () => {
     await page.getByRole('button', { name: 'Guardar cambios' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
     // La elección se recuerda al volver.
-    await page.reload()
-    await expect(page.getByRole('radio', { name: 'Tarjetas' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    )
     await page.getByRole('radio', { name: 'Tabla' }).click()
+    await page.reload()
+    await expect(page.getByRole('radio', { name: 'Tabla' })).toHaveAttribute('aria-checked', 'true')
     await expect(page.locator('main tbody tr').first()).toBeVisible()
 
     await page.goto('/combos')
-    await page.getByRole('radio', { name: 'Tarjetas' }).click()
     await expect(page.locator('article').filter({ hasText: 'Combo marino' })).toBeVisible()
-    await page.getByRole('button', { name: 'Editar Menú ejecutivo' }).last().click()
+    await page.getByRole('button', { name: 'Editar Combo marino' }).last().click()
     await expect(page.getByRole('dialog').last()).toContainText('Editar combo')
     expect(errores).toEqual([])
   })
@@ -262,6 +258,7 @@ test.describe('Humo: botones de cada pantalla', () => {
   }) => {
     await entrar()
     await page.goto('/carta')
+    await page.getByRole('radio', { name: 'Tabla' }).click()
     await expect(page.locator('main tbody img').first()).toBeVisible()
     expect(await page.locator('main tbody img').count()).toBeGreaterThanOrEqual(15)
 

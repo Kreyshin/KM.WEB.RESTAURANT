@@ -43,9 +43,12 @@ test.describe('Áreas y comandas', () => {
 
   test('el producto muestra a qué área se comanda', async ({ page }) => {
     await page.goto('/carta')
-    await page.getByRole('button', { name: 'Editar Lomo saltado' }).click()
+    // En tarjetas la foto también abre el editor: el botón es el último.
+    await page.getByRole('button', { name: 'Editar Lomo saltado' }).last().click()
     const modal = page.getByRole('dialog')
-    await expect(modal).toContainText('Se comanda en')
+    // Es consecuencia de Áreas, no una decisión del producto, y lo dice.
+    await expect(modal).toContainText('Dónde se prepara')
+    await expect(modal).toContainText('Esto no se elige en el producto')
     await expect(modal).toContainText(/Miraflores:\s*Cocina caliente/)
     await expect(modal).toContainText(/San Isidro:\s*Cocina/)
   })

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * "Base de datos" en memoria + localStorage para el modo mock.
  *
  * Sustituible por completo: cuando llegue el backend real, los servicios dejan
@@ -10,6 +10,7 @@ import type {
   CanalVenta,
   CategoriaInsumo,
   Combo,
+  Menu,
   Proveedor,
   Categoria,
   ConfigImpuestos,
@@ -22,6 +23,7 @@ import type {
   Local,
   MedioPago,
   Motivo,
+  TipoMotivo,
   SerieComprobante,
   Mesa,
   Movimiento,
@@ -76,9 +78,10 @@ import { simularRed } from './red'
  * La clave lleva versión: al cambiar la forma de los datos se sube el número y
  * los navegadores con la semilla anterior parten de cero en vez de romperse.
  */
-const CLAVE = 'km.restaurante.mock.v35'
+const CLAVE = 'km.restaurante.mock.v36'
 
 export interface Esquema {
+  menus: Menu[]
   combos: Combo[]
   listasPrecios: ListaPrecios[]
   almacenes: Almacen[]
@@ -98,6 +101,7 @@ export interface Esquema {
   canales: CanalVenta[]
   areas: Area[]
   impresoras: Impresora[]
+  tiposMotivo: TipoMotivo[]
   motivos: Motivo[]
   series: SerieComprobante[]
   salones: Salon[]
@@ -403,52 +407,66 @@ function semilla(): Esquema {
     },
   ]
 
+  // Tipos de motivo: configurables (D-017). Cada uno dice en qué operaciones se
+  // ofrecen sus motivos; «Merma» llega de serie para que se vea que crecen.
+  const tiposMotivo: TipoMotivo[] = [
+    {
+      id: 'tm1',
+      nombre: 'Anulación',
+      operaciones: ['anularProducto', 'anularVenta'],
+      activo: true,
+    },
+    { id: 'tm2', nombre: 'Descuento', operaciones: ['descuento'], activo: true },
+    { id: 'tm3', nombre: 'Cortesía', operaciones: ['cortesia'], activo: true },
+    { id: 'tm4', nombre: 'Merma', operaciones: ['merma', 'rechazarRecepcion'], activo: true },
+  ]
+
   const motivos: Motivo[] = [
     {
       id: 'mo1',
-      tipo: 'anulacion',
+      tipoId: 'tm1',
       descripcion: 'Error al tomar el pedido',
       requiereAutorizacion: false,
       activo: true,
     },
     {
       id: 'mo2',
-      tipo: 'anulacion',
+      tipoId: 'tm1',
       descripcion: 'Cliente se retiró',
       requiereAutorizacion: true,
       activo: true,
     },
     {
       id: 'mo3',
-      tipo: 'anulacion',
+      tipoId: 'tm1',
       descripcion: 'Producto agotado',
       requiereAutorizacion: false,
       activo: true,
     },
     {
       id: 'mo4',
-      tipo: 'descuento',
+      tipoId: 'tm2',
       descripcion: 'Cliente frecuente',
       requiereAutorizacion: false,
       activo: true,
     },
     {
       id: 'mo5',
-      tipo: 'descuento',
+      tipoId: 'tm2',
       descripcion: 'Demora en el servicio',
       requiereAutorizacion: true,
       activo: true,
     },
     {
       id: 'mo6',
-      tipo: 'cortesia',
+      tipoId: 'tm3',
       descripcion: 'Cumpleaños',
       requiereAutorizacion: true,
       activo: true,
     },
     {
       id: 'mo7',
-      tipo: 'cortesia',
+      tipoId: 'tm3',
       descripcion: 'Degustación de la casa',
       requiereAutorizacion: false,
       activo: false,
@@ -1224,24 +1242,44 @@ function semilla(): Esquema {
   const c7 = categorias.find((c) => c.id === 'c7')
   if (c7) c7.disponibilidad = { dias: [0, 1, 2, 3, 4], desde: '12:00', hasta: '16:00' }
 
-  const combos: Combo[] = [
+  /**
+   * Menús (D-016): qué se ofrece, sin precio propio. El «Menú del día» es un
+   * menú con vigencia por días; «Carta de verano», uno con fechas.
+   */
+  const anioCarta = new Date().getFullYear()
+  const menus: Menu[] = [
     {
-      id: 'cb1',
-      tipo: 'menuDia',
-      nombre: 'Menú ejecutivo',
-      descripcion: 'Entrada, fondo y refresco. De lunes a viernes al mediodía.',
-      precio: 32,
-      grupos: [
-        { id: 'cb1-g1', nombre: 'Entrada', opciones: ['p1', 'p2'] },
-        { id: 'cb1-g2', nombre: 'Fondo', opciones: ['p6', 'p7', 'p8'] },
-        { id: 'cb1-g3', nombre: 'Bebida', opciones: ['p13'] },
-      ],
+      id: 'mn1',
+      nombre: 'Menú del día',
+      descripcion: 'Lo que ofrece la casa de lunes a viernes al mediodía.',
+      localIds: [],
+      modoVigencia: 'dias',
+      // 0 = lunes en el convenio de la vertical: de lunes a viernes.
       dias: [0, 1, 2, 3, 4],
+      secciones: [
+        { id: 'mn1-s1', nombre: 'Entradas', productoIds: ['p1', 'p2'] },
+        { id: 'mn1-s2', nombre: 'Fondos', productoIds: ['p6', 'p7', 'p8'] },
+        { id: 'mn1-s3', nombre: 'Bebidas', productoIds: ['p13'] },
+      ],
       activo: true,
     },
     {
+      id: 'mn2',
+      nombre: 'Carta de verano',
+      descripcion: 'Solo en Miraflores, de enero a marzo.',
+      localIds: ['l1'],
+      modoVigencia: 'fechas',
+      desde: `${anioCarta + 1}-01-01`,
+      hasta: `${anioCarta + 1}-03-31`,
+      dias: [],
+      secciones: [{ id: 'mn2-s1', nombre: 'Para el calor', productoIds: ['p3', 'p13'] }],
+      activo: true,
+    },
+  ]
+
+  const combos: Combo[] = [
+    {
       id: 'cb2',
-      tipo: 'combo',
       nombre: 'Combo marino',
       descripcion: 'Cebiche clásico, chicharrón de calamar y dos pisco sour.',
       precio: 125,
@@ -2711,6 +2749,7 @@ function semilla(): Esquema {
         },
         { vendibleId: 'p:p4', precio: 48 },
       ],
+      enUso: true,
       activa: true,
     },
     {
@@ -2724,6 +2763,7 @@ function semilla(): Esquema {
       derivadaDe: 'lp1',
       ajustePorcentaje: 15,
       precios: [{ vendibleId: 'c:cb2', precio: 139 }],
+      enUso: true,
       activa: true,
     },
     {
@@ -2739,6 +2779,8 @@ function semilla(): Esquema {
         { vendibleId: 'v:v1', precio: 45 },
         { vendibleId: 'v:v2', precio: 82 },
       ],
+      // Programada: se pondrá en uso sola el 1 de enero y saldrá el 31 de marzo.
+      enUso: false,
       activa: true,
     },
     {
@@ -2751,6 +2793,7 @@ function semilla(): Esquema {
       derivadaDe: 'lp1',
       ajustePorcentaje: 0,
       precios: [],
+      enUso: true,
       activa: true,
     },
     {
@@ -2763,6 +2806,22 @@ function semilla(): Esquema {
       // Barranco declara precios sin IGV (clientela corporativa con factura).
       igvIncluido: false,
       precios: [{ vendibleId: 'p:p1', precio: 20.34 }],
+      enUso: true,
+      activa: true,
+    },
+    {
+      // Preparada y guardada, sin fechas: espera a que alguien la ponga en uso.
+      // Es el caso normal de D-015, y sin ella el catálogo no se vería.
+      id: 'lp6',
+      codigo: 'LP-MIR-02',
+      nombre: 'Carta Miraflores · alza de insumos',
+      tipo: 'base',
+      localId: 'l1',
+      canalIds: ['cv1', 'cv2', 'cv3'],
+      derivadaDe: 'lp1',
+      ajustePorcentaje: 8,
+      precios: [],
+      enUso: false,
       activa: true,
     },
   ]
@@ -3560,6 +3619,7 @@ function semilla(): Esquema {
   const comprobantesHist = comprobantesHistoricos(ventasHist)
 
   return {
+    menus,
     combos,
     permisosPorRol: {
       admin: [],
@@ -3603,6 +3663,7 @@ function semilla(): Esquema {
     canales,
     areas,
     impresoras,
+    tiposMotivo,
     motivos,
     series,
     salones,

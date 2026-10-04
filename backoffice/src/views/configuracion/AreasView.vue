@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, onMounted, ref, shallowRef } from 'vue'
 import KmBadge from '@/components/ui/KmBadge.vue'
 import KmCard from '@/components/ui/KmCard.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
@@ -101,15 +101,13 @@ function filtroLocal(consulta: Consulta) {
   }
 }
 
-// ── Revisión de comandas por local ──
-const localRevision = ref('')
-watch(
-  () => [localStore.localId, opcionesLocal.value.length] as const,
-  ([id]) => {
-    if (!localRevision.value)
-      localRevision.value = id ?? (opcionesLocal.value[0]?.valor as string) ?? ''
-  },
-  { immediate: true },
+/**
+ * Revisión de comandas: el local es el activo de la cabecera, como en el resto
+ * del back office. Un segundo selector solo para este panel hacía dudar de cuál
+ * de los dos mandaba.
+ */
+const localRevision = computed(
+  () => localStore.localId ?? (opcionesLocal.value[0]?.valor as string) ?? '',
 )
 
 const cobertura = computed(() =>
@@ -229,65 +227,6 @@ function validarImpresora(i: NuevaImpresora) {
     >
       <KmTabs v-model="pestana" :pestanas="pestanas" etiqueta="Áreas e impresoras">
         <div v-if="pestana === 'areas'" class="flex flex-col gap-5">
-          <!-- Revisión: todo producto debe llegar a un área -->
-          <section
-            class="flex flex-col gap-3 rounded-card border border-linea bg-panel-2 p-4"
-            aria-label="Revisión de comandas"
-          >
-            <div class="flex flex-wrap items-center gap-3">
-              <p class="text-sm font-semibold text-tinta">Revisión de comandas</p>
-              <div class="w-full sm:w-48">
-                <KmSelect
-                  v-model="localRevision"
-                  :opciones="opcionesLocal"
-                  etiqueta="Local a revisar"
-                />
-              </div>
-              <span class="text-xs text-tenue">
-                {{ areasDelLocal.length }} áreas reciben comandas en este local
-              </span>
-            </div>
-
-            <p
-              v-if="!cobertura.sinArea.length && !cobertura.enVarias.length"
-              class="rs-tono rs-tono-verde rounded-control border px-3 py-2 text-sm"
-              role="status"
-            >
-              Todos los productos llegan a un área, y a una sola.
-            </p>
-            <div
-              v-if="cobertura.sinArea.length"
-              class="rs-tono rs-tono-vino flex flex-col gap-1.5 rounded-control border px-3 py-2 text-sm"
-              role="alert"
-            >
-              <strong>
-                {{ cobertura.sinArea.length }}
-                {{ cobertura.sinArea.length === 1 ? 'producto no llega' : 'productos no llegan' }}
-                a ninguna área: su comanda no saldría.
-              </strong>
-              <span>{{ cobertura.sinArea.map((p) => p.nombre).join(', ') }}</span>
-            </div>
-            <div
-              v-if="cobertura.enVarias.length"
-              class="rs-tono rs-tono-laton flex flex-col gap-1.5 rounded-control border px-3 py-2 text-sm"
-              role="status"
-            >
-              <strong>
-                {{ cobertura.enVarias.length }}
-                {{ cobertura.enVarias.length === 1 ? 'producto sale' : 'productos salen' }}
-                en más de un área a la vez.
-              </strong>
-              <ul class="flex flex-col gap-0.5">
-                <li v-for="d in cobertura.enVarias" :key="d.producto.id">
-                  {{ d.producto.nombre }}: {{ d.areas.map((a) => a.nombre).join(' y ') }}
-                </li>
-              </ul>
-              <span class="text-xs"
-                >Si es a propósito (por ejemplo, barra y cocina), puedes dejarlo.</span
-              >
-            </div>
-          </section>
-
           <KmCatalogo
             titulo="Áreas"
             entidad="área"
@@ -496,6 +435,60 @@ function validarImpresora(i: NuevaImpresora) {
               </section>
             </template>
           </KmCatalogo>
+
+          <!-- Qué deja configurado lo de arriba: se lee después, no antes. -->
+          <section
+            class="flex flex-col gap-3 rounded-card border border-linea bg-panel-2 p-4"
+            aria-label="Revisión de comandas"
+          >
+            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <p class="text-sm font-semibold text-tinta">
+                Revisión de comandas en {{ nombreLocal(localRevision) }}
+              </p>
+              <span class="text-xs text-tenue">
+                {{ areasDelLocal.length }} áreas reciben comandas · cambia de local en la cabecera
+              </span>
+            </div>
+
+            <p
+              v-if="!cobertura.sinArea.length && !cobertura.enVarias.length"
+              class="rs-tono rs-tono-verde rounded-control border px-3 py-2 text-sm"
+              role="status"
+            >
+              Todos los productos llegan a un área, y a una sola.
+            </p>
+            <div
+              v-if="cobertura.sinArea.length"
+              class="rs-tono rs-tono-vino flex flex-col gap-1.5 rounded-control border px-3 py-2 text-sm"
+              role="alert"
+            >
+              <strong>
+                {{ cobertura.sinArea.length }}
+                {{ cobertura.sinArea.length === 1 ? 'producto no llega' : 'productos no llegan' }}
+                a ninguna área: su comanda no saldría.
+              </strong>
+              <span>{{ cobertura.sinArea.map((p) => p.nombre).join(', ') }}</span>
+            </div>
+            <div
+              v-if="cobertura.enVarias.length"
+              class="rs-tono rs-tono-laton flex flex-col gap-1.5 rounded-control border px-3 py-2 text-sm"
+              role="status"
+            >
+              <strong>
+                {{ cobertura.enVarias.length }}
+                {{ cobertura.enVarias.length === 1 ? 'producto sale' : 'productos salen' }}
+                en más de un área a la vez.
+              </strong>
+              <ul class="flex flex-col gap-0.5">
+                <li v-for="d in cobertura.enVarias" :key="d.producto.id">
+                  {{ d.producto.nombre }}: {{ d.areas.map((a) => a.nombre).join(' y ') }}
+                </li>
+              </ul>
+              <span class="text-xs"
+                >Si es a propósito (por ejemplo, barra y cocina), puedes dejarlo.</span
+              >
+            </div>
+          </section>
         </div>
 
         <KmCatalogo
@@ -566,10 +559,18 @@ function validarImpresora(i: NuevaImpresora) {
                   :invalido="invalido"
                 />
               </KmField>
-              <KmField v-slot="{ id }" label="Uso">
+              <KmField
+                v-slot="{ id }"
+                label="Uso"
+                ayuda="Qué imprime esta máquina. Son tres porque cada uno tiene su formato ya programado: la comanda para la cocina, la precuenta para la mesa y el comprobante con sus datos fiscales. Las impresoras las das de alta tú, las que quieras."
+              >
                 <KmSelect :id="id" v-model="borrador.uso" :opciones="opcionesUsoImpresora" />
               </KmField>
-              <KmField v-slot="{ id }" label="Ancho de papel">
+              <KmField
+                v-slot="{ id }"
+                label="Ancho de papel"
+                ayuda="El de la bobina térmica. 80 mm es lo habitual en cocina y caja; 58 mm, en las pequeñas."
+              >
                 <KmSelect
                   :id="id"
                   v-model="borrador.ancho"

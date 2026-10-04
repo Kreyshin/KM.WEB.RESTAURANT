@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import KmBadge from '@/components/ui/KmBadge.vue'
 import KmButton from '@/components/ui/KmButton.vue'
 import KmBotonIcono from '@/components/ui/KmBotonIcono.vue'
 import KmCatalogo from '@/components/ui/KmCatalogo.vue'
@@ -15,15 +14,14 @@ import { combosService } from '@/services/combos.service'
 import { useUiStore } from '@/stores/ui.store'
 import type { Combo, DiaSemana, NuevoCombo } from '@/types'
 import type { ColumnaTabla, OpcionSelect } from '@/types/ui'
-import { etiquetaDia, etiquetaTipoCombo } from '@/utils/configuracion'
+import { etiquetaDia } from '@/utils/configuracion'
 import { formatearSoles } from '@/utils/formato'
 
 const ui = useUiStore()
 const { productos, producto } = useCatalogos(['productos'])
 
 const columnas: ColumnaTabla[] = [
-  { clave: 'nombre', etiqueta: 'Combo o menú', ordenable: true },
-  { clave: 'tipo', etiqueta: 'Tipo', clase: 'w-36', ordenable: true },
+  { clave: 'nombre', etiqueta: 'Combo', ordenable: true },
   { clave: 'dias', etiqueta: 'Días', clase: 'w-40' },
   { clave: 'precio', etiqueta: 'Precio', clase: 'w-40 text-right', ordenable: true },
 ]
@@ -32,7 +30,6 @@ const dias = [0, 1, 2, 3, 4, 5, 6] as DiaSemana[]
 
 let contador = 0
 const nuevo = (): NuevoCombo => ({
-  tipo: 'combo',
   nombre: '',
   descripcion: '',
   precio: 0,
@@ -79,7 +76,6 @@ function validar(c: NuevoCombo): Record<string, string> {
   else if (c.grupos.some((g) => g.opciones.length === 0)) {
     e.grupos = 'Cada parte necesita al menos un producto.'
   }
-  if (c.tipo === 'menuDia' && c.dias.length === 0) e.dias = 'Elige los días del menú.'
   return e
 }
 </script>
@@ -87,8 +83,8 @@ function validar(c: NuevoCombo): Record<string, string> {
 <template>
   <div class="flex w-full flex-col gap-6">
     <KmCatalogo
-      titulo="Combos y menús"
-      subtitulo="Productos agrupados a un precio cerrado: menú del día, combos y promociones."
+      titulo="Combos"
+      subtitulo="Productos agrupados que se cobran a un solo precio. Lo que agrupa sin cobrar junto es un menú."
       entidad="combo"
       :servicio="combosService"
       :columnas="columnas"
@@ -97,7 +93,6 @@ function validar(c: NuevoCombo): Record<string, string> {
       :nombre-de="(c: Combo) => c.nombre"
       :exportacion="[
         { etiqueta: 'Nombre', valor: (c: Combo) => c.nombre },
-        { etiqueta: 'Tipo', valor: (c: Combo) => etiquetaTipoCombo[c.tipo] },
         { etiqueta: 'Días', valor: (c: Combo) => textoDias(c.dias) },
         { etiqueta: 'Precio', valor: (c: Combo) => c.precio },
         { etiqueta: 'Precio suelto', valor: (c: Combo) => sueltos(c.grupos) },
@@ -105,6 +100,7 @@ function validar(c: NuevoCombo): Record<string, string> {
       ]"
       archivo="combos"
       ancho-drawer="lg"
+      vista-por-defecto="tarjetas"
     >
       <template #col-nombre="{ fila }">
         <div class="flex items-start gap-3">
@@ -119,11 +115,6 @@ function validar(c: NuevoCombo): Record<string, string> {
             <p class="text-xs text-tenue">{{ fila.grupos.map((g) => g.nombre).join(' + ') }}</p>
           </div>
         </div>
-      </template>
-      <template #col-tipo="{ fila }">
-        <KmBadge :tono="fila.tipo === 'menuDia' ? 'laton' : 'neutro'">
-          {{ etiquetaTipoCombo[fila.tipo] }}
-        </KmBadge>
       </template>
       <template #col-dias="{ fila }">
         <span class="text-sm text-tenue">{{ textoDias(fila.dias) }}</span>
@@ -141,7 +132,7 @@ function validar(c: NuevoCombo): Record<string, string> {
           :nombre="fila.nombre"
           :imagen="fila.imagen"
           :precio="formatearSoles(fila.precio)"
-          :marca="`${etiquetaTipoCombo[fila.tipo]} · ${textoDias(fila.dias)}`"
+          :marca="textoDias(fila.dias)"
           :detalle="
             fila.grupos
               .map((g) => g.opciones.map((id) => producto(id)?.nombre ?? '—').join(' o '))
@@ -155,26 +146,14 @@ function validar(c: NuevoCombo): Record<string, string> {
       </template>
 
       <template #formulario="{ borrador, errores }">
-        <div class="grid gap-4 sm:grid-cols-2">
-          <KmField v-slot="{ id, invalido }" label="Nombre" requerido :error="errores.nombre">
-            <KmInput
-              :id="id"
-              v-model="borrador.nombre"
-              placeholder="Ej. Menú ejecutivo"
-              :invalido="invalido"
-            />
-          </KmField>
-          <KmField v-slot="{ id }" label="Tipo">
-            <KmSelect
-              :id="id"
-              v-model="borrador.tipo"
-              :opciones="[
-                { valor: 'combo', etiqueta: 'Combo' },
-                { valor: 'menuDia', etiqueta: 'Menú del día' },
-              ]"
-            />
-          </KmField>
-        </div>
+        <KmField v-slot="{ id, invalido }" label="Nombre" requerido :error="errores.nombre">
+          <KmInput
+            :id="id"
+            v-model="borrador.nombre"
+            placeholder="Ej. Combo marino"
+            :invalido="invalido"
+          />
+        </KmField>
         <KmField v-slot="{ id }" label="Descripción">
           <KmInput :id="id" v-model="borrador.descripcion" />
         </KmField>
@@ -285,7 +264,7 @@ function validar(c: NuevoCombo): Record<string, string> {
         <KmField
           label="Días en que se ofrece"
           :error="errores.dias"
-          :ayuda="borrador.tipo === 'combo' ? 'Sin días marcados, se ofrece siempre.' : undefined"
+          ayuda="Sin días marcados, se ofrece siempre."
         >
           <div class="flex flex-wrap gap-1.5" role="group" aria-label="Días">
             <button

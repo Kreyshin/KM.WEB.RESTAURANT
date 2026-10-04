@@ -111,9 +111,15 @@ export const modulos: ModuloNav[] = [
         roles: ['admin'],
       },
       {
+        nombreRuta: 'menus',
+        etiqueta: 'Menús',
+        descripcion: 'Qué se ofrece cada día, a su propio precio',
+        roles: ['admin'],
+      },
+      {
         nombreRuta: 'combos',
-        etiqueta: 'Combos y menús',
-        descripcion: 'Menú del día y promociones armadas',
+        etiqueta: 'Combos',
+        descripcion: 'Productos agrupados a un solo precio',
         roles: ['admin'],
       },
     ],

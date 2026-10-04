@@ -215,6 +215,10 @@ export interface ProductoVendible {
   activo: boolean
 }
 
+/**
+ * Etiqueta descriptiva de la lista ([D-015](../../docs/guia/decisiones.md)). Ya
+ * no decide precedencia: eso lo deciden `enUso` y las fechas.
+ */
 export type TipoLista = 'base' | 'temporada'
 
 /** Descuento en una línea de la lista, solo dentro de su vigencia (fechas AAAA-MM-DD). */
@@ -231,14 +235,17 @@ export interface PrecioLista {
 }
 
 /**
- * Lista de precios de un local para uno o varios canales. Hay una base por
- * local y canal; las de temporada la reemplazan en su vigencia sin solaparse.
- * Una lista derivada toma los precios de otra con un ajuste en %.
+ * Lista de precios de un local para uno o varios canales (D-015). Un local y
+ * canal tienen **tantas listas guardadas como quieran** y **una en uso a la
+ * vez**: el catálogo se prepara de antemano y se cambia con un botón. Una lista
+ * con fechas se pone en uso sola en su periodo y, al pasar, vuelve al catálogo
+ * sin borrarse. Una lista derivada toma los precios de otra con un ajuste en %.
  */
 export interface ListaPrecios {
   id: string
   codigo: string
   nombre: string
+  /** Etiqueta descriptiva; no decide cuál manda. */
   tipo: TipoLista
   localId: string
   canalIds: string[]
@@ -246,15 +253,25 @@ export interface ListaPrecios {
   ajustePorcentaje?: number
   /** Sin valor usa lo configurado para la empresa en Impuestos. */
   igvIncluido?: boolean
+  /** Con fechas, la lista se pone en uso sola mientras duren. */
   desde?: string
   hasta?: string
   precios: PrecioLista[]
+  /**
+   * La que manda hoy en su local y canales, salvo que una con fechas vigentes
+   * la tape. Como mucho una por local y canal.
+   */
+  enUso: boolean
+  /** Fuera del catálogo: no se ofrece ni se puede poner en uso. */
   activa: boolean
 }
 
 export type NuevaListaPrecios = Omit<ListaPrecios, 'id'>
 
 export type OrigenPrecio = 'lista' | 'derivada' | 'base' | 'referencia'
+
+/** Cómo quedó en uso la lista que manda ahora (D-015). */
+export type MotivoEnUso = 'programada' | 'elegida'
 
 export interface PrecioVigente {
   vendibleId: string
@@ -278,10 +295,8 @@ export interface RepartoCombo {
   asignado: number
 }
 
-export type TipoCombo = 'combo' | 'menuDia'
-
 /**
- * Parte de un combo o menú. Con una sola opción es fija («Chicha morada»);
+ * Parte de un combo. Con una sola opción es fija («Chicha morada»);
  * con varias, el cliente elige una («Entrada: causa o tequeños»).
  */
 export interface GrupoCombo {
@@ -290,10 +305,14 @@ export interface GrupoCombo {
   opciones: string[]
 }
 
+/**
+ * Agrupación que **se cobra a un solo precio** ([D-016](../../docs/guia/decisiones.md)).
+ * Es un vendible: tiene código, precio y reparto analítico entre sus partes. Lo
+ * que agrupa productos sin cobrarlos juntos es el `Menu`.
+ */
 export interface Combo {
   id: string
   codigo?: string
-  tipo: TipoCombo
   nombre: string
   descripcion?: string
   /** Precio final del combo completo. */
@@ -302,6 +321,42 @@ export interface Combo {
   grupos: GrupoCombo[]
   /** Días en que se ofrece. Vacío = todos. */
   dias: DiaSemana[]
+  activo: boolean
+}
+
+/**
+ * Cómo se decide si un menú está vigente (D-016). `permanente` siempre;
+ * `fechas` entre dos días; `dias`, los días de la semana que se marquen.
+ */
+export type ModoVigenciaMenu = 'permanente' | 'fechas' | 'dias'
+
+/** Bloque del menú: «Entradas», «Fondos». Solo ordena lo que se ofrece. */
+export interface SeccionMenu {
+  id: string
+  nombre: string
+  /** → Producto. Cada uno se cobra a su precio de lista. */
+  productoIds: string[]
+}
+
+/**
+ * Selección de lo que se ofrece (D-016). **No tiene precio**: cada producto se
+ * cobra por su lista. Un local puede tener varios menús —«Menú del día», «Carta
+ * de verano»— y cada uno su vigencia. «Menú del día» es un menú con vigencia
+ * diaria, no una entidad aparte.
+ */
+export interface Menu {
+  id: string
+  nombre: string
+  descripcion?: string
+  /** Vacío: se ofrece en todos los locales. */
+  localIds: string[]
+  modoVigencia: ModoVigenciaMenu
+  /** Con `modoVigencia: 'fechas'`. */
+  desde?: string
+  hasta?: string
+  /** Con `modoVigencia: 'dias'`. */
+  dias: DiaSemana[]
+  secciones: SeccionMenu[]
   activo: boolean
 }
 
@@ -1006,6 +1061,7 @@ export interface CostoReceta {
 export type NuevoSalon = Omit<Salon, 'id'>
 export type NuevaMesa = Omit<Mesa, 'id'>
 export type NuevoCombo = Omit<Combo, 'id'>
+export type NuevoMenu = Omit<Menu, 'id'>
 export type NuevaZona = Omit<Zona, 'id'>
 export type NuevaCadena = Omit<Cadena, 'id'>
 
@@ -1024,6 +1080,7 @@ export type NuevoCanalVenta = Omit<CanalVenta, 'id'>
 export type NuevaArea = Omit<Area, 'id'>
 export type NuevaImpresora = Omit<Impresora, 'id'>
 export type NuevoMotivo = Omit<Motivo, 'id'>
+export type NuevoTipoMotivo = Omit<TipoMotivo, 'id'>
 export type NuevaSerie = Omit<SerieComprobante, 'id'>
 export type NuevaUbicacion = Omit<Ubicacion, 'id'>
 export type NuevaTransformacion = Omit<Transformacion, 'id'>
@@ -1183,11 +1240,37 @@ export interface Impresora {
   activo: boolean
 }
 
-export type TipoMotivo = 'anulacion' | 'descuento' | 'cortesia'
+/**
+ * Puntos del flujo donde el sistema se detiene a pedir un motivo ([D-017](../../docs/guia/decisiones.md)).
+ * Es una lista cerrada porque cada uno es una pantalla que ya existe y sabe
+ * pedirlo; lo que el restaurante define son los **tipos** y los **motivos**.
+ */
+export type OperacionMotivo =
+  | 'anularProducto'
+  | 'anularVenta'
+  | 'descuento'
+  | 'cortesia'
+  | 'merma'
+  | 'cancelarReserva'
+  | 'rechazarRecepcion'
+
+/**
+ * Agrupador de motivos, configurable (D-017). El restaurante crea los que
+ * necesite —merma, consumo del personal, cortesía de la casa— y cada uno
+ * declara en qué operaciones se ofrecen sus motivos.
+ */
+export interface TipoMotivo {
+  id: string
+  nombre: string
+  /** Sin ninguna, sus motivos no se ofrecen en ningún sitio. */
+  operaciones: OperacionMotivo[]
+  activo: boolean
+}
 
 export interface Motivo {
   id: string
-  tipo: TipoMotivo
+  /** → TipoMotivo. */
+  tipoId: string
   descripcion: string
   /** Exige la aprobación de un administrador al usarlo. */
   requiereAutorizacion: boolean

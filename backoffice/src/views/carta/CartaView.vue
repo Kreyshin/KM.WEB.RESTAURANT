@@ -38,7 +38,9 @@ const vista = ref<'productos' | 'categorias'>('productos')
 /** '' significa «todas las categorías». */
 const filtroCategoria = ref<string>('')
 const busqueda = ref('')
-const vistaProductos = ref<'tabla' | 'tarjetas'>('tabla')
+// La carta se mira antes que se busca, y el plato se reconoce por la foto: abre
+// en tarjetas. `KmCambioVista` recuerda después lo que elija cada quien.
+const vistaProductos = ref<'tabla' | 'tarjetas'>('tarjetas')
 
 const modalProducto = ref(false)
 const productoEnEdicion = ref<Producto | null>(null)

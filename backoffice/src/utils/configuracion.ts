@@ -1,10 +1,9 @@
 import type {
   DiaSemana,
-  TipoCombo,
   TipoCanal,
   TipoComprobante,
   TipoMedioPago,
-  TipoMotivo,
+  OperacionMotivo,
   UsoImpresora,
 } from '@/types'
 import type { OpcionSelect, TonoMesa } from '@/types/ui'
@@ -54,11 +53,17 @@ export const etiquetaUsoImpresora: Record<UsoImpresora, string> = {
 }
 export const opcionesUsoImpresora = opciones(etiquetaUsoImpresora)
 
-export const etiquetaTipoMotivo: Record<TipoMotivo, string> = {
-  anulacion: 'Anulación',
-  descuento: 'Descuento',
-  cortesia: 'Cortesía',
+/** Dónde se pide un motivo. La lista es cerrada (D-017): son puntos del flujo. */
+export const etiquetaOperacionMotivo: Record<OperacionMotivo, string> = {
+  anularProducto: 'Anular un producto comandado',
+  anularVenta: 'Anular una venta cobrada',
+  descuento: 'Descontar sobre el precio',
+  cortesia: 'Invitar un producto',
+  merma: 'Dar de baja por merma',
+  cancelarReserva: 'Cancelar una reserva o «no vino»',
+  rechazarRecepcion: 'Rechazar una recepción',
 }
+export const opcionesOperacionMotivo = opciones(etiquetaOperacionMotivo)
 
 export const etiquetaTipoComprobante: Record<TipoComprobante, string> = {
   boleta: 'Boleta',
@@ -73,9 +78,4 @@ export const tonoTipoComprobante: Record<TipoComprobante, TonoMesa> = {
   factura: 'pizarra',
   notaCredito: 'vino',
   notaVenta: 'neutro',
-}
-
-export const etiquetaTipoCombo: Record<TipoCombo, string> = {
-  combo: 'Combo',
-  menuDia: 'Menú del día',
 }

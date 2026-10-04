@@ -12,6 +12,9 @@ test.describe('Caja', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Caja' })).toBeVisible()
   })
 
+  /** Martes a las 20:00, hora de Lima: el día que rige «Martes de cebiche». */
+  const UN_MARTES = new Date('2026-10-06T20:00:00-05:00')
+
   test('muestra el servicio en marcha con su caja abierta', async ({ page }) => {
     await expect(page.getByText('Caja abierta · fondo S/ 200.00')).toBeVisible()
     await expect(page.getByRole('button', { name: /Cuenta 1041/ })).toBeVisible()
@@ -19,6 +22,10 @@ test.describe('Caja', () => {
   })
 
   test('la cuenta encadena promoción, recargo al consumo e IGV', async ({ page }) => {
+    // La promoción de ejemplo solo rige los martes, así que el reloj se fija:
+    // antes esta prueba pasaba un día de cada siete y mentía los otros seis.
+    await page.clock.setFixedTime(UN_MARTES)
+    await page.reload()
     await page.getByRole('button', { name: /Cuenta 1041/ }).click()
     await expect(page.getByText('Recargo al consumo (10 %)')).toBeVisible()
     await expect(page.getByText('(Martes de cebiche 2×1)')).toBeVisible()

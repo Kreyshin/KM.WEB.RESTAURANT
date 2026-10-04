@@ -1,4 +1,4 @@
-﻿# Decisiones de diseño
+# Decisiones de diseño
 
 Registro de decisiones discutibles del modelo y la interfaz. Cada entrada se escribe **antes** de construir, para revisarla a tiempo.
 
@@ -441,3 +441,79 @@ que decidir qué entra en cada cifra, y que la pantalla lo diga en vez de dejarl
 **A validar con ventas reales:** si hace falta congelar el costo en la línea de venta —lo más
 probable—, los umbrales de food cost por categoría y qué diferencia entre consumo teórico y real
 es normal en cada cocina.
+
+## D-015 · Listas de precios: un catálogo que se activa, no una sola lista
+
+**Contexto.** D-010 impuso **una** lista base por local y canal, y temporadas que no podían solaparse, para que a una fecha dada hubiera un precio y solo uno. La revisión del responsable de producto encontró el problema de raíz: quien configura precios en un restaurante quiere tener **varias listas preparadas de antemano** y **cambiar entre ellas a discreción**, no redactar una cada vez. La restricción era del diseño, no del negocio. Se sumaban dos fallos: al pasar la vigencia la temporada seguía guardada pero nada en la pantalla lo decía, y el formulario dejaba crear una lista para otro local, que luego desaparecía de la vista del local activo.
+
+**Alternativas evaluadas.**
+
+| Opción                                              | Usuario                                                       | Negocio                                                              | Desarrollo                                                            |
+| --------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Una base + temporadas sin solape (D-010)            | Obliga a editar la lista viva para probar un precio           | No admite listas preparadas ni volver atrás                          | Precio determinista, barato                                           |
+| Varias que se solapan, gana la de más prioridad     | El precio deja de ser evidente: hay que simular para saberlo  | Flexible                                                             | Resolución por prioridad en cada consulta                             |
+| **Catálogo por local y canal, una activa a la vez** | Prepara, compara y cambia con un botón; siempre ve cuál manda | Admite listas guardadas, volver a la anterior y temporadas previstas | Determinista: la activa manda; las fechas solo deciden cuál se activa |
+
+**Decisión.** La lista de precios pasa a ser un **catálogo**: un local y canal tienen tantas listas como quieran, guardadas, y **una activa a la vez**.
+
+- La activación es **manual**, y es el caso normal: un botón cambia cuál manda.
+- Una lista puede llevar **fechas opcionales**: con ellas se activa y se retira sola en su periodo (Navidad, Fiestas Patrias); sin ellas solo manda la decisión del usuario.
+- Pasada la vigencia la lista **no se borra ni se desactiva**: vuelve al catálogo como disponible, y la pantalla lo dice.
+- Una lista se crea **para el local activo**. El selector de local sale del formulario: cambiar de local se hace con el selector de la cabecera, como en el resto del back office.
+
+**Consecuencias.**
+
+- `ListaPrecios` gana su estado dentro del catálogo (disponible o activa) y pierde el papel de `tipo: base | temporada` como mecanismo de precedencia; el tipo queda como etiqueta descriptiva.
+- `precioVigente()` resuelve por la lista activa del local y canal, no por «temporada vigente o base».
+- Las derivadas con ajuste en % siguen igual: se derivan de otra lista del catálogo.
+- Revisar al construir Ventas: cambiar la lista activa no retoca cuentas ya cobradas.
+
+## D-016 · Menú del día: agrupador de oferta, no un vendible
+
+**Contexto.** El modelo trataba el menú del día como un `Combo` con `tipo: 'menuDia'`, es decir, con un **precio único del conjunto**. Es incorrecto. En un restaurante son dos cosas distintas: el **combo** es una agrupación que se cobra a un solo precio; el **menú del día** es una **selección de lo que se ofrece**, y sus productos se cobran cada uno a su precio. Modelarlos juntos daba al menú un precio que no le corresponde y obligaba a explicar en la pantalla una diferencia que no estaba en el modelo.
+
+**Decisión.** Separarlos.
+
+- **Combo** (sigue en Carta › Combos): vendible con código, precio único y reparto analítico entre sus componentes. Con grupos de elección.
+- **Menú** (nuevo, Carta › Menús): agrupador **con nombre** de N productos, organizados por sección. No tiene precio: cada producto se cobra por su lista de precios. Un local puede tener **varios** menús.
+
+Cada menú lleva su **vigencia, configurable**: permanente, un rango de fechas, o unos días de la semana. «Menú del día» es un menú con vigencia diaria, no una entidad aparte.
+
+**Consecuencias.**
+
+- `TipoCombo` desaparece; `Combo` conserva su precio y deja de admitir `menuDia`.
+- El menú sale en el POS como una vista filtrada de la carta y se imprime como carta del día.
+- Queda registro de qué menú estuvo vigente cada día, que una categoría suelta no daba.
+
+## D-017 · Qué se cierra en código y qué registra el usuario
+
+**Contexto.** La revisión preguntó tres veces por lo mismo con distintas palabras: de dónde salen las modalidades de atención, los tipos de motivo y el uso de la impresora, y si tienen mantenimiento. La confusión venía de que la pantalla no distingue **dos capas**: el registro, que el usuario llena, y su agrupador, sobre el que se ramifica el código.
+
+**Decisión.** Mantener las dos capas y **decirlo en pantalla**, con una excepción.
+
+| Registro (abierto, lo llena el usuario)    | Agrupador             | Queda                                                                   |
+| ------------------------------------------ | --------------------- | ----------------------------------------------------------------------- |
+| Canales (Rappi, salón, mostrador…)         | Modalidad de atención | **Cerrado**: cada una es un flujo programado (mesa, distrito, comisión) |
+| Impresoras (Cocina 1, Barra…)              | Uso                   | **Cerrado**: cada uso tiene un formato de impresión programado          |
+| Motivos («plato frío», «mesa equivocada»…) | Tipo                  | **Se abre**                                                             |
+
+El **tipo de motivo** pasa a ser configurable: el usuario crea los que necesite (merma, consumo del personal, cortesía de la casa), y cada tipo declara **en qué operación aplica**, para que el sistema sepa dónde ofrecerlo en vez de adivinar.
+
+**Consecuencias.**
+
+- `TipoMotivo` deja de ser una unión de literales y pasa a maestro con su propia pantalla.
+- Donde el agrupador siga cerrado, el formulario explica por qué no se edita, en vez de mostrar un desplegable mudo.
+
+## D-018 · Reservar se hace en el reloj del servicio
+
+**Contexto.** El reloj del servicio enseñaba los turnos en cuartos de hora, pero no dejaba crear una reserva: había que ir a Clientes › Reservas. La revisión lo marcó como no útil, y los tres puntos sobre aforo, cupo por franja y motivo de cancelación quedaron sin probar con la nota «no entiendo dónde probar»: la funcionalidad existía y no había cómo llegar a ella.
+
+**Decisión.** Repartir las dos tareas, que son distintas.
+
+- **Sala › Reloj del servicio** es la pantalla de **operar**: se ve la franja, se pulsa un hueco y se crea la reserva ahí, con su mesa y sus personas. Ahí se nota el cupo por franja, el aforo de las mesas y la anticipación.
+- **Clientes › Reservas** queda como la **agenda administrable**: buscar, confirmar, cambiar de día, cancelar con motivo y exportar; y conserva el enlace cliente → sus reservas.
+
+**Consecuencias.**
+
+- Las reglas (cupo, aforo, cruce de horarios, anticipación) se validan en un solo servicio que las dos pantallas llaman.
+- La revisión de F6.1 se repite entera: estaba marcada como no probada por no encontrar la entrada.

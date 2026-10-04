@@ -144,13 +144,17 @@ async function guardar(datos: NuevaMesa, id?: string) {
 
 async function cambiarEstado(mesa: Mesa, estado: EstadoMesa) {
   if (mesa.estado === estado) return
-  const anterior = mesa.estado
-  mesa.estado = estado // Actualización optimista: el plano responde al instante.
+  // Una unión atiende a un solo grupo: cambia entera, y el plano lo refleja ya.
+  const grupo = mesa.grupoId ? mesas.value.filter((m) => m.grupoId === mesa.grupoId) : [mesa]
+  const anteriores = grupo.map((m) => [m, m.estado] as const)
+  for (const m of grupo) m.estado = estado
   try {
-    const actualizada = await mesasService.cambiarEstado(mesa.id, estado)
-    Object.assign(mesa, actualizada)
+    for (const actualizada of await mesasService.cambiarEstado(mesa.id, estado)) {
+      const local = mesas.value.find((m) => m.id === actualizada.id)
+      if (local) Object.assign(local, actualizada)
+    }
   } catch (e) {
-    mesa.estado = anterior
+    for (const [m, previo] of anteriores) m.estado = previo
     ui.error((e as ApiError).mensaje ?? 'No se pudo cambiar el estado.')
   }
 }

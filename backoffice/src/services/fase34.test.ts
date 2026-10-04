@@ -2,6 +2,7 @@
 import { transformacionesService } from './abastecimiento.service'
 import { combosService, precioSueltos } from './combos.service'
 import { inventarioService } from './inventario.service'
+import { menuVigente, menusService } from './menus.service'
 import { mesasService } from './mesas.service'
 import { db, reiniciarMock } from './mock/db'
 
@@ -179,14 +180,20 @@ describe('transformaciones y recetas', () => {
 
 describe('carta: combos y mesas unidas', () => {
   it('el precio suelto suma la opción más barata de cada parte', () => {
-    // Menú ejecutivo: causa 24 (vs anticuchos 28) + ají de gallina 38 + chicha 12
-    expect(precioSueltos(db.combos.find((c) => c.id === 'cb1')!)).toBe(74)
+    // Combo marino: cebiche 58 + chicharrón 42 + dos pisco sour a 28
+    const cb2 = db.combos.find((c) => c.id === 'cb2')!
+    expect(precioSueltos(cb2)).toBe(
+      cb2.grupos.reduce(
+        (t, g) =>
+          t + Math.min(...g.opciones.map((id) => db.productos.find((p) => p.id === id)!.precio)),
+        0,
+      ),
+    )
   })
 
-  it('un combo necesita partes con productos y el menú del día, días', async () => {
+  it('un combo necesita partes con productos', async () => {
     await expect(
       combosService.crear({
-        tipo: 'combo',
         nombre: 'Vacío',
         precio: 10,
         grupos: [],
@@ -196,11 +203,44 @@ describe('carta: combos y mesas unidas', () => {
     ).rejects.toMatchObject({ campos: { grupos: expect.any(String) } })
     await expect(
       combosService.crear({
-        tipo: 'menuDia',
-        nombre: 'Menú sin días',
+        nombre: 'Parte sin productos',
         precio: 10,
-        grupos: [{ id: 'g', nombre: 'Fondo', opciones: ['p6'] }],
+        grupos: [{ id: 'g', nombre: 'Fondo', opciones: [] }],
         dias: [],
+        activo: true,
+      }),
+    ).rejects.toMatchObject({ campos: { grupos: expect.any(String) } })
+  })
+
+  it('el menú agrupa sin precio, y su vigencia decide si se ofrece (D-016)', async () => {
+    const menu = db.menus.find((m) => m.id === 'mn1')!
+    expect(menu).not.toHaveProperty('precio')
+    // 2026-10-05 es lunes y 2026-10-04 domingo: el día sale de la fecha.
+    expect(menuVigente(menu, '2026-10-05')).toBe(true)
+    expect(menuVigente(menu, '2026-10-04')).toBe(false)
+    // «Carta de verano» solo en Miraflores.
+    const verano = db.menus.find((m) => m.id === 'mn2')!
+    const dentro = `${new Date().getFullYear() + 1}-02-10`
+    expect(menuVigente(verano, dentro, 'l1')).toBe(true)
+    expect(menuVigente(verano, dentro, 'l2')).toBe(false)
+
+    await expect(
+      menusService.crear({
+        nombre: 'Sin secciones',
+        localIds: [],
+        modoVigencia: 'permanente',
+        dias: [],
+        secciones: [],
+        activo: true,
+      }),
+    ).rejects.toMatchObject({ campos: { secciones: expect.any(String) } })
+    await expect(
+      menusService.crear({
+        nombre: 'Por días, sin días',
+        localIds: [],
+        modoVigencia: 'dias',
+        dias: [],
+        secciones: [{ id: 's', nombre: 'Fondos', productoIds: ['p6'] }],
         activo: true,
       }),
     ).rejects.toMatchObject({ campos: { dias: expect.any(String) } })
@@ -219,5 +259,20 @@ describe('carta: combos y mesas unidas', () => {
     const [m] = await mesasService.unir(['m1', 'm2'])
     db.mesas.find((x) => x.id === 'm1')!.estado = 'ocupada'
     await expect(mesasService.separar(m!.grupoId!)).rejects.toBeTruthy()
+  })
+
+  it('las mesas unidas cambian de estado juntas', async () => {
+    await mesasService.unir(['m1', 'm2'])
+    const cambiadas = await mesasService.cambiarEstado('m1', 'ocupada')
+    expect(cambiadas.map((m) => m.id).sort()).toEqual(['m1', 'm2'])
+    expect(db.mesas.find((m) => m.id === 'm2')!.estado).toBe('ocupada')
+    // Y liberar la unión la libera entera, soltando al mesero.
+    db.mesas.find((m) => m.id === 'm2')!.meseroId = 'u2'
+    await mesasService.cambiarEstado('m2', 'libre')
+    expect(db.mesas.find((m) => m.id === 'm1')!.estado).toBe('libre')
+    expect(db.mesas.find((m) => m.id === 'm2')!.meseroId).toBeUndefined()
+    // Una mesa suelta sigue cambiando sola.
+    const sola = await mesasService.cambiarEstado('m3', 'ocupada')
+    expect(sola).toHaveLength(1)
   })
 })

@@ -31,10 +31,6 @@ function validar(datos: Partial<NuevoCombo>, id?: string) {
       }
     }
   }
-  const tipo = datos.tipo ?? db.combos.find((c) => c.id === id)?.tipo
-  if (tipo === 'menuDia' && datos.dias !== undefined && datos.dias.length === 0) {
-    throw errorCampo('dias', 'Elige al menos un día para el menú.')
-  }
 }
 
 /** Precio de referencia: la opción más barata de cada parte, sumadas. */
